@@ -1,0 +1,13 @@
+{
+  "name": "websocket-test-server",
+  "version": "1.0.0",
+  "description": "Simple WebSocket test server for the controller",
+  "main": "test-server.js",
+  "scripts": {
+    "start": "node test-server.js"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}
+
