@@ -1,3 +1,5 @@
+//Author: Krish Shah
+//Reviewed by: Sai Raparla
 import { Direction } from '../utils/direction';
 
 interface DirectionPadProps {

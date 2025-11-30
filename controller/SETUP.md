@@ -1,3 +1,6 @@
+#Author Krish Shah
+#Reviewed by: Sai Raparla
+
 # Quick Setup Guide
 
 ## Prerequisites

@@ -1,5 +1,5 @@
-// Type definitions and direction utilities
-
+//Author: Krish Shah
+//Reviewed by: Sai Raparla
 export type Direction = 'forward' | 'back' | 'left' | 'right';
 
 export interface DirectionMsg {
