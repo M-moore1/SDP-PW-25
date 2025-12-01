@@ -1,6 +1,6 @@
-# SDP Project
+# Secure Remote Vehicle Communication System
 
-### CSE 20
+### SDP Project - CSE 20
 
 ### File Structure
 - Controller: has UI for robot dog
