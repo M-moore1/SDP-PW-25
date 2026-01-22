@@ -1,3 +1,5 @@
+//Author: Krish Shah
+//Reviewed by: Sai Raparla
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
