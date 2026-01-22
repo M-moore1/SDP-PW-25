@@ -1,3 +1,6 @@
+#Author Krish Shah
+#Reviewed by: Sai Raparla
+
 # WebSocket Controller
 
 A React + TypeScript single-page application that provides keyboard and touch-based directional controls via WebSocket.
