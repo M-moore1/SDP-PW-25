@@ -37,63 +37,59 @@ export function DirectionPad({ onDirectionStart, onDirectionStop, activeDirectio
   };
 
   return (
-    <div className="flex flex-col items-center gap-2 p-4 bg-white rounded-xl shadow-lg">
+    <div className="flex flex-col items-center gap-2 p-6 px-12 bg-white rounded-xl shadow-lg">
       <h2 className="text-lg font-semibold text-gray-700 mb-2">On-Screen Controls</h2>
       
-      {/* Grid layout for arrow buttons */}
-      <div className="grid grid-cols-3 gap-2 place-items-center">
-        {/* Top row - Forward */}
-        <div className="col-start-2">
+      {/* Arrow buttons layout */}
+      <div className="flex flex-col items-center gap-2">
+        {/* Top row - Up arrow */}
+        <button
+          onPointerDown={handlePointerDown('forward')}
+          onPointerUp={handlePointerUpOrLeave}
+          onPointerLeave={handlePointerUpOrLeave}
+          className={getButtonClass('forward')}
+          aria-label="Forward"
+          type="button"
+        >
+          ↑
+        </button>
+
+        {/* Middle row - Left and Right arrows */}
+        <div className="flex gap-2">
           <button
-            onPointerDown={handlePointerDown('forward')}
+            onPointerDown={handlePointerDown('left')}
             onPointerUp={handlePointerUpOrLeave}
             onPointerLeave={handlePointerUpOrLeave}
-            className={getButtonClass('forward')}
-            aria-label="Forward"
+            className={getButtonClass('left')}
+            aria-label="Left"
             type="button"
           >
-            ↑
+            ←
+          </button>
+          
+          <button
+            onPointerDown={handlePointerDown('right')}
+            onPointerUp={handlePointerUpOrLeave}
+            onPointerLeave={handlePointerUpOrLeave}
+            className={getButtonClass('right')}
+            aria-label="Right"
+            type="button"
+          >
+            →
           </button>
         </div>
 
-        {/* Middle row - Left and Right */}
+        {/* Bottom row - Down arrow */}
         <button
-          onPointerDown={handlePointerDown('left')}
+          onPointerDown={handlePointerDown('back')}
           onPointerUp={handlePointerUpOrLeave}
           onPointerLeave={handlePointerUpOrLeave}
-          className={getButtonClass('left')}
-          aria-label="Left"
+          className={getButtonClass('back')}
+          aria-label="Back"
           type="button"
         >
-          ←
+          ↓
         </button>
-        
-        <div /> {/* Empty space in center */}
-        
-        <button
-          onPointerDown={handlePointerDown('right')}
-          onPointerUp={handlePointerUpOrLeave}
-          onPointerLeave={handlePointerUpOrLeave}
-          className={getButtonClass('right')}
-          aria-label="Right"
-          type="button"
-        >
-          →
-        </button>
-
-        {/* Bottom row - Back */}
-        <div className="col-start-2">
-          <button
-            onPointerDown={handlePointerDown('back')}
-            onPointerUp={handlePointerUpOrLeave}
-            onPointerLeave={handlePointerUpOrLeave}
-            className={getButtonClass('back')}
-            aria-label="Back"
-            type="button"
-          >
-            ↓
-          </button>
-        </div>
       </div>
 
       <p className="text-sm text-gray-500 mt-2">
