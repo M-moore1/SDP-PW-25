@@ -164,7 +164,7 @@ function App() {
         {/* Header */}
         <header className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            WebSocket Controller
+            Robot Controller
           </h1>
           <p className="text-gray-600">
             Use arrow keys or on-screen buttons to control direction
