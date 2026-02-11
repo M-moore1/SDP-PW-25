@@ -9,7 +9,7 @@ interface DirectionPadProps {
 }
 
 /**
- * On-screen direction pad with four arrow buttons.
+ * On-screen direction pad with W/A/S/D buttons.
  * Supports mouse and touch events with hold-to-repeat behavior.
  */
 export function DirectionPad({ onDirectionStart, onDirectionStop, activeDirection }: DirectionPadProps) {
@@ -40,9 +40,9 @@ export function DirectionPad({ onDirectionStart, onDirectionStop, activeDirectio
     <div className="flex flex-col items-center gap-2 p-6 px-12 bg-white rounded-xl shadow-lg">
       <h2 className="text-lg font-semibold text-gray-700 mb-2">On-Screen Controls</h2>
       
-      {/* Arrow buttons layout */}
+      {/* WASD layout */}
       <div className="flex flex-col items-center gap-2">
-        {/* Top row - Up arrow */}
+        {/* Top row - W */}
         <button
           onPointerDown={handlePointerDown('forward')}
           onPointerUp={handlePointerUpOrLeave}
@@ -51,10 +51,10 @@ export function DirectionPad({ onDirectionStart, onDirectionStop, activeDirectio
           aria-label="Forward"
           type="button"
         >
-          ↑
+          W
         </button>
 
-        {/* Middle row - Left and Right arrows */}
+        {/* Middle row - A and D */}
         <div className="flex gap-2">
           <button
             onPointerDown={handlePointerDown('left')}
@@ -64,7 +64,7 @@ export function DirectionPad({ onDirectionStart, onDirectionStop, activeDirectio
             aria-label="Left"
             type="button"
           >
-            ←
+            A
           </button>
           
           <button
@@ -75,11 +75,11 @@ export function DirectionPad({ onDirectionStart, onDirectionStop, activeDirectio
             aria-label="Right"
             type="button"
           >
-            →
+            D
           </button>
         </div>
 
-        {/* Bottom row - Down arrow */}
+        {/* Bottom row - S */}
         <button
           onPointerDown={handlePointerDown('back')}
           onPointerUp={handlePointerUpOrLeave}
@@ -88,7 +88,7 @@ export function DirectionPad({ onDirectionStart, onDirectionStop, activeDirectio
           aria-label="Back"
           type="button"
         >
-          ↓
+          S
         </button>
       </div>
 
