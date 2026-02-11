@@ -23,24 +23,29 @@ interface MessageLogEntry {
 }
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080';
+const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY; // 64 hex chars (32 bytes)
 
 function App() {
-  const { status, sendMessage, lastError } = useWebSocket(WS_URL);
   const [activeDirection, setActiveDirection] = useState<Direction | null>(null);
   const [messageLog, setMessageLog] = useState<MessageLogEntry[]>([]);
   const [isKeyHeld, setIsKeyHeld] = useState(false);
   const [repeatRate, setRepeatRate] = useState(50);
   const [controlSpeed, setControlSpeed] = useState(50);
+  const [encryptionEnabled, setEncryptionEnabled] = useState(false);
 
   const pressedKeysRef = useRef<Set<string>>(new Set());
 
-  const logMessage = useCallback((msg: object) => {
-    const payload = JSON.stringify(msg);
+  const logMessage = useCallback((payload: string) => {
     setMessageLog((prev) => [
       { payload, timestamp: new Date().toLocaleTimeString() },
       ...prev,
     ].slice(0, 10));
   }, []);
+
+  const { status, sendMessage, lastError } = useWebSocket(WS_URL, {
+    encryptionKey: encryptionEnabled && ENCRYPTION_KEY ? ENCRYPTION_KEY : undefined,
+    onMessageSent: logMessage,
+  });
 
   const sendDirection = useCallback((direction: Direction) => {
     const axes = directionToControlAxes(direction);
@@ -52,8 +57,7 @@ function App() {
       controlSpeed
     );
     sendMessage(msg);
-    logMessage(msg);
-  }, [sendMessage, controlSpeed, logMessage]);
+  }, [sendMessage, controlSpeed]);
 
   useHoldRepeater(
     isKeyHeld && activeDirection !== null,
@@ -153,6 +157,9 @@ function App() {
             <CommandPanel
               controlSpeed={controlSpeed}
               onControlSpeedChange={setControlSpeed}
+              encryptionEnabled={encryptionEnabled}
+              onEncryptionChange={setEncryptionEnabled}
+              hasEncryptionKey={Boolean(ENCRYPTION_KEY)}
             />
             <MessageLog logs={messageLog} />
           </div>
