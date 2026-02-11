@@ -13,10 +13,9 @@ interface SettingsDrawerProps {
 export function SettingsDrawer({ repeatRate, onRepeatRateChange }: SettingsDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const presets = [
-    { label: 'Fast (250ms)', value: 250 },
-    { label: 'Normal (1000ms)', value: 1000 },
-    { label: 'Slow (2000ms)', value: 2000 },
+  const options = [
+    { label: 'Standard (50ms)', value: 50 },
+    { label: 'Slow (150ms)', value: 150 },
   ];
 
   return (
@@ -104,50 +103,23 @@ export function SettingsDrawer({ repeatRate, onRepeatRateChange }: SettingsDrawe
               </p>
             </div>
 
-            {/* Slider */}
-            <div className="mb-4">
-              <input
-                type="range"
-                min="250"
-                max="2000"
-                step="50"
-                value={repeatRate}
-                onChange={(e) => onRepeatRateChange(Number(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>250ms</span>
-                <span>2000ms</span>
-              </div>
-            </div>
-
-            {/* Preset Buttons */}
-            <div className="space-y-2">
-              {presets.map((preset) => (
+            {/* Toggle: 50ms or 150ms */}
+            <div className="flex gap-2">
+              {options.map((opt) => (
                 <button
-                  key={preset.value}
-                  onClick={() => onRepeatRateChange(preset.value)}
-                  className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
-                    repeatRate === preset.value
+                  key={opt.value}
+                  onClick={() => onRepeatRateChange(opt.value)}
+                  className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
+                    repeatRate === opt.value
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  {preset.label}
+                  {opt.label}
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* Info */}
-          <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
-            <p className="font-semibold mb-2">💡 Tips:</p>
-            <ul className="space-y-1 list-disc list-inside">
-              <li>Lower values = faster repeat</li>
-              <li>Higher values = more precise control</li>
-              <li>Changes apply immediately</li>
-            </ul>
-          </div>
+          </div>          
         </div>
       </div>
     </>
