@@ -1,0 +1,13 @@
+{
+  "name": "sdp",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "express-webserver.js",
+  "scripts": {
+    "start": "node express-webserver.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.19.0"
+  }
+}
