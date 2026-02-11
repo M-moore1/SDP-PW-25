@@ -62,3 +62,5 @@ Thumbs.db
 *.a
 *.so
 *.dylib
+
+encryption/wasm/mbedtls
