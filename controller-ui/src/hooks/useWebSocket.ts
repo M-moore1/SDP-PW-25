@@ -1,8 +1,16 @@
-//Author: Sai Raparla 
+//Author: Sai Raparla
 //Reviewed by: Krish Shah
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { loadEncryptionModule, encryptJson } from '../utils/encryption';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
+
+interface UseWebSocketOptions {
+  /** 32-byte key as 64 hex chars. When set, messages are encrypted with AES-256-GCM before sending. */
+  encryptionKey?: string;
+  /** Called with the actual payload sent over the wire (encrypted or plain JSON string). */
+  onMessageSent?: (payload: string) => void;
+}
 
 interface UseWebSocketReturn {
   status: ConnectionStatus;
@@ -19,9 +27,12 @@ const HEARTBEAT_INTERVAL = 25000; // 25s
  * - Auto-reconnect with exponential backoff
  * - Message queue (sends when connection opens)
  * - Heartbeat ping to keep connection alive
+ * - Optional AES-256-GCM encryption via WASM
  * - Automatic cleanup on visibility change and unmount
  */
-export function useWebSocket(url: string): UseWebSocketReturn {
+export function useWebSocket(url: string, options?: UseWebSocketOptions): UseWebSocketReturn {
+  const encryptionKey = options?.encryptionKey;
+  const onMessageSent = options?.onMessageSent;
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const [lastError, setLastError] = useState<string | null>(null);
 
@@ -32,24 +43,56 @@ export function useWebSocket(url: string): UseWebSocketReturn {
   const messageQueueRef = useRef<unknown[]>([]);
   const shouldConnectRef = useRef<boolean>(true);
 
-  // Send a message (queues if not connected)
+  // Send a message (queues if not connected, encrypts if encryptionKey is set)
   const sendMessage = useCallback((data: unknown) => {
-    try {
-      const message = JSON.stringify(data);
-      
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(message);
-        setLastError(null);
-      } else {
-        // Queue message to send when connection opens
-        messageQueueRef.current.push(data);
+    const doSend = async (payload: unknown) => {
+      try {
+        let message: string;
+        if (encryptionKey) {
+          await loadEncryptionModule();
+          const encrypted = encryptJson(payload as object, encryptionKey);
+          if (!encrypted) {
+            setLastError('Encryption failed');
+            return;
+          }
+          message = encrypted;
+        } else {
+          message = JSON.stringify(payload);
+        }
+
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(message);
+          setLastError(null);
+        } else {
+          messageQueueRef.current.push(payload);
+        }
+        onMessageSent?.(message);
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Failed to send message';
+        setLastError(errorMsg);
+        console.error('WebSocket send error:', error);
       }
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Failed to send message';
-      setLastError(errorMsg);
-      console.error('WebSocket send error:', error);
+    };
+
+    if (encryptionKey) {
+      doSend(data);
+    } else {
+      try {
+        const message = JSON.stringify(data);
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(message);
+          setLastError(null);
+        } else {
+          messageQueueRef.current.push(data);
+        }
+        onMessageSent?.(message);
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Failed to send message';
+        setLastError(errorMsg);
+        console.error('WebSocket send error:', error);
+      }
     }
-  }, []);
+  }, [encryptionKey, onMessageSent]);
 
   // Flush queued messages
   const flushQueue = useCallback(() => {
@@ -70,16 +113,25 @@ export function useWebSocket(url: string): UseWebSocketReturn {
       clearInterval(heartbeatIntervalRef.current);
     }
 
+    const key = encryptionKey;
     heartbeatIntervalRef.current = window.setInterval(() => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         try {
-          wsRef.current.send(JSON.stringify({ type: 'ping' }));
+          const ping = { type: 'ping' };
+          if (key) {
+            loadEncryptionModule().then(() => {
+              const enc = encryptJson(ping, key);
+              if (enc) wsRef.current?.send(enc);
+            });
+          } else {
+            wsRef.current.send(JSON.stringify(ping));
+          }
         } catch (error) {
           console.error('Heartbeat ping failed:', error);
         }
       }
     }, HEARTBEAT_INTERVAL);
-  }, []);
+  }, [encryptionKey]);
 
   // Stop heartbeat
   const stopHeartbeat = useCallback(() => {

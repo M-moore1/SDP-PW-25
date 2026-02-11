@@ -4,12 +4,52 @@
 interface CommandPanelProps {
   controlSpeed: number;
   onControlSpeedChange: (speed: number) => void;
+  encryptionEnabled: boolean;
+  onEncryptionChange: (enabled: boolean) => void;
+  hasEncryptionKey: boolean;
 }
 
-export function CommandPanel({ controlSpeed, onControlSpeedChange }: CommandPanelProps) {
+export function CommandPanel({
+  controlSpeed,
+  onControlSpeedChange,
+  encryptionEnabled,
+  onEncryptionChange,
+  hasEncryptionKey,
+}: CommandPanelProps) {
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
       <h2 className="text-lg font-semibold text-gray-700">Command Panel</h2>
+
+      {/* Encryption toggle */}
+      <div className="border border-gray-200 rounded-lg p-4 mt-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-600">Encryption</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {hasEncryptionKey ? 'AES-256-GCM via WASM' : 'Set VITE_ENCRYPTION_KEY in .env'}
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={encryptionEnabled}
+            disabled={!hasEncryptionKey}
+            onClick={() => hasEncryptionKey && onEncryptionChange(!encryptionEnabled)}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+              encryptionEnabled ? 'bg-blue-600' : 'bg-gray-200'
+            } ${!hasEncryptionKey ? 'opacity-50' : ''}`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition ${
+                encryptionEnabled ? 'translate-x-5' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          {encryptionEnabled ? 'Encrypted' : 'Unencrypted'}
+        </p>
+      </div>
 
       {/* Control (C) - speed slider */}
       <div className="border border-gray-200 rounded-lg p-4 mt-4">
