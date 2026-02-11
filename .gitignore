@@ -53,3 +53,12 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+
+# C/C++ compiled
+*.o
+*.obj
+*.out
+*.exe
+*.a
+*.so
+*.dylib
