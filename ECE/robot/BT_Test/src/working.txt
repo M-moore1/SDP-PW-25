@@ -1,0 +1,239 @@
+#include <stdio.h>
+#include <string.h>
+#include "stepper_motor.h"
+#include "driver/gpio.h"
+#include "driver/gptimer.h"
+#include "nvs_flash.h"
+#include "esp_log.h"
+#include "esp_bt.h"
+#include "esp_bt_main.h"
+#include "esp_bt_device.h"
+#include "esp_gap_bt_api.h"
+#include "esp_spp_api.h"
+
+#include "driver/uart.h"
+#include "driver/gpio.h"
+
+#define TAG "SPP_SERVER"
+
+// Global SPP handle
+static uint32_t spp_handle = 0;
+
+// UART buffer
+static char uart_buf[256];
+static int uart_index = 0;
+
+// RX buffer
+static char rx_buf[128];
+static int rx_index = 0;
+
+#define TEST_MOTOR_STEP GPIO_NUM_32
+#define TEST_MOTOR_DIR GPIO_NUM_33
+#define TEST_MOTOR_EN GPIO_NUM_25
+step_mot_t test_motor;
+
+volatile int freq = 1000;
+volatile int pulse_countdown = 0;
+volatile gptimer_handle_t my_timer;
+
+volatile int w = 0, a = 0, s = 0, d = 0, speed = 0;
+volatile char type;
+
+void disable_bluetooth_auth(void)
+{
+    // 1. Set IO Capabilities to None
+    esp_bt_io_cap_t iocap = ESP_BT_IO_CAP_NONE;
+    esp_bt_gap_set_security_param(ESP_BT_SP_IOCAP_MODE, &iocap, sizeof(iocap));
+
+    // 2. Set Authentication Requirements
+    // For Classic BT, we use MITM_NOT_REQUIRED and GENERAL_BONDING (or NO_BONDING)
+    // ESP_BT_MITM_REQD is 0x00 for "not required"
+    uint8_t auth_req = 0x00; 
+    esp_bt_gap_set_security_param(ESP_BT_SP_IOCAP_MODE, &auth_req, sizeof(auth_req));
+
+    // 3. Fix PIN logic (using standard function name)
+    esp_bt_pin_type_t pin_type = ESP_BT_PIN_TYPE_FIXED;
+    esp_bt_pin_code_t pin_code = {'0', '0', '0', '0'};
+    esp_bt_gap_set_pin(pin_type, 4, pin_code);
+    
+    ESP_LOGI(TAG, "Bluetooth security parameters updated.");
+}
+
+void bt_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *param)
+{
+    switch (event) {
+        case ESP_BT_GAP_AUTH_CMPL_EVT:
+            ESP_LOGI(TAG, "Authentication complete");
+            break;
+            
+        case ESP_BT_GAP_PIN_REQ_EVT: {
+            // For legacy pairing, always accept with default PIN 0000
+            ESP_LOGI(TAG, "PIN request, using 0000");
+            esp_bt_pin_code_t pin_code = {'0', '0', '0', '0'};
+            esp_bt_gap_pin_reply(param->pin_req.bda, true, 4, pin_code);
+            break;
+        }
+        
+        case ESP_BT_GAP_CFM_REQ_EVT: {
+            // For SSP pairing, always confirm without checking
+            ESP_LOGI(TAG, "SSP confirm request, auto-accepting");
+            esp_bt_gap_ssp_confirm_reply(param->cfm_req.bda, true);
+            break;
+        }
+        
+        case ESP_BT_GAP_KEY_NOTIF_EVT:
+            ESP_LOGI(TAG, "Passkey notification: %d", param->key_notif.passkey);
+            break;
+            
+        default:
+            break;
+    }
+}
+
+int speed_update_flag = 0;
+
+void bt_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
+{
+    switch(event) {
+
+        case ESP_SPP_INIT_EVT:
+            ESP_LOGI(TAG, "SPP initialized, starting server…");
+            esp_spp_start_srv(ESP_SPP_SEC_NONE, ESP_SPP_ROLE_SLAVE, 0, "SPP_SERVER");
+            break;
+
+        case ESP_SPP_START_EVT:
+            ESP_LOGI(TAG, "SPP server started");
+            break;
+
+        case ESP_SPP_SRV_OPEN_EVT:
+            ESP_LOGI(TAG, "Client connected! handle=%ld", param->srv_open.handle);
+            spp_handle = param->srv_open.handle;
+            break;
+
+        case ESP_SPP_CLOSE_EVT:
+            ESP_LOGI(TAG, "Client disconnected");
+            spp_handle = 0;
+            break;
+
+        case ESP_SPP_DATA_IND_EVT:
+            for (int i = 0; i < param->data_ind.len; i++) {
+                char c = param->data_ind.data[i];
+                if (c == '\r' || c == '\n') {
+                    if (rx_index > 0) {
+                        int temp_w = 0, temp_a = 0, temp_s = 0, temp_d = 0, temp_speed = 0;
+                        rx_buf[rx_index] = '\0';
+                        
+                        ESP_LOGI(TAG, "Message: %s", rx_buf);
+
+                        int matched = sscanf(rx_buf, 
+                        "{\"TYPE\":\"%c\",\"FORWARD\":%d,\"LEFT\":%d,\"BACKWARD\":%d,\"RIGHT\":%d,\"SPEED\":%d}", 
+                        &type, &temp_w, &temp_a, &temp_s, &temp_d, &temp_speed);
+                        
+                        printf(" string length: %d\n", matched);
+                        if (matched == 6) {
+                           w += temp_w; a += temp_a; s += temp_s; d += temp_d;
+                           if (temp_w || temp_a || temp_s || temp_d) {
+                                pulse_countdown += freq;
+                            }
+                           if (temp_speed != speed) {
+                            speed = temp_speed;
+                            speed_update_flag = 1;
+                           }
+                           printf("w: %d, a: %d, s: %d, d: %d, speed: %d \n", w, a,s,d, speed);
+                        }
+
+                        
+                        rx_index = 0;
+                    }
+                } else {
+                    if (rx_index < sizeof(rx_buf)-1) {
+                        rx_buf[rx_index++] = c;
+                    } else {
+                        rx_index = 0; 
+                    }
+                }
+            }
+            break;
+
+        default:
+            break;
+    }
+}
+
+void print_bt_mac() {
+    const uint8_t *mac = esp_bt_dev_get_address();
+    if (mac) {
+        printf("BT MAC: %02X:%02X:%02X:%02X:%02X:%02X\n",
+               mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    }
+}
+
+uart_port_t uart_init (){
+    const int uart_buffer_size = (1024 * 2);
+    QueueHandle_t uart_queue;
+    uart_driver_install(UART_NUM_0, uart_buffer_size, uart_buffer_size, 10, &uart_queue, 0);
+
+    const uart_port_t uart_num = UART_NUM_0;
+    uart_config_t uart_config = {
+        .baud_rate = 115200,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    };
+
+    uart_param_config(uart_num, &uart_config);
+    return uart_num;
+}
+
+void app_main(void)
+{
+    // Init NVS
+    ESP_ERROR_CHECK(nvs_flash_init());
+
+    // Release BLE memory
+    esp_bt_controller_mem_release(ESP_BT_MODE_BLE);
+
+    // Init BT controller
+    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_bt_controller_init(&bt_cfg));
+    ESP_ERROR_CHECK(esp_bt_controller_enable(ESP_BT_MODE_CLASSIC_BT));
+
+    // Init Bluedroid
+    ESP_ERROR_CHECK(esp_bluedroid_init());
+    ESP_ERROR_CHECK(esp_bluedroid_enable());
+
+    // Register callbacks
+    esp_spp_register_callback(bt_spp_cb);
+    esp_bt_gap_register_callback(bt_gap_cb);
+
+    // Disable authentication
+    disable_bluetooth_auth();
+
+    // Enhanced SPP init
+    esp_spp_cfg_t spp_cfg = {
+        .mode = ESP_SPP_MODE_CB,
+        .enable_l2cap_ertm = false,
+        .tx_buffer_size = 0
+    };
+    ESP_ERROR_CHECK(esp_spp_enhanced_init(&spp_cfg));
+
+    // Bluetooth name + discoverability
+    esp_bt_gap_set_device_name("STEVE_ESP32");
+    esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
+
+    ESP_LOGI(TAG, "ESP32 SPP Server Ready. Waiting for client connection…");
+    ESP_LOGI(TAG, "No authentication required - PIN: 0000 if prompted");
+    print_bt_mac();
+
+    const uart_port_t uart_num = uart_init();
+
+    stepper_enable(&test_motor);
+
+    while (1) {
+        uint8_t data[32];
+        int len = uart_read_bytes(UART_NUM_0, data, sizeof(data), pdMS_TO_TICKS(20));
+
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+}
