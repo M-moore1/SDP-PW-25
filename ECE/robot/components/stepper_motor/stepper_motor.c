@@ -18,6 +18,7 @@ void motor_init(step_mot_t* m, const int step_pin, const int dir_pin, const int 
 
     gpio_set_direction(m->dir_gpio, GPIO_MODE_OUTPUT);
     gpio_set_direction(m->en_gpio, GPIO_MODE_OUTPUT);
+    gpio_set_level(m->en_gpio, 1);
 
     m->timer_sel = (ledc_timer_t)(channel / 2); 
 
@@ -67,9 +68,9 @@ void stepper_disable(step_mot_t* m){
 uint32_t map_speed_to_hz(int speed) {
     if (speed <= 0) return 0;
     if (speed == 1) return 200;
-    if (speed >= 100) return 250000;
+    if (speed >= 100) return 3000;
 
-    return 200 + (speed - 1) * (250000 - 200) / (100 - 1);
+    return 200 + (speed - 1) * (3000 - 200) / (100 - 1);
 }
 
 void motor_pulse(step_mot_t *motor, uint32_t speed, int dir){
