@@ -1,8 +1,34 @@
 #include "Robot_BLE.h"
+#include "stepper_motor.h"
 #include "nvs_flash.h"
 
-// IF NOTIFY NOT ENABLED SEND BACK info to ROBOT
-// But everthing in BLE section
+#define TEST_MOTOR_STEP GPIO_NUM_32
+#define TEST_MOTOR_DIR  GPIO_NUM_33
+#define TEST_MOTOR_EN   GPIO_NUM_25
+#define TEST_MOTOR_CHANNEL LEDC_CHANNEL_0
+
+step_mot_t test_motor;
+
+// Type "FORWARD" to move the motor direction 0
+// Type "BACKWARD" to move the motor direction 1
+void cmd_parser_task(void *pvParameters)
+{
+    char *received_cmd;
+
+    while (1) {
+        if (xQueueReceive(cmd_queue, &received_cmd, portMAX_DELAY))
+        {
+            printf("\nInformation sent from BLE: %s\n", received_cmd);
+
+            if(strcmp(received_cmd, "FORWARD") == 0){
+                motor_pulse(&test_motor, 50, 0);
+            }else if (strcmp(received_cmd, "BACKWARD") == 0){
+                motor_pulse(&test_motor, 50, 1);
+            }
+            free(received_cmd);
+        }
+    }
+}
 
 void app_main()
 {
@@ -13,12 +39,22 @@ void app_main()
     char *msg1 = "hello";
     char *msg2 = "testing";
 
+    motor_init(&test_motor, TEST_MOTOR_STEP, TEST_MOTOR_DIR, TEST_MOTOR_EN, TEST_MOTOR_CHANNEL);
+
+
+    xTaskCreatePinnedToCore(
+        cmd_parser_task,
+        "cmd_parser",
+        4096,
+        NULL,
+        5,
+        NULL,
+        1
+    );
+
     while (1) {
 
         if (device_connected && notify_enabled) {
-
-            
-
             send_string(msg2);  
 
             vTaskDelay(pdMS_TO_TICKS(200));
@@ -26,6 +62,8 @@ void app_main()
             send_string(msg1);
 
         }
+
+        
 
         vTaskDelay(pdMS_TO_TICKS(2000)); // 2 seconds
     }

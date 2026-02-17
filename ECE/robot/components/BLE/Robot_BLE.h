@@ -25,6 +25,8 @@
 #define CHAR_DECLARATION_SIZE                   (sizeof(uint8_t))
 #define GATTS_DEMO_CHAR_VAL_LEN_MAX             500
 
+extern QueueHandle_t cmd_queue;
+
 enum
 {
     ROBOT_IDX_SVC,     // Service container for entire robot communication
