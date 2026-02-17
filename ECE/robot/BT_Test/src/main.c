@@ -152,6 +152,7 @@ void cmd_parser_task(void *pvParameters)
     while (1) {
         if (xQueueReceive(cmd_queue, &inst, portMAX_DELAY)) {
 
+            // Skip 0 then keep wherever a 1 is
             uint8_t type = (inst >> 0) & 0x1F;
 
             ESP_LOGI(TAG, "Received instruction type value: %u", type);

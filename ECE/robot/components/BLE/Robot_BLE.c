@@ -15,7 +15,7 @@ static const uint8_t char_prop_read_write_notify   = ESP_GATT_CHAR_PROP_BIT_WRIT
 static const uint16_t character_client_config_uuid = ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
 static const uint8_t robot_measurement_ccc[2]      = {0x00, 0x00};
 
-QueueHandle_t cmd_queue = NULL;
+QueueHandle_t ble_recieve_queue = NULL;
 
 static uint8_t service_uuid[16] = {
     /* LSB <--------------------------------------------------------------------------------> MSB */
@@ -105,9 +105,9 @@ void robot_ble_init(){
     ESP_ERROR_CHECK(esp_bluedroid_init());
     ESP_ERROR_CHECK(esp_bluedroid_enable());
 
-    cmd_queue = xQueueCreate(10, sizeof(char *));
+    ble_recieve_queue = xQueueCreate(10, sizeof(char *));
 
-    if (cmd_queue == NULL) {
+    if (ble_recieve_queue == NULL) {
         ESP_LOGE(GATTS_TABLE_TAG, "Queue creation failed!");
         return;
     }
@@ -246,7 +246,7 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
                     msg_copy[param->write.len] = '\0';
 
                     
-                    if (xQueueSend(cmd_queue, &msg_copy, 0) != pdPASS) {
+                    if (xQueueSend(ble_recieve_queue, &msg_copy, 0) != pdPASS) {
                         ESP_LOGE(GATTS_TABLE_TAG, "Queue full, freeing memory");
                         free(msg_copy); 
                     }

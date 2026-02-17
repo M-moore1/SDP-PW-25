@@ -25,7 +25,7 @@
 #define CHAR_DECLARATION_SIZE                   (sizeof(uint8_t))
 #define GATTS_DEMO_CHAR_VAL_LEN_MAX             500
 
-extern QueueHandle_t cmd_queue;
+extern QueueHandle_t ble_recieve_queue;
 
 enum
 {
@@ -48,7 +48,7 @@ extern bool notify_enabled;
 extern uint16_t robot_handle_table[ROBOT_IDX_NB];
 extern esp_ble_adv_data_t adv_data;
 extern esp_ble_adv_params_t adv_params;
-extern QueueHandle_t cmd_queue;
+extern QueueHandle_t ble_recieve_queue;
 
 // Function declarations
 void robot_ble_init();
