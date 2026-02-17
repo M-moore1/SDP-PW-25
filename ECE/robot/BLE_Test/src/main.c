@@ -9,8 +9,8 @@
 
 step_mot_t test_motor;
 
-// Type "FORWARD" to move the motor direction 0
-// Type "BACKWARD" to move the motor direction 1
+// Type "FORWARD" to move the motor direction 0 for 1 seconds
+// Type "BACKWARD" to move the motor direction 1 for 1 second
 void cmd_parser_task(void *pvParameters)
 {
     char *received_cmd;
@@ -21,9 +21,16 @@ void cmd_parser_task(void *pvParameters)
             printf("\nInformation sent from BLE: %s\n", received_cmd);
 
             if(strcmp(received_cmd, "FORWARD") == 0){
-                motor_pulse(&test_motor, 50, 0);
+                for(int i = 0; i < 17; i++){
+                    motor_pulse(&test_motor, 50, 0);
+                    vTaskDelay(pdMS_TO_TICKS(50));
+                }
+                
             }else if (strcmp(received_cmd, "BACKWARD") == 0){
-                motor_pulse(&test_motor, 50, 1);
+                for(int i = 0; i < 17; i++){
+                    motor_pulse(&test_motor, 50, 1);
+                    vTaskDelay(pdMS_TO_TICKS(50));
+                }
             }
             free(received_cmd);
         }
@@ -62,8 +69,6 @@ void app_main()
             send_string(msg1);
 
         }
-
-        
 
         vTaskDelay(pdMS_TO_TICKS(2000)); // 2 seconds
     }
