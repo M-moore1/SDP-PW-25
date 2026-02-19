@@ -1,0 +1,272 @@
+#include "Robot_BLE.h"
+
+uint16_t robot_conn_id = 0;
+esp_gatt_if_t robot_gatts_if = 0;
+bool device_connected = false;
+bool notify_enabled = false;
+
+
+uint16_t robot_handle_table[ROBOT_IDX_NB];
+static const uint16_t GATTS_SERVICE_UUID           = 0x00FF;
+static const uint16_t GATTS_ROBOT_UUID             = 0xFF01;
+static const uint16_t primary_service_uuid         = ESP_GATT_UUID_PRI_SERVICE;
+static const uint16_t character_declaration_uuid   = ESP_GATT_UUID_CHAR_DECLARE;
+static const uint8_t char_prop_read_write_notify   = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
+static const uint16_t character_client_config_uuid = ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
+static const uint8_t robot_measurement_ccc[2]      = {0x00, 0x00};
+
+QueueHandle_t ble_recieve_queue = NULL;
+
+static uint8_t service_uuid[16] = {
+    /* LSB <--------------------------------------------------------------------------------> MSB */
+    //first uuid, 16bit, [12],[13] is the value
+    0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00,
+};
+
+// Advertising Data configuration
+esp_ble_adv_data_t adv_data = {
+    .set_scan_rsp        = false,  // false = this is the main advertising packet
+    .include_name        = true,   // include the device name in advertising
+    .include_txpower     = true,   // include TX power level in advertising
+    .service_uuid_len    = sizeof(service_uuid), // length of service UUID(s)
+    .p_service_uuid      = service_uuid,         // pointer to service UUID array
+    .flag                = (ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT), // advertising flags: general discoverable, no BR/EDR
+};
+
+// Advertising Parameter
+esp_ble_adv_params_t adv_params = {
+    .adv_int_min         = 0x20,
+    .adv_int_max         = 0x40,
+    .adv_type            = ADV_TYPE_IND,  // Connectable Discoverable Settings
+    .own_addr_type       = BLE_ADDR_TYPE_PUBLIC,
+    .channel_map         = ADV_CHNL_ALL,
+    .adv_filter_policy   = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY, // Only allow if part of whitelist
+    //.peer_addr and peer_addr_type to be advertise only to only MAC  to specfic address
+};
+
+struct gatts_profile_inst {
+    esp_gatts_cb_t gatts_cb;
+    uint16_t gatts_if;
+    uint16_t app_id;
+    uint16_t conn_id;
+    uint16_t service_handle;
+    esp_gatt_srvc_id_t service_id;
+    uint16_t char_handle;
+    esp_bt_uuid_t char_uuid;
+    esp_gatt_perm_t perm;
+    esp_gatt_char_prop_t property;
+    uint16_t descr_handle;
+    esp_bt_uuid_t descr_uuid;
+};
+
+// Stores the profiles instance only need one since I only have one profile
+static struct gatts_profile_inst robot_profile_tab[ROBOT_PROFILE_NUM] = {
+    [ROBOT_PROFILE_APP_IDX ] = {
+        .gatts_cb = gatts_event_handler,
+        .gatts_if = ESP_GATT_IF_NONE,       /* Not get the gatt_if, so initial is ESP_GATT_IF_NONE */
+    },
+
+};
+
+// TURN Off Auto Respond
+static const esp_gatts_attr_db_t gatt_db[ROBOT_IDX_NB] =
+{
+    // Change ESP_GATT_AUTO_RSP to ESP_GATT_RSP_BY_APP to rsp manually
+    // Service Declaration
+    [ROBOT_IDX_SVC]        =
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&primary_service_uuid, ESP_GATT_PERM_READ,
+      sizeof(uint16_t), sizeof(GATTS_SERVICE_UUID), (uint8_t *)&GATTS_SERVICE_UUID}},
+
+    /* Characteristic Declaration */
+    [ROBOT_IDX_CHAR]     =
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
+      CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write_notify}},
+
+    /* Characteristic Value */
+    [ROBOT_IDX_VAL] =
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_ROBOT_UUID, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+      GATTS_DEMO_CHAR_VAL_LEN_MAX, 0, NULL}},
+
+    /* Client Characteristic Configuration Descriptor */
+    [ROBOT_IDX_CFG]  =
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_client_config_uuid, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+      sizeof(uint16_t), sizeof(robot_measurement_ccc), (uint8_t *)robot_measurement_ccc}},
+    
+};
+
+void robot_ble_init(){
+    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_bt_controller_init(&bt_cfg));
+
+    ESP_ERROR_CHECK(esp_bt_controller_enable(ESP_BT_MODE_BLE));
+
+    ESP_LOGI(GATTS_TABLE_TAG, "%s init bluetooth", __func__);
+
+    ESP_ERROR_CHECK(esp_bluedroid_init());
+    ESP_ERROR_CHECK(esp_bluedroid_enable());
+
+    ble_recieve_queue = xQueueCreate(10, sizeof(char *));
+
+    if (ble_recieve_queue == NULL) {
+        ESP_LOGE(GATTS_TABLE_TAG, "Queue creation failed!");
+        return;
+    }
+
+    esp_ble_gatts_register_callback(gatts_event_handler); // SET UP PROFILE and SERVICES on INITIALIZATION
+    esp_ble_gap_register_callback(gap_event_handler); // STARTS ADVERTISING ON Initilization
+    esp_ble_gatts_app_register(ESP_ROBOT_APP_ID);
+}
+
+void send_string(char *txt){
+    esp_ble_gatts_send_indicate(robot_gatts_if, robot_conn_id, robot_handle_table[ROBOT_IDX_VAL],
+                strlen(txt), (uint8_t *)txt, false); 
+}
+
+// GAP Callback - handles advertising start and stop
+void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
+{
+    switch (event) {
+
+        // Advertising data configured → start advertising
+        case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
+            esp_ble_gap_start_advertising(&adv_params);
+            break;
+
+        // Advertising started
+        case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
+            if (param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS) {
+                ESP_LOGE(GATTS_TABLE_TAG, "Advertising start failed");
+            } else {
+                ESP_LOGI(GATTS_TABLE_TAG, "Advertising start successfully");
+            }
+            break;
+
+        // Advertising stopped
+        case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
+            if (param->adv_stop_cmpl.status != ESP_BT_STATUS_SUCCESS) {
+                ESP_LOGE(GATTS_TABLE_TAG, "Advertising stop failed");
+            } else {
+                ESP_LOGI(GATTS_TABLE_TAG, "Advertising stopped successfully");
+            }
+            break;
+
+        // Connection parameter update (optional but useful log)
+        case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
+            ESP_LOGI(GATTS_TABLE_TAG,
+                     "Conn params updated: status=%d, int=%d, latency=%d, timeout=%d",
+                     param->update_conn_params.status,
+                     param->update_conn_params.conn_int,
+                     param->update_conn_params.latency,
+                     param->update_conn_params.timeout);
+            break;
+
+        default:
+            break;
+    }
+}
+
+void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param)
+{
+    switch (event) {
+        case ESP_GATTS_REG_EVT:
+        {
+            // Set device name
+            esp_ble_gap_set_device_name(SAMPLE_DEVICE_NAME);
+
+            // Configure advertising data
+            esp_ble_gap_config_adv_data(&adv_data);
+
+            // Create attribute table
+            esp_ble_gatts_create_attr_tab(gatt_db, gatts_if, ROBOT_IDX_NB, SVC_INST_ID);
+            break;
+        }
+        case ESP_GATTS_CREAT_ATTR_TAB_EVT:
+        {
+            if (param->add_attr_tab.status == ESP_GATT_OK) {
+
+                memcpy(robot_handle_table, param->add_attr_tab.handles, sizeof(robot_handle_table));
+
+                esp_ble_gatts_start_service(robot_handle_table[ROBOT_IDX_SVC]);
+            }
+            break;
+        }
+        // Connection Event
+        case ESP_GATTS_CONNECT_EVT:
+            ESP_LOGI(GATTS_TABLE_TAG,"Device connected, conn_id=%d", param->connect.conn_id);
+            esp_ble_gap_stop_advertising();
+            robot_conn_id = param->connect.conn_id;
+            robot_gatts_if = gatts_if;
+            device_connected = true;
+            break;
+
+        // Disconnect Event
+        case ESP_GATTS_DISCONNECT_EVT:
+            ESP_LOGI(GATTS_TABLE_TAG,
+                    "Device disconnected");
+
+            device_connected = false;
+            notify_enabled = false;
+            esp_ble_gap_start_advertising(&adv_params);
+            break;
+
+        case ESP_GATTS_WRITE_EVT:
+        {
+            if (!param->write.is_prep) {
+
+                ESP_LOGI(GATTS_TABLE_TAG, "Write event, handle=%d len=%d", 
+                        param->write.handle,
+                        param->write.len);
+
+                ESP_LOG_BUFFER_HEX(GATTS_TABLE_TAG,
+                                param->write.value,
+                                param->write.len);
+
+                if (param->write.handle == robot_handle_table[ROBOT_IDX_CFG]){
+                    uint16_t descr_value =
+                        param->write.value[1] << 8 |
+                        param->write.value[0];
+
+                    if (descr_value == 0x0001) {
+                        ESP_LOGI(GATTS_TABLE_TAG, "Notifications ENABLED");
+                        notify_enabled = true;
+                    }
+                    else if (descr_value == 0x0000) {
+                        ESP_LOGI(GATTS_TABLE_TAG, "Notifications DISABLED");
+                        notify_enabled = false;
+                    }
+                }else if (param->write.handle == robot_handle_table[ROBOT_IDX_VAL]) {
+
+                    ESP_LOGI(GATTS_TABLE_TAG, "Robot Command Received:");
+
+                    //ESP_LOG_BUFFER_HEX(GATTS_TABLE_TAG, param->write.value, param->write.len);
+                    //ESP_LOGI(GATTS_TABLE_TAG, "Received Text: %.*s", param->write.len, (char *)param->write.value);
+
+                    char *msg_copy = malloc(param->write.len + 1);
+                    memcpy(msg_copy, param->write.value, param->write.len);
+                    msg_copy[param->write.len] = '\0';
+
+                    
+                    if (xQueueSend(ble_recieve_queue, &msg_copy, 0) != pdPASS) {
+                        ESP_LOGE(GATTS_TABLE_TAG, "Queue full, freeing memory");
+                        free(msg_copy); 
+                    }
+                    
+                }
+                
+
+                if (param->write.need_rsp) {
+                    esp_ble_gatts_send_response(
+                        gatts_if,
+                        param->write.conn_id,
+                        param->write.trans_id,
+                        ESP_GATT_OK,
+                        NULL);
+                }
+            }
+            break;
+        }
+
+        default:
+            break;
+    }
+}
