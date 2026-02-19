@@ -9,7 +9,7 @@
 //   [0]=0xAA [1]=0x55 [2]=len(=8) [3..10]=payload(8 bytes, big-endian) [11]=xor
 //
 // UDS frame format:
-//   4-byte big-endian length, then JSON bytes
+//   4-byte big-endian length, then JSON byte%s
 //
 // Build example:
 //   gcc -O2 -Wall -Wextra gs_bridge.c cJSON.c -o gs_bridge
