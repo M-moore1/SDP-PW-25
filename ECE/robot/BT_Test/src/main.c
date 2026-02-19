@@ -104,15 +104,17 @@ void bt_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
             break;
 
         case ESP_SPP_DATA_IND_EVT:
+            printf("DATA WAS RECEIVED ENTERING CASE\n");
             for (int i = 0; i < param->data_ind.len; i++) {
 
                 char c = param->data_ind.data[i];
-
+                printf("SANITY CHECK: Looping \n");
                 if (c == '\r' || c == '\n') {
                     if (rx_index > 0) {
-
+                        printf("BUFFER COMPLETE PRINTING FINAL MESSAGE\n");
                         rx_buf[rx_index] = '\0';
-
+                        printf("%s", rx_buf);
+                        // Decrypt
                         char *end;
                         uint64_t inst = strtoull(rx_buf, &end, 2);
 
@@ -129,9 +131,11 @@ void bt_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
                     }
                 }
                 else if (rx_index < sizeof(rx_buf) - 1) {
+                    printf("MADE IT TO ADD TO BUFFER\n");
                     rx_buf[rx_index++] = c;
                 }
                 else {
+                    printf("Buffer Overflow\n");
                     ESP_LOGW(TAG, "RX buffer overflow");
                     rx_index = 0;
                 }
@@ -153,6 +157,7 @@ void cmd_parser_task(void *pvParameters)
         if (xQueueReceive(cmd_queue, &inst, portMAX_DELAY)) {
 
             // Skip 0 then keep wherever a 1 is
+
             uint8_t type = (inst >> 0) & 0x1F;
 
             ESP_LOGI(TAG, "Received instruction type value: %u", type);
