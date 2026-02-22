@@ -1,5 +1,5 @@
 #ifndef STEPPER_MOTOR_H
-#define STEPPPER_MOTOR_H
+#define STEPPER_MOTOR_H
 
 #include "driver/ledc.h"
 #include "driver/gpio.h"

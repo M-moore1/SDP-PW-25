@@ -1,10 +1,10 @@
 #include "robot_bt.h"
 
-static uint32_t spp_handle = 0;
-char rx_buf[128];
-int rx_index = 0;
+uint32_t spp_handle = 0;
+uint8_t rx_buf[9]; 
+int rx_idx = 0;
 
-QueueHandle_t cmd_queue = NULL;
+QueueHandle_t bt_recieve_queue = NULL;
 
 void disable_bluetooth_auth(void)
 {
@@ -19,6 +19,53 @@ void disable_bluetooth_auth(void)
     esp_bt_gap_set_pin(pin_type, 4, pin_code);
 
     ESP_LOGI(TAG, "Bluetooth auth minimized (SPP_SEC_NONE, PIN 0000)");
+}
+
+void print_bt_mac(void)
+{
+    const uint8_t *mac = esp_bt_dev_get_address();
+    if (mac) {
+        ESP_LOGI(TAG,
+            "BT MAC: %02X:%02X:%02X:%02X:%02X:%02X",
+            mac[0], mac[1], mac[2],
+            mac[3], mac[4], mac[5]);
+    }
+}
+
+
+void bt_init(){
+    esp_bt_controller_mem_release(ESP_BT_MODE_BLE);
+
+    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_bt_controller_init(&bt_cfg));
+    ESP_ERROR_CHECK(esp_bt_controller_enable(ESP_BT_MODE_CLASSIC_BT));
+
+    ESP_ERROR_CHECK(esp_bluedroid_init());
+    ESP_ERROR_CHECK(esp_bluedroid_enable());
+
+    esp_bt_gap_register_callback(bt_gap_cb);
+    esp_spp_register_callback(bt_spp_cb);
+
+    disable_bluetooth_auth();
+
+    esp_spp_cfg_t spp_cfg = {
+        .mode = ESP_SPP_MODE_CB,
+        .enable_l2cap_ertm = false,
+        .tx_buffer_size = 0
+    };
+    ESP_ERROR_CHECK(esp_spp_enhanced_init(&spp_cfg));
+
+    esp_bt_gap_set_device_name("SDP2635_ESP32");
+    esp_bt_gap_set_scan_mode(
+        ESP_BT_CONNECTABLE,
+        ESP_BT_GENERAL_DISCOVERABLE
+    );
+
+    print_bt_mac();
+
+    bt_recieve_queue= xQueueCreate(10, sizeof(uint64_t));
+
+    ESP_LOGI(TAG, "SPP Server Ready");
 }
 
 void bt_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *param)
@@ -69,44 +116,31 @@ void bt_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
             break;
 
         case ESP_SPP_DATA_IND_EVT:
-            printf("DATA WAS RECEIVED ENTERING CASE\n");
             for (int i = 0; i < param->data_ind.len; i++) {
+                uint8_t byte = param->data_ind.data[i];
+                //printf("rx_buf[%d] = 0x%02X\n", rx_idx, byte);
 
-                char c = param->data_ind.data[i];
-                printf("SANITY CHECK: Looping \n");
-                if (c == '\r' || c == '\n') {
-                    if (rx_index > 0) {
-                        printf("BUFFER COMPLETE PRINTING FINAL MESSAGE\n");
-                        rx_buf[rx_index] = '\0';
-                        printf("%s", rx_buf);
-                        // Decrypt
-                        char *end;
-                        uint64_t inst = strtoull(rx_buf, &end, 2);
+                rx_buf[rx_idx] = byte;
+                rx_idx++;
 
-                        if (end != rx_buf) {
-                            // Success! The string of 1s and 0s is now a uint64_t bitfield
-                            if (xQueueSend(cmd_queue, &inst, 0) != pdPASS) {
-                                ESP_LOGW(TAG, "Command queue full");
-                            }
-                        } else {
-                            ESP_LOGW(TAG, "Invalid binary string: %s", rx_buf);
-                        }
+                if (rx_idx == 9) {
+                    if(rx_buf[8] == 0x0D) {
+                        //printf(">>> Packet Valid. Sending to Queue.\n");
+                        uint64_t full_command;
+                        memcpy(&full_command, rx_buf, 8);
+                        
+                        // Using PRIx64 to print the full 64-bit result
+                        //printf(">>> Full Command: 0x%016llX\n", (unsigned long long)full_command);
 
-                        rx_index = 0;
+                        xQueueSend(bt_recieve_queue, &full_command, 0);
                     }
-                }
-                else if (rx_index < sizeof(rx_buf) - 1) {
-                    printf("MADE IT TO ADD TO BUFFER\n");
-                    rx_buf[rx_index++] = c;
-                }
-                else {
-                    printf("Buffer Overflow\n");
-                    ESP_LOGW(TAG, "RX buffer overflow");
-                    rx_index = 0;
+                    
+                    // Reset for next packet
+                    rx_idx = 0; 
                 }
             }
             break;
-
+            
         default:
             break;
     }

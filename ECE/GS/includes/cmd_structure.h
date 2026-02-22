@@ -1,38 +1,7 @@
-#ifndef PINOUT_H
-#define PINOUT_H
+#ifndef CMD_STRUCTURE_H
+#define CMD_STRUCTURE_H
 
-#include "driver/gpio.h"
-#include "driver/ledc.h"
-
-// TEST MOTOR
-#define TEST_MOTOR_STEP    GPIO_NUM_32
-#define TEST_MOTOR_DIR     GPIO_NUM_33
-#define TEST_MOTOR_EN      GPIO_NUM_25
-#define TEST_MOTOR_CHANNEL LEDC_CHANNEL_0
-
-//Front Left Motor
-#define FL_MOTOR_STEP    GPIO_NUM_3
-#define FL_MOTOR_DIR     GPIO_NUM_1
-#define FL_MOTOR_EN      GPIO_NUM_23
-#define FL_MOTOR_PWM     LEDC_CHANNEL_0
-
-//Front Right Motor
-#define FR_MOTOR_STEP    GPIO_NUM_15
-#define FR_MOTOR_DIR     GPIO_NUM_2
-#define FR_MOTOR_EN      GPIO_NUM_23
-#define FR_MOTOR_PWM     LEDC_CHANNEL_1
-
-//Back Left Motor
-#define BL_MOTOR_STEP    GPIO_NUM_32
-#define BL_MOTOR_DIR     GPIO_NUM_33
-#define BL_MOTOR_EN      GPIO_NUM_23
-#define BL_MOTOR_PWM     LEDC_CHANNEL_2
-
-//Back Right Motor
-#define BR_MOTOR_STEP    GPIO_NUM_12
-#define BR_MOTOR_DIR     GPIO_NUM_14
-#define BR_MOTOR_EN      GPIO_NUM_23
-#define BR_MOTOR_PWM     LEDC_CHANNEL_3
+#include <stdint.h>
 
 typedef enum {
     CONTROL_CMD      = 0x01,  
@@ -72,6 +41,7 @@ typedef enum {
     SECURITY_LEVEL    = 0x03
 } system_instructions_t;
 
+
 typedef struct __attribute__((packed)) {
     uint64_t pl          : 2;  // Bits 0-1 (Priority Level)
     uint64_t type        : 5;  // Bits 2-6
@@ -87,7 +57,7 @@ typedef union {
     uint64_t raw;          // For logging/debugging
     control_format_t ctrl; // Map to Control layout
     system_format_t sys;   // Map to System layout
-    query_format_t query;  //
+    query_format_t query;  // Map to Query layout
 } robot_bt_packet_t;
 
 #endif
