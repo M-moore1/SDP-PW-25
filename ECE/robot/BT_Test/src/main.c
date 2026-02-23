@@ -79,6 +79,11 @@ void command_parser(void *pvParameters)
                 break;
                 
                 default:
+                    ack_format_t ack = {0};
+                    ack.pl = 1;
+                    ack.type = ACK_CMD;       
+                    ack.id = cmd.query.id;    
+                    ack.result_code = RESULT_UNKNOWN_CMD;
                     printf("\nInvalid Command\n");
                 break;
             }    
