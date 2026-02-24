@@ -80,6 +80,7 @@ int rn42_enter_cmd(int uart_fd) {
   printf("\nPMOD Response: %s\n\r", buffer);
 
   if (n > 0 && strstr(buffer, "?")) {
+    printf("\nAlready in CMD mode\n\r");
     return 1; 
   }
 
@@ -141,6 +142,8 @@ int rn42_disconnect(int uart_fd) {
   char buffer[64];
 
   if (rn42_enter_cmd(uart_fd) != 0) return -1;
+
+  // Check if already in cmd mode
 
   uart_write_str(uart_fd, "K,1\r");
   msleep(400);
