@@ -50,32 +50,40 @@ int uart_write_str(int fd, const char *s) {
 }
 
 int rn42_enter_cmd(int uart_fd) {
-    char buffer[32];
-    int n;
+  char buffer[32];
+  int n, results;
 
-    write(uart_fd, "$$$", 3);
-    msleep(500);
+  results = write(uart_fd, "$$$", 3);
+  if (results < 0) {
+    perror("UART write failed");
+    return -1;
+  }
+  msleep(500);
 
-    memset(buffer, 0, sizeof(buffer));
-    n = read(uart_fd, buffer, sizeof(buffer) - 1);
-    printf("\nPMOD Response: %s\n", buffer);
-    
-    if (n > 0 && strstr(buffer, "CMD")) {
-        return 0; 
-    }
+  memset(buffer, 0, sizeof(buffer));
+  n = read(uart_fd, buffer, sizeof(buffer) - 1);
+  printf("\nPMOD Response: %s\n", buffer);
+  
+  if (n > 0 && strstr(buffer, "CMD")) {
+    return 0; 
+  }
 
-    write(uart_fd, "UNKNOWN\r", 8); 
-    msleep(200);
+  results = write(uart_fd, "UNKNOWN\r", 8); 
+  if (results < 0) {
+    perror("UART write failed");
+    return -1;
+  }
+  msleep(200);
 
-    memset(buffer, 0, sizeof(buffer));
-    n = read(uart_fd, buffer, sizeof(buffer) - 1);
-    printf("\nPMOD Response: %s\n", buffer);
+  memset(buffer, 0, sizeof(buffer));
+  n = read(uart_fd, buffer, sizeof(buffer) - 1);
+  printf("\nPMOD Response: %s\n", buffer);
 
-    if (n > 0 && strstr(buffer, "?")) {
-        return 1; 
-    }
+  if (n > 0 && strstr(buffer, "?")) {
+    return 1; 
+  }
 
-    return -1; 
+  return -1; 
 }
 
 int rn42_exit_cmd(int uart_fd) {
@@ -123,9 +131,8 @@ int rn42_connect_mac(int uart_fd, const char *mac) {
       }
     }
 
-    msleep(3000);
+    msleep(2000);
 
-    rn42_exit_cmd(uart_fd);
 
     return 0;
 }
@@ -154,25 +161,34 @@ int rn42_disconnect(int uart_fd) {
 
 
 int uart_send_str(int uart_fd, char *str) {
-    char buffer[128]; 
-    int len = strlen(str);
+  char buffer[128]; 
+  size_t len = strlen(str);
 
-    if (len > (sizeof(buffer) - 2)) {
-        return -1; 
-    }
+  // Ensure string + '\r' fits in buffer
+  if (len > (sizeof(buffer) - 2)) {
+    return -1; 
+  }
 
-    strcpy(buffer, str);
+  strcpy(buffer, str);
 
-    buffer[len] = '\r';
-    buffer[len + 1] = '\0';
+  // Append Carriage Return and Null Terminator
+  buffer[len] = '\r';
+  buffer[len + 1] = '\0';
 
-    ssize_t n = write(uart_fd, buffer, len + 1);
+  size_t total_to_send = len + 1;
+  ssize_t n = write(uart_fd, buffer, total_to_send);
 
-    if (n < 0) {
-        return -1;
-    }
+  
+  if (n < 0) {
+      return -1;
+  }
 
-    return (n == (len + 1)) ? 0 : -1;
+  // Check if all bytes were actually sent 
+  if ((size_t)n == total_to_send) {
+    return 0;
+  } else {
+    return -1;
+  }
 }
 
 int uart_send_instruction(int uart_fd, uint64_t instruction) {
