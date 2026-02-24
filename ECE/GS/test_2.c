@@ -88,13 +88,14 @@ int main() {
             }
 
         }
-        
+        /*
         long now = clock() / (CLOCKS_PER_SEC / 1000);
         if (now - last >= 500){
             //instruction set to type C 0b00001 in bits 0-4
             // print the the 64 bit instruction
             ctrl_inst.ctrl.pl = 1; ctrl_inst.ctrl.type = CONTROL_CMD; ctrl_inst.ctrl.speed = speed;
             uart_send_instruction(bt_uart, ctrl_inst.raw);
+            
             ctrl_inst.raw = 0;
 
             if(send_security_update){
@@ -103,6 +104,7 @@ int main() {
 
             last  = now;
         }
+        */
         
     }
 

@@ -77,7 +77,7 @@ int rn42_enter_cmd(int uart_fd) {
 
   memset(buffer, 0, sizeof(buffer));
   n = read(uart_fd, buffer, sizeof(buffer) - 1);
-  printf("\nPMOD Response: %s\n", buffer);
+  printf("\nPMOD Response: %s\n\r", buffer);
 
   if (n > 0 && strstr(buffer, "?")) {
     return 1; 
@@ -124,7 +124,7 @@ int rn42_connect_mac(int uart_fd, const char *mac) {
     msleep(200);
     memset(buffer, 0, sizeof(buffer));
     if (read(uart_fd, buffer, sizeof(buffer) - 1) > 0) {
-      printf("\nPMOD Response: %s\n", buffer);
+      printf("\nPMOD Response: %s\n\r", buffer);
       if (strstr(buffer, "ERR") || strstr(buffer, "?")) {
         rn42_exit_cmd(uart_fd);
         return -2;
@@ -147,7 +147,7 @@ int rn42_disconnect(int uart_fd) {
 
   memset(buffer, 0, sizeof(buffer));
   if (read(uart_fd, buffer, sizeof(buffer) - 1) > 0) {
-      printf("\nPMOD Response: %s\n", buffer);
+      printf("\nPMOD Response: %s\n\r", buffer);
       if (strstr(buffer, "ERR") || strstr(buffer, "?")) {
           rn42_exit_cmd(uart_fd);
           return -2;
