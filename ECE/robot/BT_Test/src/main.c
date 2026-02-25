@@ -15,6 +15,11 @@
 
 
 step_mot_t test_motor;
+
+step_mot_t front_left;
+step_mot_t front_right;
+step_mot_t back_left;
+step_mot_t back_right;
 static QueueHandle_t cmd_queue = NULL;
 
 
@@ -59,7 +64,7 @@ void command_parser(void *pvParameters)
             switch (cmd_type){
                 case CONTROL_CMD:
                     printf("\nI got a control instruction\n");
-                    control_cmd(cmd.ctrl, &test_motor, &test_motor, &test_motor, &test_motor);
+                    control_cmd(cmd.ctrl, &front_left, &front_right, &back_left, &back_right);
 
                 break;
 
@@ -97,6 +102,11 @@ void app_main(void)
     ESP_ERROR_CHECK(nvs_flash_init());
     bt_init();
     motor_init(&test_motor, TEST_MOTOR_STEP, TEST_MOTOR_DIR, TEST_MOTOR_EN, TEST_MOTOR_CHANNEL);
+    motor_init(&front_left,  FL_MOTOR_STEP, FL_MOTOR_DIR, FL_MOTOR_EN, FL_MOTOR_PWM);
+    motor_init(&front_right, FR_MOTOR_STEP, FR_MOTOR_DIR, FR_MOTOR_EN, FR_MOTOR_PWM);
+
+    motor_init(&back_left,   BL_MOTOR_STEP, BL_MOTOR_DIR, BL_MOTOR_EN, BL_MOTOR_PWM);
+    motor_init(&back_right,  BR_MOTOR_STEP, BR_MOTOR_DIR, BR_MOTOR_EN, BR_MOTOR_PWM);
     cmd_queue = xQueueCreate(10, sizeof(uint64_t)); 
 
     xTaskCreatePinnedToCore(bt_reciever_parser, "bt_reciever", 4096, NULL, 5, NULL, 1);

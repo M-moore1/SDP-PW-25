@@ -118,7 +118,7 @@ void bt_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
         case ESP_SPP_DATA_IND_EVT:
             for (int i = 0; i < param->data_ind.len; i++) {
                 uint8_t byte = param->data_ind.data[i];
-                //printf("rx_buf[%d] = 0x%02X\n", rx_idx, byte);
+                printf("rx_buf[%d] = 0x%02X\n", rx_idx, byte);
 
                 rx_buf[rx_idx] = byte;
                 rx_idx++;
