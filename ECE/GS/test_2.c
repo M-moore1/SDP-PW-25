@@ -27,6 +27,7 @@ int main() {
     robot_bt_packet_t sys_inst = {0};
     sys_inst.sys.pl = 1;            sys_inst.sys.ac = 0x3FF;
     sys_inst.sys.type = System_CMD; 
+    int connected = 0;
 
     while(1){
         unsigned char rx_buffer[256]; 
@@ -36,9 +37,9 @@ int main() {
             printf("[RX BYTES]: ");
             for (ssize_t i = 0; i < bytes_read; i++) {
                 
-                printf("%02X ", rx_buffer[i]);
+                printf("%02X", rx_buffer[i]);
             }
-            printf("\n");
+            printf("\r\n");
             fflush(stdout);
         }
 
@@ -78,6 +79,7 @@ int main() {
                 results = rn42_connect_mac(bt_uart, "004B1224B0A6");
                 if (results == 0){
                     printf("\nAttempt Successful\r\n");
+                    connected = 1;
                 }else{
                     printf("\nAttempt Failed\r\n");
                 }
@@ -87,6 +89,7 @@ int main() {
                 results = rn42_disconnect(bt_uart);
                 if (results == 0){
                     printf("Disconnection Successful\r\n");
+                    connected = 0;
                 }else{
                     printf("Disconnection Failed\r\n");
                 }
@@ -94,9 +97,13 @@ int main() {
             if (c == 'b'){
                 results = rn42_connect_check(bt_uart);
                 if (results == 0){
-                    printf("Connect Check Successful\r\n");
+                    printf("Device Connected\r\n");
+                    connected = 1;
+                }else if (results == 1){
+                    printf("Device Not Connected\r\n");
+                    connected = 0;
                 }else{
-                    printf("Connect Check Failed\r\n");
+                    printf("Other Error\r\n");
                 }
             }
 
@@ -106,34 +113,36 @@ int main() {
                 sys_inst.sys.instruction = SECURITY_LEVEL;
                 sys_inst.sys.id = 0x05;
                 sys_inst.sys.specific = 0x01;
-                printf("\nSetting Secuirty to On\n");
+                printf("Setting Secuirty to On\r\n");
             }
             if (c == '2'){
                 send_security_update = 1;
                 sys_inst.sys.instruction = SECURITY_LEVEL;
                 sys_inst.sys.id = 0x05;
                 sys_inst.sys.specific = 0x00;
-                printf("\nSetting Secuirty to Off\n");
+                printf("Setting Secuirty to Off\r\n");
             }
 
         }
-        /*
+        
         long now = clock() / (CLOCKS_PER_SEC / 1000);
         if (now - last >= 500){
-            //instruction set to type C 0b00001 in bits 0-4
-            // print the the 64 bit instruction
-            ctrl_inst.ctrl.pl = 1; ctrl_inst.ctrl.type = CONTROL_CMD; ctrl_inst.ctrl.speed = speed;
-            uart_send_instruction(bt_uart, ctrl_inst.raw);
-            
-            ctrl_inst.raw = 0;
+            if (connected == 1){
+                //instruction set to type C 0b00001 in bits 0-4
+                // print the the 64 bit instruction
+                ctrl_inst.ctrl.pl = 1; ctrl_inst.ctrl.type = CONTROL_CMD; ctrl_inst.ctrl.speed = speed;
+                uart_send_instruction(bt_uart, ctrl_inst.raw);
+                
+                ctrl_inst.raw = 0;
 
-            if(send_security_update){
-                uart_send_instruction(bt_uart, sys_inst.raw);
+                if(send_security_update){
+                    uart_send_instruction(bt_uart, sys_inst.raw);
+                }
+
+                last  = now;
             }
-
-            last  = now;
         }
-        */
+        
         
     }
 

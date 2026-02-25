@@ -39,7 +39,7 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
   // Placeholder for future AES-GCM decryption
   if (security_level) {
     // TODO: decrypt json_str if your team moves to encrypted JSON
-
+    
 
   }
 
@@ -52,7 +52,7 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
 
   const char *t = type_item->valuestring;
   robot_bt_packet_t packet = {0}; // Initialize to clear all 64 bits (including "unused")
-
+  // TODO: Add Arm instructions
   // CONTROL (C)
   if (strcmp(t, "C") == 0) {
     uint8_t f, b, l, r_move, speed, pl;
