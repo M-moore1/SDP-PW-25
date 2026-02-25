@@ -54,24 +54,53 @@ int main() {
             if (c == '-'){ if (speed > 0) speed -= 1; }
 
             if(c == 'c'){
+                printf("Entering CMD MODE\r\n");
+                results = rn42_enter_cmd(bt_uart);
+                if (results == 0){
+                    printf("CMD Mode Entered Successfully\r\n");
+                }else if (results == 1){
+                    printf("Already in CMD Mode\r\n");
+                }else{
+                    printf("Failed to Enter CMD Mode\r\n");
+                }
+                
+            }
+            if(c == 'v'){
+                results = rn42_exit_cmd(bt_uart);
+                if (results == 0){
+                    printf("Exited CMD Mode Successfully\r\n");
+                }else{
+                    printf("Failed to Exit CMD Mode\r\n");
+                }
+            }
+            if (c == 'z'){
                 printf("\nAttempting to connect...\r\n");
                 results = rn42_connect_mac(bt_uart, "004B1224B0A6");
                 if (results == 0){
-                    printf("\nAttempt Successful\n");
+                    printf("\nAttempt Successful\r\n");
                 }else{
-                    printf("\nAttempt Failed");
+                    printf("\nAttempt Failed\r\n");
                 }
-
             }
-            if(c == 'v'){
-                printf("\nDisconnecting\r\n");
+            if(c == 'x'){
+                printf("Disconnecting\r\n");
                 results = rn42_disconnect(bt_uart);
                 if (results == 0){
-                    printf("\nDisconnection Successful\n");
+                    printf("Disconnection Successful\r\n");
                 }else{
-                    printf("\nDisconnection Failed");
+                    printf("Disconnection Failed\r\n");
                 }
             }
+            if (c == 'b'){
+                results = rn42_connect_check(bt_uart);
+                if (results == 0){
+                    printf("Connect Check Successful\r\n");
+                }else{
+                    printf("Connect Check Failed\r\n");
+                }
+            }
+
+
             if (c == '1'){
                 send_security_update = 1;
                 sys_inst.sys.instruction = SECURITY_LEVEL;
@@ -88,13 +117,14 @@ int main() {
             }
 
         }
-        
+        /*
         long now = clock() / (CLOCKS_PER_SEC / 1000);
         if (now - last >= 500){
             //instruction set to type C 0b00001 in bits 0-4
             // print the the 64 bit instruction
             ctrl_inst.ctrl.pl = 1; ctrl_inst.ctrl.type = CONTROL_CMD; ctrl_inst.ctrl.speed = speed;
             uart_send_instruction(bt_uart, ctrl_inst.raw);
+            
             ctrl_inst.raw = 0;
 
             if(send_security_update){
@@ -103,6 +133,7 @@ int main() {
 
             last  = now;
         }
+        */
         
     }
 

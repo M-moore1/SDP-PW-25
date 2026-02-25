@@ -62,7 +62,7 @@ int rn42_enter_cmd(int uart_fd) {
 
   memset(buffer, 0, sizeof(buffer));
   n = read(uart_fd, buffer, sizeof(buffer) - 1);
-  printf("\nPMOD Response: %s\n", buffer);
+  printf("[PMOD RESPONSE]: %s\r\n", buffer);
   
   if (n > 0 && strstr(buffer, "CMD")) {
     return 0; 
@@ -77,7 +77,7 @@ int rn42_enter_cmd(int uart_fd) {
 
   memset(buffer, 0, sizeof(buffer));
   n = read(uart_fd, buffer, sizeof(buffer) - 1);
-  printf("\nPMOD Response: %s\n", buffer);
+  printf("[PMOD RESPONSE]: %s\r\n", buffer);
 
   if (n > 0 && strstr(buffer, "?")) {
     return 1; 
@@ -89,65 +89,91 @@ int rn42_enter_cmd(int uart_fd) {
 int rn42_exit_cmd(int uart_fd) {
     char buffer[16];
     
-    if (write(uart_fd, "\r", 1) != 1) return -1;
+    // Clear any pending input to avoid confusion with the "EXIT" response
+    if (write(uart_fd, "TESTING\r", 8) != 8) return -1;
     msleep(100);
     
-    // Optional: Clear the local UART read buffer so '?' doesn't 
+    // Clear the local UART read buffer so '?' doesn't 
     tcflush(uart_fd, TCIFLUSH);
 
-    if (write(uart_fd, "---\r", 4) != 4) return -1;
+    if (write(uart_fd, "---\r", 5) != 5) return -1;
     msleep(500); 
 
     memset(buffer, 0, sizeof(buffer));
     if (read(uart_fd, buffer, sizeof(buffer) - 1) > 0) {
-      printf("\nPMOD Response: %s\n", buffer);
+      printf("[PMOD RESPONSE]: %s\r\n", buffer);
       if (strstr(buffer, "END")) {
         return 0; 
       }
     }
 
-    return 0; 
+    return -1; 
 }
 
 int rn42_connect_mac(int uart_fd, const char *mac) {
-    char cmd[64];
-    char buffer[64];
+  char cmd[64];
+  char buffer[128];
+  int attempts = 0;
+  ssize_t n;
 
-    if (rn42_enter_cmd(uart_fd) < 0) return -1;
+  if (rn42_enter_cmd(uart_fd) < 0) return -1;
+  tcflush(uart_fd, TCIFLUSH);
 
-    snprintf(cmd, sizeof(cmd), "C,%s\r", mac);
-    if (write(uart_fd, cmd, strlen(cmd)) != (ssize_t)strlen(cmd)) {
-        return -1;
-    }
+  snprintf(cmd, sizeof(cmd), "C,%s\r", mac);
+  if (write(uart_fd, cmd, strlen(cmd)) != (ssize_t)strlen(cmd)) {
+    return -1;
+  }
 
-    
-    msleep(200);
+  printf("Connecting to %s\r\n", mac);
+
+  fflush(stdout);
+
+  // Loop until timeout 
+  while (attempts < 100) {
     memset(buffer, 0, sizeof(buffer));
-    if (read(uart_fd, buffer, sizeof(buffer) - 1) > 0) {
-      printf("\nPMOD Response: %s\n", buffer);
-      if (strstr(buffer, "ERR") || strstr(buffer, "?")) {
+    n = read(uart_fd, buffer, sizeof(buffer) - 1);
+
+    if (n > 0) {
+      printf("\r\n[PMOD Response]: %s\r\n", buffer);
+
+      if (strstr(buffer, "TRYING")) {
+        printf("Attempting to Connect.");
+      }
+
+      if (strstr(buffer, "CONNECT failed") || strstr(buffer, "ERR") || strstr(buffer, "?")) {
+        printf("Connection FAILED\r\n");
         rn42_exit_cmd(uart_fd);
-        return -2;
+        return -2; 
+      }
+
+      if (strstr(buffer, "CONNECT")) {
+        printf("\nResult: Connection SUCCESSFUL\r\n");
+        return 0; // RN42 exits CMD mode automatically on success
       }
     }
 
-    msleep(2000);
+    msleep(100); 
+    attempts++;
+    if (attempts % 10 == 0) { printf("."); fflush(stdout); }
+  }
 
-
-    return 0;
+  printf("Connection Timeout.\r\n");
+  rn42_exit_cmd(uart_fd);
+  return -3;
 }
 
 int rn42_disconnect(int uart_fd) {
   char buffer[64];
 
   if (rn42_enter_cmd(uart_fd) != 0) return -1;
+  tcflush(uart_fd, TCIFLUSH);
 
   uart_write_str(uart_fd, "K,1\r");
   msleep(400);
 
   memset(buffer, 0, sizeof(buffer));
   if (read(uart_fd, buffer, sizeof(buffer) - 1) > 0) {
-      printf("\nPMOD Response: %s\n", buffer);
+      printf("\n[PMOD RESPONSE]: %s\n\r", buffer);
       if (strstr(buffer, "ERR") || strstr(buffer, "?")) {
           rn42_exit_cmd(uart_fd);
           return -2;
@@ -155,10 +181,41 @@ int rn42_disconnect(int uart_fd) {
   }
   msleep(3000);
   rn42_exit_cmd(uart_fd);
-
   return 0;
 }
 
+int rn42_connect_check(int uart_fd){
+  char buffer[64];
+
+  if (rn42_enter_cmd(uart_fd) != 0) return -1;
+  tcflush(uart_fd, TCIFLUSH);
+
+  uart_write_str(uart_fd, "GK\r");
+  msleep(400);
+
+  memset(buffer, 0, sizeof(buffer));
+  if (read(uart_fd, buffer, sizeof(buffer) - 1) > 0) {
+    printf("\n[PMOD RESPONSE]: %s\n\r", buffer);
+    if (strstr(buffer, "ERR") || strstr(buffer, "?")) {
+      rn42_exit_cmd(uart_fd);
+      return -1;
+    }
+
+    if (strstr(buffer, "0,0,0")) {
+      rn42_exit_cmd(uart_fd);
+      return 1; 
+    }
+
+    if (strstr(buffer, "1,1,1")) {
+      rn42_exit_cmd(uart_fd);
+      return 0; 
+    }
+
+  }
+
+  rn42_exit_cmd(uart_fd);
+  return -1;
+}
 
 int uart_send_str(int uart_fd, char *str) {
   char buffer[128]; 
