@@ -14,10 +14,12 @@ void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_m
     if(w) { 
         printf("\nMotor moving forward at speed %d\n", speed);
         motor_pulse(F_L, speed, 0); 
+        motor_pulse(F_R, speed, 0); 
     }
     if(s) { 
         printf("\nMotor moving backwards at speed %d\n", speed);
         motor_pulse(F_L, speed, 1); 
+        motor_pulse(F_R, speed, 1);  
     }
 
 }
