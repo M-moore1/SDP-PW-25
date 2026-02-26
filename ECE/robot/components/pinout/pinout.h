@@ -4,6 +4,8 @@
 #include "driver/gpio.h"
 #include "driver/ledc.h"
 
+
+
 // TEST MOTOR
 #define TEST_MOTOR_STEP    GPIO_NUM_32
 #define TEST_MOTOR_DIR     GPIO_NUM_33
@@ -12,7 +14,7 @@
 
 //Front Left Motor
 #define FL_MOTOR_STEP    GPIO_NUM_3 // RX
-#define FL_MOTOR_DIR     GPIO_NUM_1 // TX
+#define FL_MOTOR_DIR     GPIO_NUM_19
 #define FL_MOTOR_EN      GPIO_NUM_23
 #define FL_MOTOR_PWM     LEDC_CHANNEL_0
 
@@ -23,7 +25,7 @@
 #define FR_MOTOR_PWM     LEDC_CHANNEL_1
 
 //Back Left Motor
-#define BL_MOTOR_STEP    GPIO_NUM_32
+#define BL_MOTOR_STEP    GPIO_NUM_25
 #define BL_MOTOR_DIR     GPIO_NUM_33
 #define BL_MOTOR_EN      GPIO_NUM_23
 #define BL_MOTOR_PWM     LEDC_CHANNEL_2
