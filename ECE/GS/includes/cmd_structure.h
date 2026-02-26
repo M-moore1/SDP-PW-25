@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 // Command Types
-typedef enum {
+enum command_type_t{
     CONTROL_CMD      = 0x01,  
     POSE_CMD         = 0x02,
     System_CMD       = 0x03,  
@@ -14,7 +14,7 @@ typedef enum {
     ACK_CMD          = 0x07,
     HPR_CMD          = 0x08
 
-} command_type_t;
+};
 
 // Control Command Structure
 typedef struct __attribute__((packed)) {

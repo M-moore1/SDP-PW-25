@@ -256,6 +256,7 @@ int uart_send_instruction(int uart_fd, uint64_t instruction) {
   for (int i = 0; i < 8; i++) {
     printf("%02X ", ptr[i]);
   }
+  printf("\r\n");
   uint8_t packet[9];
   memcpy(packet, &instruction, 8);
   packet[8] = 0x0D; // STOP BIT
