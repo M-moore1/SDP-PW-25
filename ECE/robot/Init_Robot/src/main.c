@@ -2,31 +2,42 @@
 #include "freertos/task.h"
 #include "driver/gpio.h"
 #include "stepper_motor.h"
+#include "robot_bt.h"
+#include "pinout.h"
+#include "robot_commands.h"
 
 
-#define TEST_MOTOR_STEP GPIO_NUM_32
-#define TEST_MOTOR_DIR  GPIO_NUM_33
-#define TEST_MOTOR_EN   GPIO_NUM_25
-#define TEST_MOTOR_CHANNEL LEDC_CHANNEL_0
+
 
 // Create the motor instance
-step_mot_t test_motor;
-step_mot_t test_motor_2;
+step_mot_t front_left;
+step_mot_t front_right;
+step_mot_t back_left;
+step_mot_t back_right;
 
 void app_main(void) {
 
-    motor_init(&test_motor, TEST_MOTOR_STEP, TEST_MOTOR_DIR, TEST_MOTOR_EN, TEST_MOTOR_CHANNEL);
-    motor_init(&test_motor_2, 18, TEST_MOTOR_DIR, TEST_MOTOR_EN, TEST_MOTOR_CHANNEL);
+    motor_init(&front_left,  FL_MOTOR_STEP, FL_MOTOR_DIR, FL_MOTOR_EN, FL_MOTOR_PWM);
+    motor_init(&front_right, FR_MOTOR_STEP, FR_MOTOR_DIR, FR_MOTOR_EN, FR_MOTOR_PWM);
+
+    motor_init(&back_left,   BL_MOTOR_STEP, BL_MOTOR_DIR, BL_MOTOR_EN, BL_MOTOR_PWM);
+    motor_init(&back_right,  BR_MOTOR_STEP, BR_MOTOR_DIR, BR_MOTOR_EN, BR_MOTOR_PWM);
 
     while(1) {
         for (int i = 0; i < 50; i++) {
-            motor_pulse(&test_motor, 100, 1);
+            motor_pulse(&back_left, 100, 1);
+            motor_pulse(&back_right, 100, 1);
             vTaskDelay(pdMS_TO_TICKS(50));
         }
-        for (int i = 0; i < 50; i++) {
-            motor_pulse(&test_motor, 100, 0);
+        
+         for (int i = 0; i < 50; i++) {
+            motor_pulse(&front_left, 100, 1);
+            
+
+            motor_pulse(&front_right, 100, 1);
             vTaskDelay(pdMS_TO_TICKS(50));
         }
+        
 
         // ---- 1 second delay ----
         vTaskDelay(pdMS_TO_TICKS(1000));

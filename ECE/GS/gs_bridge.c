@@ -254,6 +254,7 @@ static int uart_open_config(const char *dev, speed_t baud) {
   return fd;                                           // Return UART fd
 }
 
+// CHECK
 // Send one 64-bit word over UART using our frame format.
 /*
 static int uart_send_word(int uart_fd, uint64_t w) {
@@ -275,6 +276,7 @@ static int uart_send_word(int uart_fd, uint64_t w) {
 }
 */
 
+// CHECK
 static int uart_send_word(int uart_fd, uint64_t instruction) {
     // 64 bits + '\r' + '\0' = 66 bytes
     char bit_string[66]; 
@@ -311,6 +313,8 @@ static int uart_send_word(int uart_fd, uint64_t instruction) {
 
     return 0; // Success
 }
+
+// CHECK
 // ------------------------- RN-42 command helpers -------------------------
 
 static void msleep(int ms) { usleep(ms * 1000); }
@@ -472,6 +476,7 @@ static int json_get_u32(const cJSON *obj, const char *key, uint32_t *out) {
   return 0;                                              // Success
 }
 
+// CHECK
 // ------------------------- Handle Node JSON -------------------------
 // Parse incoming JSON from Node and transmit appropriate 64-bit word(s) over UART.
 
