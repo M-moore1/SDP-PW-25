@@ -23,9 +23,9 @@ export interface PoseMsg {
 /** System (S) - 0b00011, Event Driven */
 export interface SystemMsg {
   type: 'S';
-  instruction: string[];
-  Authurization_Code: number;
-  Instruction_Specfic: string[];
+  instruction: number;
+  Authorization_Code: number;
+  instruction_specific: number;
   priority_level: number;
   id: number;
 }
