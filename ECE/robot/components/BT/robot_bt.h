@@ -20,7 +20,7 @@
 #define TAG "SDP2635_SPP_Server"
 
 extern uint32_t spp_handle;
-extern uint8_t rx_buf[9];
+extern uint8_t rx_buf[128];
 extern int rx_index;
 extern QueueHandle_t bt_recieve_queue;
 

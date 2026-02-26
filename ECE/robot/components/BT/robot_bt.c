@@ -1,7 +1,7 @@
 #include "robot_bt.h"
 
 uint32_t spp_handle = 0;
-uint8_t rx_buf[9]; 
+uint8_t rx_buf[128]; 
 int rx_idx = 0;
 
 QueueHandle_t bt_recieve_queue = NULL;
@@ -123,9 +123,16 @@ void bt_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
                 rx_buf[rx_idx] = byte;
                 rx_idx++;
 
-                if (rx_idx == 9) {
-                    if(rx_buf[8] == 0x0D) {
-                        //printf(">>> Packet Valid. Sending to Queue.\n");
+                if (rx_idx == 127) {
+                    if(rx_buf[127] == 0x0D) {
+                        printf("rx_buf: ");
+                        for (int j = 0; j < 128; j++) {
+                            printf("%02X ", rx_buf[j]);
+                        }
+                        printf("\n");
+
+
+                        
                         uint64_t full_command;
                         memcpy(&full_command, rx_buf, 8);
                         
