@@ -17,7 +17,7 @@ import net from "net";
 // ------------------------- Config -------------------------
 
 const PORT = Number(process.env.PORT || 8080);
-const BIND = process.env.BIND || "0.0.0.0";
+const BIND = process.env.BIND || "127.0.0.1";
 const SOCKET_PATH = process.env.SOCKET_PATH || "/tmp/gs_bridge.sock";
 
 // If your UI sends just "direction": "w/a/s/d", we map it to a Control (C) command:
