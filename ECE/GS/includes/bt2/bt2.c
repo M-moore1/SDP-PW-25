@@ -173,7 +173,7 @@ int rn42_disconnect(int uart_fd) {
 
   memset(buffer, 0, sizeof(buffer));
   if (read(uart_fd, buffer, sizeof(buffer) - 1) > 0) {
-      printf("\n[PMOD RESPONSE]: %s\n\r", buffer);
+      printf("\n[PMOD RESPONSE]: %s\r\n", buffer);
       if (strstr(buffer, "ERR") || strstr(buffer, "?")) {
           rn42_exit_cmd(uart_fd);
           return -2;
@@ -206,7 +206,7 @@ int rn42_connect_check(int uart_fd){
       return 1; 
     }
 
-    if (strstr(buffer, "1,1,1")) {
+    if (strstr(buffer, "1,0,0")) {
       rn42_exit_cmd(uart_fd);
       return 0; 
     }
@@ -249,8 +249,13 @@ int uart_send_str(int uart_fd, char *str) {
 }
 
 int uart_send_instruction(int uart_fd, uint64_t instruction) {
-  printf("PMOD SENDING: %" PRIu64 "\n", instruction);
-
+  //printf("PMOD SENDING: %" PRIu64 "\r\n", instruction);
+  
+  printf("[TX BYTES]: ");
+  unsigned char *ptr = (unsigned char *)&instruction;
+  for (int i = 0; i < 8; i++) {
+    printf("%02X ", ptr[i]);
+  }
   uint8_t packet[9];
   memcpy(packet, &instruction, 8);
   packet[8] = 0x0D; // STOP BIT
