@@ -12,7 +12,7 @@ void sys_cmd(int uart_fd, system_format_t sys_inst){
 
       break;
     case Connect_Reconnect:
-      rn42_connect_mac(uart_fd, "004B1224B0A6");
+      rn42_connect_mac(uart_fd, "441d64f17066");
 
       break;
 
@@ -83,17 +83,20 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
     uint8_t  pl, instr;
     uint16_t id, ac;
     uint32_t spec;
+    
 
     if (json_get_u8(root, "instruction",         &instr, 0, 15)   ||
-        json_get_u16(root,"Authorization_Code",  &ac,    0, 1023) ||
+        json_get_u16(root,"Authorization_Code",  &ac,    0, 1024) ||
         json_get_u8(root, "priority_level",      &pl,    0, 3)    ||
         json_get_u16(root,"id",                  &id,    0, 2047) ||
         json_get_u32(root,"instruction_specific",&spec)) // Assuming 3-arg version
     {
+      printf("I GOT AN ERROR WITH THE S INSTRUCTION\n");
       uds_send_json(uds_fd, "{\"type\":\"ERR\",\"msg\":\"bad S fields\"}");
       cJSON_Delete(root);
       return -1;
     }
+    printf("I GOT AN S INSTRUCTION\n");
 
     packet.sys.type         = System_CMD;
     packet.sys.pl           = pl;

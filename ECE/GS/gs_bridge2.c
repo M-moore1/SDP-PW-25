@@ -34,14 +34,14 @@
 #include "includes/cmd_parser/cmd_parser.h"
 #include "includes/json_uds/json_uds.h"
 
-#include <cjson/cJSON.h> // CHANGE                      // cJSON library header (vendored)
+#include "cJSON.h" // CHANGE                      // cJSON library header (vendored)
 // 004B1224B0A6
 // ------------------------- Defaults / Config -------------------------
 
 #define DEFAULT_UDS_PATH "/tmp/gs_bridge.sock" // Socket file path for Node<->C IPC
 #define DEFAULT_UART_DEV "/dev/ttyPS2"         // Default UART device (Zynq PS UART)
 #define DEFAULT_UART_BAUD B115200              // Default baud rate (termios constant)
-#define ESP32_MACADDRESS "004B1224B0A6"
+#define ESP32_MACADDRESS "441d64f17066"
 
 // ------------------------- Bit helpers -------------------------
 
@@ -218,7 +218,7 @@ int main(int argc, char **argv) {
 
 
         const char *esp32_mac = ESP32_MACADDRESS;  
-        /*
+        
         printf("Entering cmd\n");
         printf("RN-42: connecting to ESP32 MAC %s...\n", esp32_mac);
         if (rn42_connect_mac(uart_fd, esp32_mac) != 0) {
@@ -226,7 +226,7 @@ int main(int argc, char **argv) {
         } else {
           printf("RN-42: connect command sent.\n");
         }
-        */
+        
       }
     }
 
