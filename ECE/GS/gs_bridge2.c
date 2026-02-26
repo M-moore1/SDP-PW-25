@@ -33,7 +33,7 @@
 #include "includes/bt2/bt2.h"
 #include "includes/cmd_parser/cmd_parser.h"
 #include "includes/json_uds/json_uds.h"
-
+#include <ctype.h>   // isxdigit, tolower
 #include <cjson/cJSON.h> // CHANGE                      // cJSON library header (vendored)
 // 004B1224B0A6
 // ------------------------- Defaults / Config -------------------------
@@ -43,8 +43,92 @@
 #define DEFAULT_UART_BAUD B115200              // Default baud rate (termios constant)
 #define ESP32_MACADDRESS "004B1224B0A6"
 
-// ------------------------- Bit helpers -------------------------
 
+// Classifier Parseorstring
+static const char* skip_ws(const char *s) {
+  while (*s == ' ' || *s == '\t' || *s == '\r' || *s == '\n') s++;
+  return s;
+}
+
+static int is_valid_json(const char *buf) {
+  const char *p = skip_ws(buf);
+
+  // Quick reject: JSON must start with { or [
+  if (*p != '{' && *p != '[') return 0;
+
+  cJSON *root = cJSON_Parse(p);
+  if (!root) return 0;
+
+  cJSON_Delete(root);
+  return 1;
+}
+// Accept even-length hex, optionally with "0x" prefix, ignoring whitespace.
+static int is_hex_ciphertext(const char *buf) {
+  const char *p = skip_ws(buf);
+  if (p[0]=='0' && (p[1]=='x' || p[1]=='X')) p += 2;
+
+  int digits = 0;
+  for (; *p; p++) {
+    if (*p==' '||*p=='\t'||*p=='\r'||*p=='\n') continue;
+    if (!isxdigit((unsigned char)*p)) return 0;
+    digits++;
+  }
+  return (digits > 0) && ((digits % 2) == 0);
+}
+
+static int hexval(int c) {
+  if (c >= '0' && c <= '9') return c - '0';
+  c = tolower(c);
+  if (c >= 'a' && c <= 'f') return 10 + (c - 'a');
+  return -1;
+}
+
+// Converts hex string -> bytes (malloc). Caller frees(*out).
+static int hex_to_bytes(const char *hex, uint8_t **out, size_t *out_len) {
+  const char *p = skip_ws(hex);
+  if (p[0]=='0' && (p[1]=='x' || p[1]=='X')) p += 2;
+
+  // count hex digits ignoring whitespace
+  size_t digits = 0;
+  for (const char *q = p; *q; q++) {
+    if (*q==' '||*q=='\t'||*q=='\r'||*q=='\n') continue;
+    if (!isxdigit((unsigned char)*q)) return -1;
+    digits++;
+  }
+  if (digits == 0 || (digits % 2) != 0) return -1;
+
+  size_t nbytes = digits / 2;
+  uint8_t *buf = (uint8_t*)malloc(nbytes);
+  if (!buf) return -2;
+
+  size_t bi = 0;
+  int hi = -1;
+  for (; *p; p++) {
+    if (*p==' '||*p=='\t'||*p=='\r'||*p=='\n') continue;
+    int v = hexval((unsigned char)*p);
+    if (v < 0) { free(buf); return -1; }
+    if (hi < 0) hi = v;
+    else {
+      buf[bi++] = (uint8_t)((hi << 4) | v);
+      hi = -1;
+    }
+  }
+
+  *out = buf;
+  *out_len = nbytes;
+  return 0;
+}
+// ------------------------- Bit helpers -------------------------
+static int uart_send_frame8(int uart_fd, const uint8_t payload[8]) {
+  uint8_t fr[12];
+  fr[0] = 0xAA;
+  fr[1] = 0x55;
+  fr[2] = 8;                  // len
+  memcpy(&fr[3], payload, 8);
+  fr[11] = xor8(fr, 11);      // XOR over header+len+payload
+  ssize_t w = write(uart_fd, fr, sizeof(fr));
+  return (w == (ssize_t)sizeof(fr)) ? 0 : -1;
+}
 // Extract nbits starting at bit position lo from a 64-bit word, returning up to 32 bits.
 static inline uint32_t get_bits_u32(uint64_t w, int lo, int nbits) {
   return (uint32_t)((w >> lo) & ((1ULL << nbits) - 1ULL)); // shift down and mask
@@ -281,10 +365,20 @@ int main(int argc, char **argv) {
           continue;
         }
 
-        buf[len] = '\0';                                   // Null-terminate JSON string
-        printf("UDS->C got JSON: %s\n", buf);
-        handle_node_json(uart_fd, uds_client, buf);         // Parse + pack + send to UART
+        buf[len] = '\0';
+        if (is_valid_json(buf)) {
+          printf("UDS->C got PLAINTEXT JSON\n");
+          handle_node_json(uart_fd, uds_client, buf);
 
+        } else if (is_hex_ciphertext(buf)) {
+          printf("UDS->C got HEX CIPHERTEXT (chars=%u)\n", len);
+          handle_node_ciphertext(uart_fd, uds_client, buf, len);
+
+        } else {
+          printf("UDS->C got UNKNOWN payload (not JSON, not hex). Dropping.\n");
+          // optional: notify Node
+          uds_send_json(uds_client, "{\"type\":\"ERR\",\"msg\":\"payload not json or hex\"}");
+        }
         free(buf);                                         // Free buffer
       }
     }
