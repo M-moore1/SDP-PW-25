@@ -20,13 +20,13 @@
   includes/cmd_parser/cmd_parser.c \
   includes/crypto/aes_gcm_blob.c \
   includes/crypto/gs_key.c \
-  ../../cJSON/cJSON.c \
+  ./newcJSON/cJSON.c \
   -I./includes/json_uds \
   -I./includes/bt2 \
   -I./includes/cmd_parser \
   -I./includes/cmd_structure \
   -I./includes/crypto \
-  -I../../cJSON \
+  -I./newcJSON \
   -lcrypto \
   -o gs_bridge2
 // -----------------------------------------------------------------------------
