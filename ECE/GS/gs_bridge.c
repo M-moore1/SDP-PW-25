@@ -29,7 +29,7 @@
 #include <sys/un.h>                     // sockaddr_un for Unix domain sockets
 #include <termios.h>                    // termios UART config
 #include <unistd.h>                     // read(), write(), close(), unlink()
-
+#include "includes/crypto/aes_gcm_blob.h" // decrpypt json and encrypt for esp32
 #include "cJSON.h"                      // cJSON library header (vendored)
 // 004B1224B0A6
 // ------------------------- Defaults / Config -------------------------

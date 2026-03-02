@@ -13,6 +13,22 @@
 // Build example:
 //   gcc -O2 -Wall -Wextra gs_bridge2.c cJSON.c -o gs_bridge
 //   gcc -O2 -Wall -Wextra gs_bridge2.c includes/json_uds/json_uds.c includes/bt2/bt2.c includes/cmd_parser/cmd_parser.c -I./includes/json_uds -I./includes/bt2 -I./includes/cmd_parser -I./includes/cmd_structure -lcjson -o gs_bridge2
+//   gcc -O2 -Wall -Wextra \
+  gs_bridge2.c \
+  includes/json_uds/json_uds.c \
+  includes/bt2/bt2.c \
+  includes/cmd_parser/cmd_parser.c \
+  includes/crypto/aes_gcm_blob.c \
+  includes/crypto/gs_key.c \
+  ../../cJSON/cJSON.c \
+  -I./includes/json_uds \
+  -I./includes/bt2 \
+  -I./includes/cmd_parser \
+  -I./includes/cmd_structure \
+  -I./includes/crypto \
+  -I../../cJSON \
+  -lcrypto \
+  -o gs_bridge2
 // -----------------------------------------------------------------------------
 
 #define _GNU_SOURCE                     // Enables some GNU extensions (safe on Linux)
@@ -33,102 +49,21 @@
 #include "includes/bt2/bt2.h"
 #include "includes/cmd_parser/cmd_parser.h"
 #include "includes/json_uds/json_uds.h"
-#include <ctype.h>   // isxdigit, tolower
-#include <cjson/cJSON.h> // CHANGE                      // cJSON library header (vendored)
+#include "includes/crypto/aes_gcm_blob.h" // decrpypt json and encrypt for esp32
+#include "includes/crypto/gs_key.h"
+#include "cJSON.h" // CHANGE                      // cJSON library header (vendored)
 // 004B1224B0A6
+
+static int decrypt_blobhex_to_u64_word(const char *blob_hex, uint64_t *out_word);
 // ------------------------- Defaults / Config -------------------------
 
 #define DEFAULT_UDS_PATH "/tmp/gs_bridge.sock" // Socket file path for Node<->C IPC
 #define DEFAULT_UART_DEV "/dev/ttyPS2"         // Default UART device (Zynq PS UART)
 #define DEFAULT_UART_BAUD B115200              // Default baud rate (termios constant)
-#define ESP32_MACADDRESS "004B1224B0A6"
+#define ESP32_MACADDRESS "441d64f17066"
 
-
-// Classifier Parseorstring
-static const char* skip_ws(const char *s) {
-  while (*s == ' ' || *s == '\t' || *s == '\r' || *s == '\n') s++;
-  return s;
-}
-
-static int is_valid_json(const char *buf) {
-  const char *p = skip_ws(buf);
-
-  // Quick reject: JSON must start with { or [
-  if (*p != '{' && *p != '[') return 0;
-
-  cJSON *root = cJSON_Parse(p);
-  if (!root) return 0;
-
-  cJSON_Delete(root);
-  return 1;
-}
-// Accept even-length hex, optionally with "0x" prefix, ignoring whitespace.
-static int is_hex_ciphertext(const char *buf) {
-  const char *p = skip_ws(buf);
-  if (p[0]=='0' && (p[1]=='x' || p[1]=='X')) p += 2;
-
-  int digits = 0;
-  for (; *p; p++) {
-    if (*p==' '||*p=='\t'||*p=='\r'||*p=='\n') continue;
-    if (!isxdigit((unsigned char)*p)) return 0;
-    digits++;
-  }
-  return (digits > 0) && ((digits % 2) == 0);
-}
-
-static int hexval(int c) {
-  if (c >= '0' && c <= '9') return c - '0';
-  c = tolower(c);
-  if (c >= 'a' && c <= 'f') return 10 + (c - 'a');
-  return -1;
-}
-
-// Converts hex string -> bytes (malloc). Caller frees(*out).
-static int hex_to_bytes(const char *hex, uint8_t **out, size_t *out_len) {
-  const char *p = skip_ws(hex);
-  if (p[0]=='0' && (p[1]=='x' || p[1]=='X')) p += 2;
-
-  // count hex digits ignoring whitespace
-  size_t digits = 0;
-  for (const char *q = p; *q; q++) {
-    if (*q==' '||*q=='\t'||*q=='\r'||*q=='\n') continue;
-    if (!isxdigit((unsigned char)*q)) return -1;
-    digits++;
-  }
-  if (digits == 0 || (digits % 2) != 0) return -1;
-
-  size_t nbytes = digits / 2;
-  uint8_t *buf = (uint8_t*)malloc(nbytes);
-  if (!buf) return -2;
-
-  size_t bi = 0;
-  int hi = -1;
-  for (; *p; p++) {
-    if (*p==' '||*p=='\t'||*p=='\r'||*p=='\n') continue;
-    int v = hexval((unsigned char)*p);
-    if (v < 0) { free(buf); return -1; }
-    if (hi < 0) hi = v;
-    else {
-      buf[bi++] = (uint8_t)((hi << 4) | v);
-      hi = -1;
-    }
-  }
-
-  *out = buf;
-  *out_len = nbytes;
-  return 0;
-}
 // ------------------------- Bit helpers -------------------------
-static int uart_send_frame8(int uart_fd, const uint8_t payload[8]) {
-  uint8_t fr[12];
-  fr[0] = 0xAA;
-  fr[1] = 0x55;
-  fr[2] = 8;                  // len
-  memcpy(&fr[3], payload, 8);
-  fr[11] = xor8(fr, 11);      // XOR over header+len+payload
-  ssize_t w = write(uart_fd, fr, sizeof(fr));
-  return (w == (ssize_t)sizeof(fr)) ? 0 : -1;
-}
+
 // Extract nbits starting at bit position lo from a 64-bit word, returning up to 32 bits.
 static inline uint32_t get_bits_u32(uint64_t w, int lo, int nbits) {
   return (uint32_t)((w >> lo) & ((1ULL << nbits) - 1ULL)); // shift down and mask
@@ -216,7 +151,73 @@ static int unpack_HR(uint64_t w, HealthHR *out) {
 // ------------------------- Robot word -> Node JSON -------------------------
 // Convert incoming robot u64 into JSON string and send back to Node via UDS.
 
-static void robot_word_to_node_json(int uds_fd, uint64_t w) {}
+static void robot_word_to_node_json(int uds_fd, uint64_t w) {
+  if (uds_fd < 0) return;
+
+  uint8_t pl   = (uint8_t)get_bits_u32(w, 0, 2);   // bits 0..1
+  uint8_t type = (uint8_t)get_bits_u32(w, 2, 5);   // bits 2..6 (Option X)
+
+  char msg[256];
+
+  switch (type) {
+
+    case ACK_CMD: {
+      // Use your packed union/struct to interpret fields
+      robot_bt_packet_t p;
+      p.raw = w;
+
+      // ack_format_t:
+      // pl: 0..1, type:2..6, id:7..17, result_code:18..22, instruction_specific:23..63
+      uint16_t id = (uint16_t)p.ack.id;
+      uint8_t  rc = (uint8_t)p.ack.result_code;
+
+      snprintf(msg, sizeof(msg),
+        "{\"type\":\"ACK\",\"pl\":%u,\"id\":%u,\"result_code\":%u,\"raw_hex\":\"0x%016llX\"}",
+        pl, id, rc, (unsigned long long)w);
+
+      uds_send_json(uds_fd, msg);
+    } break;
+
+    case HPR_CMD: {
+      robot_bt_packet_t p;
+      p.raw = w;
+
+      uint8_t alert_type = (uint8_t)p.hpr.alert_type;
+
+      snprintf(msg, sizeof(msg),
+        "{\"type\":\"HPR\",\"pl\":%u,\"alert_type\":%u,\"raw_hex\":\"0x%016llX\"}",
+        pl, alert_type, (unsigned long long)w);
+
+      uds_send_json(uds_fd, msg);
+    } break;
+
+    case STATUS_CMD: {
+      // TODO: once you finalize STATUS/SR bit layout, decode fields here.
+      // For now, forward raw.
+      snprintf(msg, sizeof(msg),
+        "{\"type\":\"SR\",\"pl\":%u,\"raw_hex\":\"0x%016llX\"}",
+        pl, (unsigned long long)w);
+      uds_send_json(uds_fd, msg);
+    } break;
+
+    case HEALTH_CMD: {
+      // TODO: once you finalize HEALTH/HR bit layout, decode fields here.
+      snprintf(msg, sizeof(msg),
+        "{\"type\":\"HR\",\"pl\":%u,\"raw_hex\":\"0x%016llX\"}",
+        pl, (unsigned long long)w);
+      uds_send_json(uds_fd, msg);
+    } break;
+
+    default: {
+      // Unknown packet type → still forward raw so UI can log it
+      snprintf(msg, sizeof(msg),
+        "{\"type\":\"RAW\",\"pl\":%u,\"type_code\":%u,\"raw_hex\":\"0x%016llX\"}",
+        pl, type, (unsigned long long)w);
+      uds_send_json(uds_fd, msg);
+    } break;
+  }
+}
+//static void robot_word_to_node_json(int uds_fd, uint64_t w) {}
 /*
 {
   uint8_t type = (uint8_t)get_bits_u32(w, 0, 5);           // Extract 5-bit type
@@ -258,6 +259,123 @@ static void robot_word_to_node_json(int uds_fd, uint64_t w) {}
 */
 
 
+// Decode a 128-byte UART record into a u64 word (plaintext 'P' only for now).
+// Returns 1 if a word was produced, 0 if ignored, -1 on error.
+static int uart_record_to_word(const uint8_t rec[128], uint64_t *out_word) {
+  if (rec[0] == 'P') {
+    uint64_t w = 0;
+    for (int i = 0; i < 8; i++) w = (w << 8) | (uint64_t)rec[1 + i];
+    *out_word = w;
+    return 1;
+  }
+
+  if (rec[0] == 'E') {
+    // blob lives in rec[1..126], may be NUL-terminated or padded with zeros
+    char blob[128];
+    size_t n = 0;
+    for (size_t i = 1; i < 127 && n + 1 < sizeof(blob); i++) {
+      uint8_t c = rec[i];
+      if (c == 0) break;
+      blob[n++] = (char)c;
+    }
+    blob[n] = '\0';
+
+    uint64_t w = 0;
+    if (decrypt_blobhex_to_u64_word(blob, &w) != 0) return -1;
+    *out_word = w;
+    return 1;
+  }
+
+  // Unknown record type
+  return 0;
+}
+
+// Send RAW word up to Node for debugging (hex string).
+static void send_raw_word_json(int uds_fd, uint64_t w) {
+  if (uds_fd < 0) return;
+  char msg[128];
+  snprintf(msg, sizeof(msg),
+           "{\"type\":\"RAW\",\"src\":\"ESP32\",\"u64_hex\":\"0x%016llX\"}",
+           (unsigned long long)w);
+  uds_send_json(uds_fd, msg);
+}
+
+
+// Return 1 if s looks like JSON (starts with '{' or '[' after whitespace)
+static int looks_like_json(const char *s) {
+  if (!s) return 0;
+  while (*s == ' ' || *s == '\n' || *s == '\r' || *s == '\t') s++;
+  return (*s == '{' || *s == '[');
+}
+
+static int is_hex_char(char c) {
+  return (c >= '0' && c <= '9') ||
+         (c >= 'a' && c <= 'f') ||
+         (c >= 'A' && c <= 'F');
+}
+
+// Return 1 if string is all hex chars (after trimming whitespace) and length >= min_len
+static int looks_like_hex_blob(const char *s, size_t min_len) {
+  if (!s) return 0;
+  while (*s == ' ' || *s == '\n' || *s == '\r' || *s == '\t') s++;
+  size_t n = 0;
+  for (; s[n] != '\0'; n++) {
+    if (s[n] == ' ' || s[n] == '\n' || s[n] == '\r' || s[n] == '\t') continue;
+    if (!is_hex_char(s[n])) return 0;
+  }
+  return (n >= min_len);
+}
+
+// Decrypt encrypted hex blob (nonce||tag||ct) into plaintext JSON string.
+// Returns 0 on success, -1 on failure.
+// NOTE: This is a stub until AES is integrated as a callable function.
+static int decrypt_blobhex_to_json(const char *blob_hex, char *out_json, size_t out_cap) {
+  uint8_t nonce[AES_GCM_NONCE_LEN];
+  uint8_t tag[AES_GCM_TAG_LEN];
+  uint8_t ct[4096];
+  size_t ct_len = 0;
+
+  if (aes_gcm_parse_blob_hex(blob_hex, nonce, tag, ct, sizeof(ct), &ct_len) != 0) {
+    return -1;
+  }
+
+  uint8_t pt[4096];
+  size_t pt_len = 0;
+
+  // No AAD for now
+  int rc = aes_gcm_decrypt_bytes(GS_AES_KEY, nonce, tag, NULL, 0, ct, ct_len, pt, &pt_len);
+  if (rc != 0) return -1;
+
+  // Ensure null-terminated and fits
+  if (pt_len + 1 > out_cap) return -1;
+  memcpy(out_json, pt, pt_len);
+  out_json[pt_len] = '\0';
+  return 0;
+}
+
+static int decrypt_blobhex_to_u64_word(const char *blob_hex, uint64_t *out_word) {
+  uint8_t nonce[AES_GCM_NONCE_LEN];
+  uint8_t tag[AES_GCM_TAG_LEN];
+
+  uint8_t ct[64];
+  size_t ct_len = 0;
+
+  if (aes_gcm_parse_blob_hex(blob_hex, nonce, tag, ct, sizeof(ct), &ct_len) != 0) return -1;
+  if (ct_len != 8) return -1; // for word packets we expect exactly 8 bytes ciphertext
+
+  uint8_t pt[16];
+  size_t pt_len = 0;
+
+  int rc = aes_gcm_decrypt_bytes(GS_AES_KEY, nonce, tag, NULL, 0, ct, ct_len, pt, &pt_len);
+  if (rc != 0) return -1;
+  if (pt_len != 8) return -1;
+
+  // Convert 8 bytes big-endian to u64
+  uint64_t w = 0;
+  for (int i = 0; i < 8; i++) w = (w << 8) | (uint64_t)pt[i];
+  *out_word = w;
+  return 0;
+}
 // ------------------------- Main -------------------------
 
 int main(int argc, char **argv) {
@@ -302,7 +420,7 @@ int main(int argc, char **argv) {
 
 
         const char *esp32_mac = ESP32_MACADDRESS;  
-        /*
+        
         printf("Entering cmd\n");
         printf("RN-42: connecting to ESP32 MAC %s...\n", esp32_mac);
         if (rn42_connect_mac(uart_fd, esp32_mac) != 0) {
@@ -310,16 +428,16 @@ int main(int argc, char **argv) {
         } else {
           printf("RN-42: connect command sent.\n");
         }
-        */
+        
       }
     }
 
     fd_set rfds;                                           // Read fd set
-    FD_ZERO(&rfds);                                        // Clear set
-    FD_SET(uds_client, &rfds);                             // Watch Node socket
-    FD_SET(uart_fd, &rfds);                                // Watch UART
-    int maxfd = (uds_client > uart_fd) ? uds_client : uart_fd; // select needs max+1
-
+    FD_ZERO(&rfds);
+    if (uds_client >= 0) FD_SET(uds_client, &rfds);
+    FD_SET(uart_fd, &rfds);
+    int maxfd = uart_fd;
+    if (uds_client > maxfd) maxfd = uds_client;
     struct timeval tv;                                     // Timeout for select()
     tv.tv_sec = 0;                                         // 0 seconds
     tv.tv_usec = 20000;                                    // 20ms tick (gives responsiveness)
@@ -366,34 +484,90 @@ int main(int argc, char **argv) {
         }
 
         buf[len] = '\0';
-        if (is_valid_json(buf)) {
-          printf("UDS->C got PLAINTEXT JSON\n");
-          handle_node_json(uart_fd, uds_client, buf);
 
-        } else if (is_hex_ciphertext(buf)) {
-          printf("UDS->C got HEX CIPHERTEXT (chars=%u)\n", len);
-          handle_node_ciphertext(uart_fd, uds_client, buf, len);
+        int handled = 0;
 
-        } else {
-          printf("UDS->C got UNKNOWN payload (not JSON, not hex). Dropping.\n");
-          // optional: notify Node
-          uds_send_json(uds_client, "{\"type\":\"ERR\",\"msg\":\"payload not json or hex\"}");
+        // Fast path: if it looks like JSON and parses, treat as plaintext JSON
+        if (looks_like_json(buf)) {
+          cJSON *probe = cJSON_Parse(buf);
+          if (probe) {
+            cJSON_Delete(probe);
+            printf("UDS->C plaintext JSON\n");
+            handle_node_json(uart_fd, uds_client, buf);
+            handled = 1;
+          }
         }
-        free(buf);                                         // Free buffer
+
+        // If not handled, attempt decrypt path
+        if (!handled) {
+          // Minimum hex length needed just to contain nonce+tag (no ct): 24+32 = 56
+          // Real ct will add more.
+          if (!looks_like_hex_blob(buf, 56)) {
+            if (uds_client >= 0) uds_send_json(uds_client,
+              "{\"type\":\"ERR\",\"msg\":\"UDS payload not JSON and not hex blob\"}");
+          } else {
+            char plain[4096];
+            int drc = decrypt_blobhex_to_json(buf, plain, sizeof(plain));
+            if (drc != 0) {
+              if (uds_client >= 0) uds_send_json(uds_client,
+                "{\"type\":\"ERR\",\"msg\":\"decrypt failed\"}");
+            } else {
+              // Optional: validate decrypted JSON parses before using
+              cJSON *probe2 = cJSON_Parse(plain);
+              if (!probe2) {
+                if (uds_client >= 0) uds_send_json(uds_client,
+                  "{\"type\":\"ERR\",\"msg\":\"decrypted text not valid JSON\"}");
+              } else {
+                cJSON_Delete(probe2);
+                printf("UDS->C decrypted JSON\n");
+                handle_node_json(uart_fd, uds_client, plain);
+              }
+            }
+          }
+        }
+
+        free(buf);
       }
     }
 
-    // ----- If UART readable: read bytes, parse frames, forward to Node -----
-    if (FD_ISSET(uart_fd, &rfds)) {                         // UART has data
-      uint8_t tmp[256];                                     // Temp read buffer
-      ssize_t n = read(uart_fd, tmp, sizeof(tmp));          // Read available bytes
-      if (n > 0) {                                          // If bytes received
-        for (ssize_t i = 0; i < n; i++) {                   // Feed each byte into parser
-          uint64_t word = 0;                                // Output word
-          //int got = uart_parser_feed(&up, tmp[i], &word);   // Parser state update
-          //if (got == 1 && uds_client >= 0) {                // If we got a complete frame
-            robot_word_to_node_json(uds_client, word);      // Convert to JSON and send to Node
-          //}
+    // ----- If UART readable: read 128-byte records and forward to Node -----
+    if (FD_ISSET(uart_fd, &rfds)) {
+      static uint8_t rxbuf[128];
+      static size_t rx_used = 0;
+
+      uint8_t tmp[256];
+      ssize_t n = read(uart_fd, tmp, sizeof(tmp));
+      if (n > 0) {
+        size_t off = 0;
+
+        while (off < (size_t)n) {
+          size_t space = 128 - rx_used;
+          size_t take = ((size_t)n - off < space) ? ((size_t)n - off) : space;
+
+          memcpy(rxbuf + rx_used, tmp + off, take);
+          rx_used += take;
+          off += take;
+
+          if (rx_used == 128) {
+            // We have one full record
+            uint64_t w = 0;
+            int got = uart_record_to_word(rxbuf, &w);
+
+            if (got == 1) {
+              // For now, forward raw word JSON (debug)
+              robot_word_to_node_json(uds_client, w);
+
+              // Later step: decode SR/HR/ACK/HPR and call robot_word_to_node_json()
+              // robot_word_to_node_json(uds_client, w);
+            } else if (got < 0) {
+              // Optional: report record decode error
+              uds_send_json(uds_client, "{\"type\":\"ERR\",\"msg\":\"uart record decode failed\"}");
+            }
+
+            // Reset for next record
+            rx_used = 0;
+            memset(rxbuf, 0, sizeof(rxbuf));
+          }
         }
       }
     }

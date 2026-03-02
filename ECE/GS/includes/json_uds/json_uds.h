@@ -15,7 +15,7 @@
 #include <sys/un.h>                     // sockaddr_un for Unix domain sockets
 #include <termios.h>                    // termios UART config
 #include <unistd.h>                     // read(), write(), close(), unlink()
-#include <cjson/cJSON.h> // CHANGE       
+#include "cJSON.h"     
 
 
 int read_full(int fd, void *buf, size_t n);

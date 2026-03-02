@@ -1,4 +1,46 @@
 #include "bt2.h"
+#include "aes_gcm_blob.h"   // adjust include path as needed
+#include <openssl/rand.h>                  // if needed by nonce generator
+
+
+// NOTE: You need GS_AES_KEY visible here OR pass key in.
+// Simplest: declare extern and define key in one .c file.
+extern const uint8_t GS_AES_KEY[AES_GCM_KEY_LEN];
+
+int uart_send_encrypted_word(int uart_fd, uint64_t word) {
+    uint8_t packet[128];
+    memset(packet, 0, sizeof(packet));
+    packet[0] = 'E';
+
+    // Pack word as 8 bytes big-endian
+    uint8_t pt[8];
+    for (int i = 0; i < 8; i++) pt[i] = (uint8_t)(word >> (56 - 8*i));
+
+    // Encrypt
+    uint8_t nonce[AES_GCM_NONCE_LEN];
+    uint8_t tag[AES_GCM_TAG_LEN];
+    uint8_t ct[8];
+
+    if (aes_gcm_random_nonce(nonce) != 0) return -1;
+    if (aes_gcm_encrypt_bytes(GS_AES_KEY, nonce, NULL, 0, pt, sizeof(pt), ct, tag) != 0) return -1;
+
+    // Build blob hex (72 chars + NUL)
+    char blob[2*(AES_GCM_NONCE_LEN + AES_GCM_TAG_LEN + 8) + 1];
+    aes_gcm_build_blob_hex(nonce, tag, ct, sizeof(ct), blob);
+
+    // Copy blob into packet[1..]
+    size_t blen = strlen(blob);
+    if (blen > 126) return -1; // must fit before byte 127
+    memcpy(&packet[1], blob, blen);
+
+    // Keep your delimiter
+    packet[127] = 0x0D;
+
+    ssize_t n = write(uart_fd, packet, sizeof(packet));
+    if (n < 0) return -1;
+    if (n != (ssize_t)sizeof(packet)) return -1;
+    return 0;
+}
 
 // ------------------------- UART open/config -------------------------
 // Open UART device and configure baud/8N1/no flow control (typical SPP serial).
@@ -249,36 +291,37 @@ int uart_send_str(int uart_fd, char *str) {
 }
 
 int uart_send_instruction(int uart_fd, uint64_t instruction) {
-
     uint8_t packet[128];
-
-    // 1) Zero entire packet (padding bytes 8–126 become 0)
     memset(packet, 0, sizeof(packet));
 
-    // 2) Copy ONLY 8 bytes from instruction
-    memcpy(packet, &instruction, sizeof(instruction));
+    // Marker so receiver can distinguish plaintext vs encrypted later
+    packet[0] = 'P';  // Plaintext
 
-    // 3) Set last byte to 0x0D
+    // Put instruction in a defined byte order (big-endian) at bytes 1..8
+    packet[1] = (uint8_t)((instruction >> 56) & 0xFF);
+    packet[2] = (uint8_t)((instruction >> 48) & 0xFF);
+    packet[3] = (uint8_t)((instruction >> 40) & 0xFF);
+    packet[4] = (uint8_t)((instruction >> 32) & 0xFF);
+    packet[5] = (uint8_t)((instruction >> 24) & 0xFF);
+    packet[6] = (uint8_t)((instruction >> 16) & 0xFF);
+    packet[7] = (uint8_t)((instruction >>  8) & 0xFF);
+    packet[8] = (uint8_t)((instruction >>  0) & 0xFF);
+
+    // Keep your last-byte delimiter (optional but harmless with fixed 128)
     packet[127] = 0x0D;
 
-    // Optional debug print
+    // Debug print (optional)
     printf("[TX 128 BYTES]: ");
-    for (int i = 0; i < 128; i++) {
-        printf("%02X ", packet[i]);
-    }
+    for (int i = 0; i < 128; i++) printf("%02X ", packet[i]);
     printf("\n");
 
-    // 4) Write full 128 bytes
     ssize_t n = write(uart_fd, packet, sizeof(packet));
-
     if (n < 0) {
         perror("UART Write Error");
         return -1;
     }
-
-    if (n != sizeof(packet)) {
-        fprintf(stderr, "Short write: sent %zd of %zu bytes\n",
-                n, sizeof(packet));
+    if (n != (ssize_t)sizeof(packet)) {
+        fprintf(stderr, "Short write: sent %zd of %zu bytes\n", n, sizeof(packet));
         return -1;
     }
 
