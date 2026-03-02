@@ -126,6 +126,17 @@ function App() {
     setIsKeyHeld(false);
   }, []);
 
+  const handleConnect = useCallback(() => {
+    sendMessage({
+      type: 'S',
+      instruction: 0b0010,
+      Authorization_Code: 0x03ff,
+      instruction_specific: 0x00,
+      priority_level: 1,
+      id: 28,
+    });
+  }, [sendMessage]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
       <div className="max-w-5xl mx-auto">
@@ -160,6 +171,7 @@ function App() {
               encryptionEnabled={encryptionEnabled}
               onEncryptionChange={setEncryptionEnabled}
               hasEncryptionKey={Boolean(ENCRYPTION_KEY)}
+              onConnect={handleConnect}
             />
             <MessageLog logs={messageLog} />
           </div>

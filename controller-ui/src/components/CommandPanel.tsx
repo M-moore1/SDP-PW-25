@@ -7,6 +7,7 @@ interface CommandPanelProps {
   encryptionEnabled: boolean;
   onEncryptionChange: (enabled: boolean) => void;
   hasEncryptionKey: boolean;
+  onConnect?: () => void;
 }
 
 export function CommandPanel({
@@ -15,10 +16,22 @@ export function CommandPanel({
   encryptionEnabled,
   onEncryptionChange,
   hasEncryptionKey,
+  onConnect,
 }: CommandPanelProps) {
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
       <h2 className="text-lg font-semibold text-gray-700">Command Panel</h2>
+
+      {/* Connect button */}
+      <div className="border border-gray-200 rounded-lg p-4 mt-4">
+        <button
+          type="button"
+          onClick={onConnect}
+          className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Connect
+        </button>
+      </div>
 
       {/* Encryption toggle */}
       <div className="border border-gray-200 rounded-lg p-4 mt-4">

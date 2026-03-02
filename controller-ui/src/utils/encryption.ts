@@ -105,7 +105,7 @@ export function encrypt(
 
 /**
  * Encrypt a JSON object and return a string suitable for WebSocket send.
- * Output format: JSON string of { nonce, ct, tag } that the robot can decrypt.
+ * Output format: concatenated nonce + ct + tag (hex strings), ending with \r.
  */
 export function encryptJson(
   obj: object,
@@ -114,5 +114,5 @@ export function encryptJson(
   const plaintext = JSON.stringify(obj);
   const encrypted = encrypt(plaintext, keyHex);
   if (!encrypted) return null;
-  return JSON.stringify(encrypted);
+  return encrypted.nonce + encrypted.ct + encrypted.tag + '\r';
 }
