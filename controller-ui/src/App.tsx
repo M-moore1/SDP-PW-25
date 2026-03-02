@@ -22,7 +22,7 @@ interface MessageLogEntry {
   timestamp: string;
 }
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://127.0.0.1:8080';
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://137.99.0.13:8080';
 const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY; // 64 hex chars (32 bytes)
 
 function App() {
