@@ -25,7 +25,7 @@ static QueueHandle_t cmd_queue = NULL;
 
 void bt_reciever_parser(void *pvParameters)
 {
-    uint64_t received_cmd;
+    uint8_t received_cmd[128];
 
     while (1) {
         if (xQueueReceive(bt_recieve_queue, &received_cmd, portMAX_DELAY)) {
@@ -38,8 +38,10 @@ void bt_reciever_parser(void *pvParameters)
 
             // ADD PRIORITY
 
+
+
             // 3. Send the finalized packet to the main robot controller
-            if (xQueueSend(cmd_queue, &received_cmd, 0) != pdPASS) {
+            if (xQueueSend(cmd_queue, &received_cmd, 8) != pdPASS) {
                 ESP_LOGW(TAG, "cmd_queue full");
             }
         }
