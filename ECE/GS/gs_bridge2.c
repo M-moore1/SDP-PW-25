@@ -60,7 +60,8 @@ static int decrypt_blobhex_to_u64_word(const char *blob_hex, uint64_t *out_word)
 #define DEFAULT_UDS_PATH "/tmp/gs_bridge.sock" // Socket file path for Node<->C IPC
 #define DEFAULT_UART_DEV "/dev/ttyPS2"         // Default UART device (Zynq PS UART)
 #define DEFAULT_UART_BAUD B115200              // Default baud rate (termios constant)
-#define ESP32_MACADDRESS "441d64f17066"
+#define ESP32_MACADDRESS "441d64f11a86"
+//441d64f17066
 
 // ------------------------- Bit helpers -------------------------
 
@@ -489,6 +490,7 @@ int main(int argc, char **argv) {
 
         // Fast path: if it looks like JSON and parses, treat as plaintext JSON
         if (looks_like_json(buf)) {
+          printf("I GOT SOMETHING ENCRYPTED");
           cJSON *probe = cJSON_Parse(buf);
           if (probe) {
             cJSON_Delete(probe);
@@ -500,6 +502,7 @@ int main(int argc, char **argv) {
 
         // If not handled, attempt decrypt path
         if (!handled) {
+          printf("I GOT SOMETHING ENCRYPTED");
           // Minimum hex length needed just to contain nonce+tag (no ct): 24+32 = 56
           // Real ct will add more.
           if (!looks_like_hex_blob(buf, 56)) {
