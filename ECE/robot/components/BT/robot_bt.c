@@ -1,7 +1,7 @@
 #include "robot_bt.h"
 
 uint32_t spp_handle = 0;
-uint8_t rx_buf[128]; 
+uint8_t rx_buf[156]; 
 int rx_idx = 0;
 
 QueueHandle_t bt_recieve_queue = NULL;
@@ -123,8 +123,8 @@ void bt_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
                 rx_buf[rx_idx] = byte;
                 rx_idx++;
 
-                if (rx_idx == 127) {
-                    if(rx_buf[127] == 0x0D) {
+                if (rx_idx == 156) {
+                    if(rx_buf[155] == 0x0D) {
                         printf("rx_buf: ");
                         for (int j = 0; j < 128; j++) {
                             printf("%02X ", rx_buf[j]);
