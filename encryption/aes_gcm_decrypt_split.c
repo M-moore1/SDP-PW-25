@@ -1,8 +1,11 @@
-// aes_gcm_decrypt_hardcoded.c
+// aes_gcm_decrypt_split.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <openssl/evp.h>
+
+#define NONCE_HEX_LEN 24   // 12 bytes
+#define TAG_HEX_LEN   32   // 16 bytes
 
 // ---------- helpers ----------
 static int from_hex(char c){
@@ -11,63 +14,100 @@ static int from_hex(char c){
     if(c>='A'&&c<='F')return c-'A'+10;
     return -1;
 }
+
 static int hex_decode(const char *hex, unsigned char **out, size_t *out_len){
-    size_t n=strlen(hex);
-    if(n%2!=0) return 0;
-    *out=(unsigned char*)malloc(n/2);
+    size_t n = strlen(hex);
+    if(n % 2 != 0) return 0;
+
+    *out = (unsigned char*)malloc(n/2);
     if(!*out) return 0;
-    for(size_t i=0;i<n;i+=2){
-        int hi=from_hex(hex[i]), lo=from_hex(hex[i+1]);
-        if(hi<0||lo<0){ free(*out); return 0; }
-        (*out)[i/2]=(unsigned char)((hi<<4)|lo);
+
+    for(size_t i=0; i<n; i+=2){
+        int hi = from_hex(hex[i]), lo = from_hex(hex[i+1]);
+        if(hi < 0 || lo < 0){
+            free(*out);
+            *out = NULL;
+            return 0;
+        }
+        (*out)[i/2] = (unsigned char)((hi<<4) | lo);
     }
-    *out_len=n/2;
+    *out_len = n/2;
     return 1;
 }
 
-// Optional: print bytes as hex (useful for debugging)
-static void print_hex(const char *label, const unsigned char *buf, size_t len){
-    fprintf(stderr, "%s (%zu bytes): ", label, len);
-    for(size_t i=0;i<len;i++) fprintf(stderr, "%02x", buf[i]);
-    fprintf(stderr, "\n");
+// Split input hex string into malloc'd NONCE_HEX, CT_HEX, TAG_HEX.
+// Layout: [nonce(24)][ciphertext(variable)][tag(32)]
+static int split_nonce_ct_tag(const char *input_hex,
+                             char **nonce_hex, char **ct_hex, char **tag_hex)
+{
+    if(!input_hex || !nonce_hex || !ct_hex || !tag_hex) return 0;
+
+    size_t n = strlen(input_hex);
+
+    // Must be at least nonce + tag
+    if(n < (size_t)(NONCE_HEX_LEN + TAG_HEX_LEN)) return 0;
+
+    // Whole thing must be even-length hex
+    if(n % 2 != 0) return 0;
+
+    size_t ct_len = n - (size_t)(NONCE_HEX_LEN + TAG_HEX_LEN);
+    // ciphertext hex must also be even length
+    if(ct_len % 2 != 0) return 0;
+
+    *nonce_hex = (char*)malloc(NONCE_HEX_LEN + 1);
+    *tag_hex   = (char*)malloc(TAG_HEX_LEN + 1);
+    *ct_hex    = (char*)malloc(ct_len + 1);
+
+    if(!*nonce_hex || !*tag_hex || !*ct_hex){
+        free(*nonce_hex); free(*tag_hex); free(*ct_hex);
+        *nonce_hex = *tag_hex = *ct_hex = NULL;
+        return 0;
+    }
+
+    memcpy(*nonce_hex, input_hex, NONCE_HEX_LEN);
+    (*nonce_hex)[NONCE_HEX_LEN] = '\0';
+
+    memcpy(*ct_hex, input_hex + NONCE_HEX_LEN, ct_len);
+    (*ct_hex)[ct_len] = '\0';
+
+    memcpy(*tag_hex, input_hex + (n - TAG_HEX_LEN), TAG_HEX_LEN);
+    (*tag_hex)[TAG_HEX_LEN] = '\0';
+
+    return 1;
 }
 
+int main(int argc, char **argv){
+    // Usage: ./aes_gcm_decrypt_split <nonce||ciphertext||tag as hex>
+    if(argc != 2){
+        fprintf(stderr,
+            "Usage: %s <HEXSTRING>\n"
+            "Where HEXSTRING = NONCE(24 hex) + CIPHERTEXT(variable hex) + TAG(32 hex)\n",
+            argv[0]
+        );
+        return 1;
+    }
 
+    const char *COMBINED_HEX = argv[1];
 
-
-
-
-
-
-
-
-int main(void){
     // =========================================================
-    // HARD-CODE TEST VECTORS HERE (hex strings, no 0x prefix)
+    // HARD-CODE KEY + OPTIONAL AAD HERE
     // =========================================================
+    const char *KEY_HEX = "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456";
+    const char *AAD_HEX = ""; // leave "" if none
 
+    // Split combined into the three pieces
+    char *NONCE_HEX = NULL;
+    char *CT_HEX    = NULL;
+    char *TAG_HEX   = NULL;
 
-    // bd6665607407c261687a7e6264036aa70f8529132a17b4c393ea269f6c03fb5b0d3026e22e7fbd428fbdebe8c688d420342cb020e68560da9f80771c28154ee9eaf171f82fc06f002cc60f4a1aee3cb4271fe1cade7f8005ecccadfc0ddbe2eee078bb2153d5359d004b722e1ab4c51dd0e6
-
-    // NEW W COMMAND
-    //1ef4ceb4196504bf748d026f7e5be378dc5a9b39edfdd4341d3e9d2eef124eb5aaf40069b5dd0b467959fbe3a3d87ddb0a7bdbdb6d4b29d4ed9de5ecc07067dd95fe10f48b54433e96647f3b34142ec1c95bd972b324430217d51824fa56eee884f690627f5cfb2c08810b4f731da4a46b0d28707f4a51c022a6399dab86851e8dba33e272ab6162a36a73e979c573e537559e824a78f1d1636ad972
-
-    // AES-256 key (32 bytes = 64 hex chars)
-    const char *KEY_HEX   = "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456";
-
-    // GCM nonce/IV (12 bytes = 24 hex chars) is most common
-    const char *NONCE_HEX = "373ab9ca3fb48c50c0c4fa23";
-
-    // Auth tag (16 bytes = 32 hex chars) is most common
-    const char *TAG_HEX   = "c26ff8380ebb8aeb605888f18737bcfa";
-
-    // Ciphertext bytes (any length)
-    // NOTE: this should be ONLY the ciphertext (not including tag)
-    const char *CT_HEX    = "3a9dea35cd482ad27526cf8349b1ab5ebb889d2e637e24e73ab2b4476f826e76b6deb716d530fd2fdcb53ad40569298a6f8fc6cd3f21e9a2182fb09a120e5c5a5e923b694caecbe297483c594c0f9a25cd2195cad34afe4f2b1b7241487bfe403f5ced6d02d94bedf1f0c004220f3b01b3085ec8b691edf2d4526ba601e9d2b4";  // <-- replace with your real ciphertext hex
-
-    // Optional AAD (can be empty string if none)
-    // If you didn't use AAD when encrypting, leave AAD_HEX = "" and it will be skipped.
-    const char *AAD_HEX   = "";
+    if(!split_nonce_ct_tag(COMBINED_HEX, &NONCE_HEX, &CT_HEX, &TAG_HEX)){
+        fprintf(stderr,
+            "Error: input must be even-length hex and at least %d chars total.\n"
+            "Expected: [nonce 24 hex][ciphertext ...][tag 32 hex]\n",
+            NONCE_HEX_LEN + TAG_HEX_LEN
+        );
+        return 1;
+    }
 
     // =========================================================
     // decode inputs
@@ -97,13 +137,6 @@ int main(void){
         fprintf(stderr,"Invalid ciphertext hex\n");
         return 1;
     }
-
-    // (Optional) show what we parsed
-    // print_hex("key", key, key_len);
-    // print_hex("nonce", nonce, nonce_len);
-    // print_hex("tag", tag, tag_len);
-    // print_hex("ct", ct, ct_len);
-    // if(aad) print_hex("aad", aad, aad_len);
 
     // =========================================================
     // decrypt
@@ -165,6 +198,7 @@ int main(void){
 
     // cleanup
     free(pt); free(ct); free(aad); free(tag); free(nonce); free(key);
+    free(NONCE_HEX); free(CT_HEX); free(TAG_HEX);
     EVP_CIPHER_CTX_free(ctx);
     return 0;
 }
