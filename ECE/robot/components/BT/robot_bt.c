@@ -63,7 +63,11 @@ void bt_init(){
 
     print_bt_mac();
 
+<<<<<<< Updated upstream
     bt_recieve_queue= xQueueCreate(10, 128); // CHANGE
+=======
+    bt_recieve_queue= xQueueCreate(10, 156);
+>>>>>>> Stashed changes
 
     ESP_LOGI(TAG, "SPP Server Ready");
 }
@@ -118,32 +122,25 @@ void bt_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
         case ESP_SPP_DATA_IND_EVT:
             // CHANGE ENTIRE LOOP
             for (int i = 0; i < param->data_ind.len; i++) {
-                uint8_t byte = param->data_ind.data[i];
-                printf("rx_buf[%d] = 0x%02X\n", rx_idx, byte);
-
-                rx_buf[rx_idx] = byte;
-                rx_idx++;
+                
+                if (rx_idx < 156) {
+                    rx_buf[rx_idx] = param->data_ind.data[i];
+                    rx_idx++;
+                }
 
                 if (rx_idx == 156) {
-                    if(rx_buf[155] == 0x0D) {
-                        printf("rx_buf: ");
-                        for (int j = 0; j < 128; j++) {
-                            printf("%02X ", rx_buf[j]);
-                        }
-                        printf("\n");
-
-
-                        
-                        uint8_t processed_cmd[128];
-                        memcpy(processed_cmd, rx_buf, 128);
-                        
-                        // Using PRIx64 to print the full 64-bit result
-                        //printf(">>> Full Command: 0x%016llX\n", (unsigned long long)full_command);
-
-                        xQueueSend(bt_recieve_queue, &full_command, 0);
+                    if (xQueueSend(bt_recieve_queue, (void *)rx_buf, (TickType_t)0) != pdPASS) {
+                        ESP_LOGW(TAG, "BT Queue full, dropping packet");
+                    } else {
+                        ESP_LOGI(TAG, "Full packet queued (156 bytes)");
                     }
-                    
-                    // Reset for next packet
+                    /*
+                    if (rx_buf[155] == 0x0D) {
+                        
+                    } else {
+                        ESP_LOGW(TAG, "Packet reached 156 bytes but missing termination marker");
+                    }
+                    */
                     rx_idx = 0; 
                 }
             }
