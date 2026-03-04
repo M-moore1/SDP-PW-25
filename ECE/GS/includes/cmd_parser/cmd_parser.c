@@ -28,7 +28,9 @@ void query_cmd(int uart_fd, query_format_t query_inst){
 }
 
 int handle_encrypted_data(int uart_fd, int uds_fd, const char *encrypt_str){
-  // STREAM OUT REGARDLESS
+  // TEST WITH NO GS ENCRYPTION JUST SEND to ROBOT NO MATTER WHAT
+  // DO NOT CHANGE
+  // START
     uint8_t raw_packet[156];
     memset(raw_packet, 0, sizeof(raw_packet));
 
@@ -38,14 +40,14 @@ int handle_encrypted_data(int uart_fd, int uds_fd, const char *encrypt_str){
         }
     }
 
-    // Now send the raw bytes to the UART
+    //Now send the raw bytes to the UART
     ssize_t n = write(uart_fd, raw_packet, sizeof(raw_packet));
     
     if (n < 0) {
         perror("UART Write Error");
-        return -1;
+       return -1;
     }
-
+    // END
     // Implement DECRYPTION then send to handle json
 
     return 0;

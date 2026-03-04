@@ -8,12 +8,15 @@
 #include <time.h>
 #include "includes/bt2/bt2.h"
 #include "includes/cmd_structure.h"
-//gcc -O2 -Wall -Wextra test_encrypted.c includes/bt2/bt2.c -I./includes/bt2 -I./includes/cmd_structure -o test_encrypted
+#include "includes/cmd_parser/cmd_parser.h"
+//gcc -O2 -Wall -Wextra test_encrypted.c  includes/json_uds/json_uds.c includes/bt2/bt2.c includes/cmd_parser/cmd_parser.c ./cJSON-master/cJSON.c -I./includes/json_uds -I./includes/bt2 -I./includes/cmd_parser -I./includes/cmd_structure -I./cJSON-master -o test_encrypted
 
 // --- CONFIGURATION ---
 #define byte_test_size 156   // The size of the packet to send/receive
 #define AVG_SAMPLES    100    // Calculate average RTT every 50 packets
 #define SEND_INTERVAL  50    // Send a packet every 50ms
+
+const char *hex_digits = "0123456789ABCDEF";
 
 int main() {
 
@@ -121,6 +124,23 @@ int main() {
                 
                 // Keep your mandatory terminator
                 packet[byte_test_size - 1] = 0x0D;
+
+                char hex_string[(byte_test_size * 2) + 1];
+                for (int i = 0; i < byte_test_size; i++) {
+                    sprintf(&hex_string[i * 2], "%02X", packet[i]);
+                }
+                /*
+                printf("--- HEX STRING REPRESENTATION (312 Chars) ---\r\n");
+                for (int i = 0; i < (byte_test_size * 2); i++) {
+                    printf("%c", hex_string[i]);
+                    
+                    // Every 32 characters (16 raw bytes), start a new line
+                    if ((i + 1) % 32 == 0) {
+                        printf("\r\n");
+                    }
+                }
+                printf("\r\n------------------------------------------\r\n");
+                */
                 /*
                 printf("Sending 256 bytes to UART:\r\n");
                 for (int i = 0; i < 156; i++) {
@@ -132,7 +152,8 @@ int main() {
 
                 
                 message_start = clock() / (CLOCKS_PER_SEC / 1000000);
-                int n = uart_send_encrypted(bt_uart, packet);
+                int n = handle_encrypted_data(bt_uart, 1, hex_string);
+                //int n = uart_send_encrypted(bt_uart, packet);
                 
                 if (n < 0) {
                     perror("UART Write Failed");
