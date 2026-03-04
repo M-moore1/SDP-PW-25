@@ -137,6 +137,23 @@ function App() {
     });
   }, [sendMessage]);
 
+  const handleEncryptionChange = useCallback(
+    (enabled: boolean) => {
+      const msg = {
+        type: 'S',
+        instruction: 0b0011,
+        Authorization_Code: 0x03ff,
+        instruction_specific: enabled ? 1 : 0,
+        priority_level: 1,
+        id: 28,
+      };
+      logMessage(`Encryption ${enabled ? 'enabled' : 'disabled'} (${JSON.stringify(msg)})`);
+      sendMessage(msg);
+      setEncryptionEnabled(enabled);
+    },
+    [sendMessage, logMessage]
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
       <div className="max-w-5xl mx-auto">
@@ -169,7 +186,7 @@ function App() {
               controlSpeed={controlSpeed}
               onControlSpeedChange={setControlSpeed}
               encryptionEnabled={encryptionEnabled}
-              onEncryptionChange={setEncryptionEnabled}
+              onEncryptionChange={handleEncryptionChange}
               hasEncryptionKey={Boolean(ENCRYPTION_KEY)}
               onConnect={handleConnect}
             />
