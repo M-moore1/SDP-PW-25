@@ -248,17 +248,19 @@ int uart_send_str(int uart_fd, char *str) {
   }
 }
 
-int uart_send_encrypted(int uart_fd, uint8_t *packet){
+int uart_send_encrypted(int uart_fd, uint8_t *encrypt_data){
+  // DO NOT CHANGE WITHOUT TALKING
+    uint8_t packet[158];
+    memset(packet, 0, sizeof(packet));
 
-    size_t packet_size = 156; 
-    ssize_t n = write(uart_fd, packet, packet_size);
+    packet[0] = 0x0A;
+    memcpy(&packet[1], encrypt_data, 156);
+    packet[157] = 0x0D;
 
+    ssize_t n = write(uart_fd, packet, sizeof(packet));
+    
     if (n < 0) {
       perror("UART Write Error");
-      return -1;
-    }
-    if (n != (ssize_t)packet_size) {
-      fprintf(stderr, "Short write: sent %zd of %zu bytes\n", n, sizeof(packet));
       return -1;
     }
 
@@ -267,12 +269,13 @@ int uart_send_encrypted(int uart_fd, uint8_t *packet){
 
 
 int uart_send_instruction(int uart_fd, uint64_t instruction) {
-    uint8_t packet[156];
-
+  // DO NOT CHANGE WITHOUT TALKING
+    uint8_t packet[158];
     memset(packet, 0, sizeof(packet));
-    memcpy(packet, &instruction, 8);
-    packet[155] = 0x0D;
 
+    packet[0] = 0x0A;
+    memcpy(&packet[1], &instruction, 8);
+    packet[157] = 0x0D;
 
     ssize_t n = write(uart_fd, packet, sizeof(packet));
     if (n < 0) {

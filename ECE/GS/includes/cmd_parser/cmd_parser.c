@@ -41,14 +41,13 @@ int handle_encrypted_data(int uart_fd, int uds_fd, const char *encrypt_str){
     }
 
     //Now send the raw bytes to the UART
-    ssize_t n = write(uart_fd, raw_packet, sizeof(raw_packet));
-    
+    ssize_t n = uart_send_encrypted(uart_fd, raw_packet);
     if (n < 0) {
         perror("UART Write Error");
        return -1;
     }
     // END
-    // Implement DECRYPTION then send to handle json
+    // Implement DECRYPTION then send to handle json also add json send back feedback
 
     return 0;
 }
