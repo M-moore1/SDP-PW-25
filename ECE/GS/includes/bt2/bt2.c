@@ -248,34 +248,39 @@ int uart_send_str(int uart_fd, char *str) {
   }
 }
 
-int uart_send_instruction(int uart_fd, uint64_t instruction) {
-  //printf("PMOD SENDING: %" PRIu64 "\r\n", instruction);
-  
-  //printf("[TX BYTES]: ");
-  unsigned char *ptr = (unsigned char *)&instruction;
-  for (int i = 0; i < 8; i++) {
-    //printf("%02X ", ptr[i]);
-  }
-  //printf("\r\n");
-  uint8_t packet[9];
-  memcpy(packet, &instruction, 8);
-  packet[8] = 0x0D; // STOP BIT
+int uart_send_encrypted(int uart_fd, uint8_t packet[156]){
 
-  ssize_t n = write(uart_fd, packet, 9);
-  
-  if (n < 0) {
-    if (errno == EAGAIN || errno == EWOULDBLOCK) {
-      return 0; // Non-blocking: buffer full
+    size_t packet_size = 156; 
+    ssize_t n = write(uart_fd, packet, packet_size);
+
+    if (n < 0) {
+      perror("UART Write Error");
+      return -1;
     }
-    perror("UART Write Error");
-    return -1; 
-  }
-
-  if (n != 9) {
-    fprintf(stderr, "Short write: sent %zd of 9 bytes\n", n);
-    return -1; 
-  }
-
-  return 0;
+    if (n != (ssize_t)sizeof(packet)) {
+      fprintf(stderr, "Short write: sent %zd of %zu bytes\n", n, sizeof(packet));
+      return -1;
+    }
 }
 
+
+int uart_send_instruction(int uart_fd, uint64_t instruction) {
+    uint8_t packet[156];
+
+    memset(packet, 0, sizeof(packet));
+    memcpy(packet, &instruction, 8);
+    packet[155] = 0x0D;
+
+
+    ssize_t n = write(uart_fd, packet, sizeof(packet));
+    if (n < 0) {
+        perror("UART Write Error");
+        return -1;
+    }
+    if (n != (ssize_t)sizeof(packet)) {
+        fprintf(stderr, "Short write: sent %zd of %zu bytes\n", n, sizeof(packet));
+        return -1;
+    }
+
+    return 0;
+}
