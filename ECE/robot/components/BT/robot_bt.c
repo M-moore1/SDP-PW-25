@@ -1,7 +1,7 @@
 #include "robot_bt.h"
 
 uint32_t spp_handle = 0;
-uint8_t rx_buf[128]; // Change
+uint8_t rx_buf[156]; // Change
 int rx_idx = 0;
 
 QueueHandle_t bt_recieve_queue = NULL;
@@ -63,11 +63,7 @@ void bt_init(){
 
     print_bt_mac();
 
-<<<<<<< Updated upstream
-    bt_recieve_queue= xQueueCreate(10, 128); // CHANGE
-=======
     bt_recieve_queue= xQueueCreate(10, 156);
->>>>>>> Stashed changes
 
     ESP_LOGI(TAG, "SPP Server Ready");
 }
