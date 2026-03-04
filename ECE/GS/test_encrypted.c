@@ -1,0 +1,168 @@
+#include <fcntl.h>
+#include "conio.c" 
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <termios.h>
+#include <stdint.h>
+#include <time.h>
+#include "includes/bt2/bt2.h"
+#include "includes/cmd_structure.h"
+#include "includes/cmd_parser/cmd_parser.h"
+//gcc -O2 -Wall -Wextra test_encrypted.c  includes/json_uds/json_uds.c includes/bt2/bt2.c includes/cmd_parser/cmd_parser.c ./cJSON-master/cJSON.c -I./includes/json_uds -I./includes/bt2 -I./includes/cmd_parser -I./includes/cmd_structure -I./cJSON-master -o test_encrypted
+
+// --- CONFIGURATION ---
+#define byte_test_size 156   // The size of the packet to send/receive
+#define AVG_SAMPLES    100    // Calculate average RTT every 50 packets
+#define SEND_INTERVAL  50    // Send a packet every 50ms
+
+const char *hex_digits = "0123456789ABCDEF";
+
+int main() {
+
+    int bt_uart = uart_open_config(DEFAULT_UART_DEV, DEFAULT_UART_BAUD); // Opens pmod connections
+    set_conio_terminal_mode(); // turns on keyboard reading
+    
+    long last = 0;
+
+    int speed = 50;
+    int results;
+    int send_security_update = 0;
+
+    int connected = 0;
+    robot_bt_packet_t ack_inst;
+    int send = 0;
+    long message_end = 0;
+    long message_start = 0;
+    long average_time = 0;
+    long average_idx = 0;
+
+    while(1){
+        unsigned char rx_buffer[256]; 
+       
+
+        ssize_t bytes_read = read(bt_uart, rx_buffer, sizeof(rx_buffer));
+        if (bytes_read > 0) {
+            message_end = clock() / (CLOCKS_PER_SEC / 1000000);
+            /*
+            printf("[RX]: ");
+            for (ssize_t i = 0; i < bytes_read; i++) {
+                
+                printf("%c", rx_buffer[i]);
+            }
+            printf("\r\n");
+            printf("[RoundTrip]: %ld us (%.3f ms)\r\n", rtt_us, (double)rtt_us / 1000.0);
+            */
+            if (message_start > 0) {
+                long rtt_us = message_end - message_start;
+                average_time += rtt_us; 
+                average_idx++;
+
+
+                if (average_idx >= AVG_SAMPLES) {
+                    long final_avg = average_time / AVG_SAMPLES;
+                    printf(" STATISTICS FOR %d PACKETS\r\n", AVG_SAMPLES);
+                    printf(" Packet Size: %d bytes\r\n", byte_test_size);
+                    printf(" Avg RTT:    %ld us (%.3f ms)\r\n", final_avg, (double)final_avg / 1000.0);
+
+                
+                    average_time = 0;
+                    average_idx = 0;
+                }
+            }
+            fflush(stdout);
+        }
+        
+        
+        if(kbhit()){
+            char c = getch();
+            if (c == 'q')break;
+
+            // ESP32 #1 004B1224B0A6
+            // ESP32 ROBOT: 44:1D:64:F1:1A:86
+            if (c == 'c'){
+                printf("\nAttempting to connect...\r\n");
+                results = rn42_connect_mac(bt_uart, "441D64F11A86");
+                if (results == 0){
+                    printf("\nAttempt Successful\r\n");
+                    connected = 1;
+                }else{
+                    printf("\nAttempt Failed\r\n");
+                }
+            }
+            if(c == 'v'){
+                printf("Disconnecting\r\n");
+                results = rn42_disconnect(bt_uart);
+                if (results == 0){
+                    printf("Disconnection Successful\r\n");
+                    connected = 0;
+                }else{
+                    printf("Disconnection Failed\r\n");
+                }
+            }
+            if (c == 'b'){
+                results = rn42_connect_check(bt_uart);
+                if (results == 0){
+                    printf("Device Connected\r\n");
+                    connected = 1;
+                }else if (results == 1){
+                    printf("Device Not Connected\r\n");
+                    connected = 0;
+                }else{
+                    printf("Other Error\r\n");
+                }
+            }
+
+        }
+        long now = clock() / (CLOCKS_PER_SEC / 1000); // Current ms
+        if (now - last >= SEND_INTERVAL) { 
+            if (connected == 1) {
+                uint8_t packet[byte_test_size];
+                for (int i = 0; i < byte_test_size; i++) {
+                    packet[i] = (uint8_t)(i % 255); 
+                }
+                
+                // Keep your mandatory terminator
+                packet[byte_test_size - 1] = 0x0D;
+
+                char hex_string[(byte_test_size * 2) + 1];
+                for (int i = 0; i < byte_test_size; i++) {
+                    sprintf(&hex_string[i * 2], "%02X", packet[i]);
+                }
+                /*
+                printf("--- HEX STRING REPRESENTATION (312 Chars) ---\r\n");
+                for (int i = 0; i < (byte_test_size * 2); i++) {
+                    printf("%c", hex_string[i]);
+                    
+                    // Every 32 characters (16 raw bytes), start a new line
+                    if ((i + 1) % 32 == 0) {
+                        printf("\r\n");
+                    }
+                }
+                printf("\r\n------------------------------------------\r\n");
+                */
+                /*
+                printf("Sending 256 bytes to UART:\r\n");
+                for (int i = 0; i < 156; i++) {
+                    printf("%02X ", packet_156[i]);
+                    if ((i + 1) % 16 == 0) printf("\r\n"); 
+                }
+                printf("\r\n");
+                */
+
+                
+                message_start = clock() / (CLOCKS_PER_SEC / 1000000);
+                int n = handle_encrypted_data(bt_uart, 1, hex_string);
+                //int n = uart_send_encrypted(bt_uart, packet);
+                
+                if (n < 0) {
+                    perror("UART Write Failed");
+                }
+            }
+            last = now;
+        } 
+    }
+
+    close(bt_uart);
+    return 0;
+}
