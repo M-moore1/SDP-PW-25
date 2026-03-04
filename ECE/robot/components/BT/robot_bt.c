@@ -1,7 +1,7 @@
 #include "robot_bt.h"
 
 uint32_t spp_handle = 0;
-uint8_t rx_buf[156]; 
+uint8_t rx_buf[128]; // Change
 int rx_idx = 0;
 
 QueueHandle_t bt_recieve_queue = NULL;
@@ -63,7 +63,7 @@ void bt_init(){
 
     print_bt_mac();
 
-    bt_recieve_queue= xQueueCreate(10, sizeof(uint64_t));
+    bt_recieve_queue= xQueueCreate(10, 128); // CHANGE
 
     ESP_LOGI(TAG, "SPP Server Ready");
 }
@@ -116,6 +116,7 @@ void bt_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
             break;
 
         case ESP_SPP_DATA_IND_EVT:
+            // CHANGE ENTIRE LOOP
             for (int i = 0; i < param->data_ind.len; i++) {
                 uint8_t byte = param->data_ind.data[i];
                 printf("rx_buf[%d] = 0x%02X\n", rx_idx, byte);
@@ -133,8 +134,8 @@ void bt_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
 
 
                         
-                        uint64_t full_command;
-                        memcpy(&full_command, rx_buf, 8);
+                        uint8_t processed_cmd[128];
+                        memcpy(processed_cmd, rx_buf, 128);
                         
                         // Using PRIx64 to print the full 64-bit result
                         //printf(">>> Full Command: 0x%016llX\n", (unsigned long long)full_command);
