@@ -39,7 +39,7 @@ endif
 # ----- Targets -----
 .PHONY: all clean test
 
-all: json_serialize aes_gcm_encrypt aes_gcm_decrypt aes_gcm_decrypt_hardcoded
+all: json_serialize aes_gcm_encrypt aes_gcm_decrypt aes_gcm_decrypt_hardcoded aes_gcm_decrypt_split
 
 json_serialize: json_serialize.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(CJSON_CFLAGS) $< -o $@ $(LDFLAGS) $(CJSON_LIBS)
@@ -54,6 +54,10 @@ aes_gcm_decrypt: aes_gcm_decrypt.c
 aes_gcm_decrypt_hardcoded: aes_gcm_decrypt_hardcoded.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(OSSL_CFLAGS) $< -o $@ $(LDFLAGS) $(OSSL_LIBS)
 
+# ---- Split Decrypt ----
+aes_gcm_decrypt_split: aes_gcm_decrypt_split.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(OSSL_CFLAGS) $< -o $@ $(LDFLAGS) $(OSSL_LIBS)
+
 # ---- Test binary for AES-GCM CLI tools ----
 test_aes_gcm: test_aes_gcm.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $< -o $@ $(LDFLAGS)
@@ -64,4 +68,4 @@ test: all test_aes_gcm
 
 clean:
 	rm -f json_serialize aes_gcm_encrypt aes_gcm_decrypt aes_gcm_decrypt_hardcoded test_aes_gcm \
-	      pt.txt enc_out.txt ct.txt dec_out.txt dec_tampered.txt
+	      pt.txt enc_out.txt ct.txt dec_out.txt dec_tampered.txt aes_gcm_decrypt_split
