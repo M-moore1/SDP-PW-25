@@ -1,8 +1,14 @@
 #include "robot_bt.h"
 
+typedef enum {
+    WAITING          = 0x00,  
+    COLLECTING       = 0x01,
+} data_retrieval_t;
+
 uint32_t spp_handle = 0;
 uint8_t rx_buf[156]; // Change
 int rx_idx = 0;
+data_retrieval_t data_collection_mode = WAITING;
 
 QueueHandle_t bt_recieve_queue = NULL;
 
@@ -118,27 +124,31 @@ void bt_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
         case ESP_SPP_DATA_IND_EVT:
             // CHANGE ENTIRE LOOP
             for (int i = 0; i < param->data_ind.len; i++) {
-                
-                if (rx_idx < 156) {
-                    rx_buf[rx_idx] = param->data_ind.data[i];
-                    rx_idx++;
-                }
+                uint8_t current_byte = param->data_ind.data[i];
 
-                if (rx_idx == 156) {
-                    if (xQueueSend(bt_recieve_queue, (void *)rx_buf, (TickType_t)0) != pdPASS) {
-                        ESP_LOGW(TAG, "BT Queue full, dropping packet");
-                    } else {
-                        ESP_LOGI(TAG, "Full packet queued (156 bytes)");
+                if (data_collection_mode == WAITING) {
+                    if (current_byte == 0x0A) {
+                        rx_idx = 0;
+                        data_collection_mode = COLLECTING;
                     }
-                    /*
-                    if (rx_buf[155] == 0x0D) {
-                        
-                    } else {
-                        ESP_LOGW(TAG, "Packet reached 156 bytes but missing termination marker");
+                }else if (data_collection_mode == COLLECTING){
+
+                    if (rx_idx < 156) {
+                        rx_buf[rx_idx] = current_byte;
+                        rx_idx++;
+                    }else{
+                        if (current_byte == 0x0D){
+                            if (xQueueSend(bt_recieve_queue, (void *)rx_buf, (TickType_t)0) != pdPASS) {
+                                ESP_LOGW(TAG, "BT Queue full, dropping packet");
+                            }
+                        }else{
+                            ESP_LOGW(TAG, "Packet reached 156 bytes but missing termination marker");
+                        }
+                        rx_idx = 0; 
+                        data_collection_mode = WAITING;
                     }
-                    */
-                    rx_idx = 0; 
-                }
+
+                }                
             }
             break;
             

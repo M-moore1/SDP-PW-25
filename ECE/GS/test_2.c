@@ -88,7 +88,8 @@ int main() {
             // ESP32 ROBOT: 
             if (c == 'z'){
                 printf("\nAttempting to connect...\r\n");
-                results = rn42_connect_mac(bt_uart, "441d64f17066");
+                // NEW MAC
+                results = rn42_connect_mac(bt_uart, "441d64f11a86");
                 if (results == 0){
                     printf("\nAttempt Successful\r\n");
                     connected = 1;

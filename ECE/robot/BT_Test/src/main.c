@@ -40,6 +40,8 @@ void bt_reciever_parser(void *pvParameters)
             printf("\n");
             printf("End of Bytes");
 
+            // CUT OUT THE STOP AND START BYTES THEN DECRYPT
+
             if (security_flag) {
                 printf("Decrypting bits...\n");
                 
