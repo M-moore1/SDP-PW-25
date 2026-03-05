@@ -34,144 +34,21 @@
 #include "includes/cmd_parser/cmd_parser.h"
 #include "includes/json_uds/json_uds.h"
 
-#include "cJSON.h" // CHANGE                      // cJSON library header (vendored)
+#include "cJSON.h"                     // cJSON library header (vendored)
 // 004B1224B0A6
 // ------------------------- Defaults / Config -------------------------
 
 #define DEFAULT_UDS_PATH "/tmp/gs_bridge.sock" // Socket file path for Node<->C IPC
 #define DEFAULT_UART_DEV "/dev/ttyPS2"         // Default UART device (Zynq PS UART)
 #define DEFAULT_UART_BAUD B115200              // Default baud rate (termios constant)
-#define ESP32_MACADDRESS "441d64f17066"
+#define ESP32_MACADDRESS "441d64f11a86"
 
-// ------------------------- Bit helpers -------------------------
 
-// Extract nbits starting at bit position lo from a 64-bit word, returning up to 32 bits.
-static inline uint32_t get_bits_u32(uint64_t w, int lo, int nbits) {
-  return (uint32_t)((w >> lo) & ((1ULL << nbits) - 1ULL)); // shift down and mask
+int looks_like_json(const char *s) {
+  if (!s) return 0;
+  while (*s == ' ' || *s == '\n' || *s == '\r' || *s == '\t') s++;
+  return (*s == '{' || *s == '[');
 }
-
-// Convert uint64_t to 8 bytes big-endian (network byte order).
-static void u64_to_be(uint64_t w, uint8_t out[8]) {
-  for (int i = 0; i < 8; i++) {                // For each byte
-    out[i] = (uint8_t)(w >> (56 - 8*i));       // Take MSB first, then next, etc.
-  }
-}
-
-// Convert 8 bytes big-endian to uint64_t.
-static uint64_t be_to_u64(const uint8_t in[8]) {
-  uint64_t w = 0;                              // Start at 0
-  for (int i = 0; i < 8; i++) {                // For each incoming byte
-    w = (w << 8) | (uint64_t)in[i];            // Shift left and OR next byte
-  }
-  return w;                                    // Return reconstructed 64-bit word
-}
-
-// Simple XOR checksum over N bytes (cheap v1 integrity check).
-static uint8_t xor8(const uint8_t *p, int n) {
-  uint8_t x = 0;                               // Start checksum at 0
-  for (int i = 0; i < n; i++) x ^= p[i];       // XOR each byte into accumulator
-  return x;                                    // Return final XOR
-}
-// Debug: print bytes in hex (optional but super useful)
-static void dump_hex(const char *tag, const uint8_t *b, size_t n) {
-  printf("%s (%zu): ", tag, n);
-  for (size_t i = 0; i < n; i++) printf("%02X ", b[i]);
-  printf("\n");
-}
-
-/*
-// ------------------------- Unpackers (Robot->Node) -------------------------
-// Decode 64-bit words from ESP32 back into values we can send up to Node as JSON.
-
-typedef struct {
-  uint8_t speed;                               // Bits 5..11
-  uint8_t state;                               // Bit 12 (interpretation TBD)
-  uint8_t motor;                               // Bit 13 (interpretation TBD)
-  uint8_t robot_id;                            // Bits 14..15
-  uint32_t curr_pos;                           // Bits 16..46 (31 bits)
-} StatusSR;
-
-// Unpack SR (Status Report) word into struct.
-static int unpack_SR(uint64_t w, StatusSR *out) {
-  uint8_t type = (uint8_t)get_bits_u32(w, 0, 5);  // Read 5-bit type
-  if (type != TYPE_SR) return -1;                 // Not SR -> error
-
-  out->speed = (uint8_t)get_bits_u32(w, 5, 7);    // 7-bit speed
-  out->state = (uint8_t)get_bits_u32(w, 12, 1);   // 1-bit state
-  out->motor = (uint8_t)get_bits_u32(w, 13, 1);   // 1-bit motor status
-  out->robot_id = (uint8_t)get_bits_u32(w, 14, 2);// 2-bit robot id
-
-  // Curr_Pos is 31 bits starting at bit 16.
-  out->curr_pos = (uint32_t)((w >> 16) & ((1ULL << 31) - 1ULL));
-
-  return 0;                                       // Success
-}
-
-typedef struct {
-  uint8_t battery;                              // Bits 5..11
-  uint8_t signal;                               // Bits 12..17
-  uint8_t security;                             // Bits 18..19
-  uint16_t name_id;                             // Bits 20..31 (index into name table)
-} HealthHR;
-
-// Unpack HR (Health Report) word into struct.
-static int unpack_HR(uint64_t w, HealthHR *out) {
-  uint8_t type = (uint8_t)get_bits_u32(w, 0, 5); // Read type
-  if (type != TYPE_HR) return -1;                // Not HR -> error
-
-  out->battery  = (uint8_t)get_bits_u32(w, 5, 7);  // battery field
-  out->signal   = (uint8_t)get_bits_u32(w, 12, 6); // signal field
-  out->security = (uint8_t)get_bits_u32(w, 18, 2); // security field
-  out->name_id  = (uint16_t)get_bits_u32(w, 20, 12);// name id index
-
-  return 0;                                      // Success
-}
-  */
-
-
-// ------------------------- Robot word -> Node JSON -------------------------
-// Convert incoming robot u64 into JSON string and send back to Node via UDS.
-
-static void robot_word_to_node_json(int uds_fd, uint64_t w) {}
-/*
-{
-  uint8_t type = (uint8_t)get_bits_u32(w, 0, 5);           // Extract 5-bit type
-
-  if (type == TYPE_SR) {                                   // Status report
-    StatusSR sr;                                           // Parsed SR struct
-    if (unpack_SR(w, &sr) == 0) {                          // If decode ok
-      char msg[256];                                       // Output JSON buffer
-      snprintf(msg, sizeof(msg),
-        "{\"type\":\"SR\",\"speed\":%u,\"state\":%u,\"motor\":%u,\"robot_id\":%u,\"curr_pos\":%u}",
-        sr.speed, sr.state, sr.motor, sr.robot_id, sr.curr_pos);
-      uds_send_json(uds_fd, msg);                          // Send JSON to Node
-    }
-  } else if (type == TYPE_HR) {                            // Health report
-    HealthHR hr;                                           // Parsed HR struct
-    if (unpack_HR(w, &hr) == 0) {                          // If decode ok
-      char msg[256];                                       // Output JSON
-      snprintf(msg, sizeof(msg),
-        "{\"type\":\"HR\",\"battery\":%u,\"signal\":%u,\"security\":%u,\"name_id\":%u}",
-        hr.battery, hr.signal, hr.security, hr.name_id);
-      uds_send_json(uds_fd, msg);                          // Send to Node
-    }
-  } else if (type == TYPE_A) {                             // Ack
-    // TODO: once you finalize Ack layout, unpack it here. For now forward raw.
-    char msg[128];
-    snprintf(msg, sizeof(msg), "{\"type\":\"A\",\"raw_u64\":\"%llu\"}",
-             (unsigned long long)w);
-    uds_send_json(uds_fd, msg);
-  } else if (type == TYPE_HPR) {                           // High priority report
-    // TODO: once you finalize HPR layout, unpack it here. For now forward raw.
-    char msg[128];
-    snprintf(msg, sizeof(msg), "{\"type\":\"HPR\",\"raw_u64\":\"%llu\"}",
-             (unsigned long long)w);
-    uds_send_json(uds_fd, msg);
-  } else {
-    // Unknown type -> ignore for now (or forward raw if you want).
-  }
-}
-*/
 
 
 // ------------------------- Main -------------------------
@@ -282,8 +159,27 @@ int main(int argc, char **argv) {
         }
 
         buf[len] = '\0';                                   // Null-terminate JSON string
-        printf("UDS->C got JSON: %s\n", buf);
-        handle_node_json(uart_fd, uds_client, buf);         // Parse + pack + send to UART
+        int handled = 0;
+
+        // Fast path: if it looks like JSON and parses, treat as plaintext JSON
+        if (looks_like_json(buf)) {
+          printf("I GOT a JSON\r\n");
+          cJSON *probe = cJSON_Parse(buf);
+          if (probe) {
+            cJSON_Delete(probe);
+            printf("UDS->C plaintext JSON\n");
+            handle_node_json(uart_fd, uds_client, buf);
+            handled = 1;
+          }
+        }
+        // If not handled, attempt decrypt path or send raw string over Bluetooth
+        if (!handled) {
+          printf("I GOT SOMETHING ENCRYPTED\r\n");
+          handle_encrypted_data(uart_fd, uds_client, buf);
+        }
+
+        printf("\r\n Recieved Data:\r\n");
+        printf("%s \r\n", buf);
 
         free(buf);                                         // Free buffer
       }
@@ -298,7 +194,7 @@ int main(int argc, char **argv) {
           uint64_t word = 0;                                // Output word
           //int got = uart_parser_feed(&up, tmp[i], &word);   // Parser state update
           //if (got == 1 && uds_client >= 0) {                // If we got a complete frame
-            robot_word_to_node_json(uds_client, word);      // Convert to JSON and send to Node
+            //robot_word_to_node_json(uds_client, word);      // Convert to JSON and send to Node
           //}
         }
       }

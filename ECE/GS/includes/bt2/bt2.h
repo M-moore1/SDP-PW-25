@@ -23,6 +23,7 @@ int rn42_disconnect(int uart_fd);
 int rn42_connect_check(int uart_fd);
 
 int uart_send_str(int uart_fd, char * str);
+int uart_send_encrypted(int uart_fd, uint8_t *packet);
 int uart_send_instruction(int uart_fd, uint64_t instruction);
 
 

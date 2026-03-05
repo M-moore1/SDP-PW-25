@@ -25,21 +25,28 @@ static QueueHandle_t cmd_queue = NULL;
 
 void bt_reciever_parser(void *pvParameters)
 {
-    uint64_t received_cmd;
+    uint8_t received_packet[156]; 
 
     while (1) {
-        if (xQueueReceive(bt_recieve_queue, &received_cmd, portMAX_DELAY)) {
-            
-            
-            if(security_flag) {
-                printf("\nDecrypting bits...");
+        if (xQueueReceive(bt_recieve_queue, received_packet, portMAX_DELAY)) {
+            const char *acknowledge = "Bytes Recieved\n";
+            esp_spp_write(spp_handle, strlen(acknowledge), (uint8_t *)acknowledge);
+            printf("Received 156 bytes: \n");
+
+            for (int i = 0; i < 156; i++) {
+                printf("%02X ", received_packet[i]);
+                if ((i + 1) % 16 == 0) printf("\n"); 
+            }
+            printf("\n");
+            printf("End of Bytes");
+
+            // Send to get decrypted if need bee
+            if (security_flag) {
+                printf("Decrypting bits...\n");
                 
             }
 
-            // ADD PRIORITY
-
-            // 3. Send the finalized packet to the main robot controller
-            if (xQueueSend(cmd_queue, &received_cmd, 0) != pdPASS) {
+            if (xQueueSend(cmd_queue, received_packet, 0) != pdPASS) {
                 ESP_LOGW(TAG, "cmd_queue full");
             }
         }

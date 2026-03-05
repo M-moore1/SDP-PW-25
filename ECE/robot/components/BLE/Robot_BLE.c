@@ -17,6 +17,7 @@ static const uint8_t robot_measurement_ccc[2]      = {0x00, 0x00};
 
 QueueHandle_t ble_recieve_queue = NULL;
 
+
 static uint8_t service_uuid[16] = {
     /* LSB <--------------------------------------------------------------------------------> MSB */
     //first uuid, 16bit, [12],[13] is the value

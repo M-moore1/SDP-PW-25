@@ -27,6 +27,31 @@ void query_cmd(int uart_fd, query_format_t query_inst){
 
 }
 
+int handle_encrypted_data(int uart_fd, int uds_fd, const char *encrypt_str){
+  // TEST WITH NO GS ENCRYPTION JUST SEND to ROBOT NO MATTER WHAT
+  // DO NOT CHANGE
+  // START
+    uint8_t raw_packet[156];
+    memset(raw_packet, 0, sizeof(raw_packet));
+
+    for (int i = 0; i < 156; i++) {
+        if (sscanf(&encrypt_str[i * 2], "%2hhx", &raw_packet[i]) != 1) {
+            break; 
+        }
+    }
+
+    //Now send the raw bytes to the UART
+    ssize_t n = uart_send_encrypted(uart_fd, raw_packet);
+    if (n < 0) {
+        perror("UART Write Error");
+       return -1;
+    }
+    // END
+    // Implement DECRYPTION then send to handle json also add json send back feedback
+
+    return 0;
+}
+
 // ------------------------- Handle Node JSON -------------------------
 // Parse incoming JSON from Node and transmit appropriate 64-bit word(s) over UART.
 int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
@@ -145,7 +170,9 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
 
   if (security_level) {
     // TODO: Wrap packet.raw in AES-GCM 33-byte envelope here
-    // return uart_send_encrypted(uart_fd, packet.raw);
+    
+        // return uart_send_encrypted(uart_fd, packet.raw);
+    
   }
   // TODO add priority Queue   
   return uart_send_instruction(uart_fd, packet.raw);

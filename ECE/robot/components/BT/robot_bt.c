@@ -1,8 +1,14 @@
 #include "robot_bt.h"
 
+typedef enum {
+    WAITING          = 0x00,  
+    COLLECTING       = 0x01,
+} data_retrieval_t;
+
 uint32_t spp_handle = 0;
-uint8_t rx_buf[9]; 
+uint8_t rx_buf[156]; // Change
 int rx_idx = 0;
+data_retrieval_t data_collection_mode = WAITING;
 
 QueueHandle_t bt_recieve_queue = NULL;
 
@@ -63,7 +69,7 @@ void bt_init(){
 
     print_bt_mac();
 
-    bt_recieve_queue= xQueueCreate(10, sizeof(uint64_t));
+    bt_recieve_queue= xQueueCreate(10, 156);
 
     ESP_LOGI(TAG, "SPP Server Ready");
 }
@@ -117,27 +123,31 @@ void bt_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
 
         case ESP_SPP_DATA_IND_EVT:
             for (int i = 0; i < param->data_ind.len; i++) {
-                uint8_t byte = param->data_ind.data[i];
-                printf("rx_buf[%d] = 0x%02X\n", rx_idx, byte);
+                uint8_t current_byte = param->data_ind.data[i];
 
-                rx_buf[rx_idx] = byte;
-                rx_idx++;
-
-                if (rx_idx == 9) {
-                    if(rx_buf[8] == 0x0D) {
-                        //printf(">>> Packet Valid. Sending to Queue.\n");
-                        uint64_t full_command;
-                        memcpy(&full_command, rx_buf, 8);
-                        
-                        // Using PRIx64 to print the full 64-bit result
-                        //printf(">>> Full Command: 0x%016llX\n", (unsigned long long)full_command);
-
-                        xQueueSend(bt_recieve_queue, &full_command, 0);
+                if (data_collection_mode == WAITING) {
+                    if (current_byte == 0x0A) {
+                        rx_idx = 0;
+                        data_collection_mode = COLLECTING;
                     }
-                    
-                    // Reset for next packet
-                    rx_idx = 0; 
-                }
+                }else if (data_collection_mode == COLLECTING){
+
+                    if (rx_idx < 156) {
+                        rx_buf[rx_idx] = current_byte;
+                        rx_idx++;
+                    }else{
+                        if (current_byte == 0x0D){
+                            if (xQueueSend(bt_recieve_queue, (void *)rx_buf, (TickType_t)0) != pdPASS) {
+                                ESP_LOGW(TAG, "BT Queue full, dropping packet");
+                            }
+                        }else{
+                            ESP_LOGW(TAG, "Packet reached 156 bytes but missing termination marker");
+                        }
+                        rx_idx = 0; 
+                        data_collection_mode = WAITING;
+                    }
+
+                }                
             }
             break;
             
