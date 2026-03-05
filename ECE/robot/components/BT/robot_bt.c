@@ -122,7 +122,6 @@ void bt_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
             break;
 
         case ESP_SPP_DATA_IND_EVT:
-            // CHANGE ENTIRE LOOP
             for (int i = 0; i < param->data_ind.len; i++) {
                 uint8_t current_byte = param->data_ind.data[i];
 
