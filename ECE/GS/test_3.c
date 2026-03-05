@@ -10,15 +10,15 @@
 #include "includes/cmd_structure.h"
 //gcc -O2 -Wall -Wextra test_3.c includes/bt2/bt2.c -I./includes/bt2 -I./includes/cmd_structure -o test_3
 
-// --- CONFIGURATION ---
-#define byte_test_size 156   // The size of the packet to send/receive
-#define AVG_SAMPLES    100    // Calculate average RTT every 50 packets
-#define SEND_INTERVAL  50    // Send a packet every 50ms
+
+#define byte_test_size 156   
+#define AVG_SAMPLES    50    
+#define SEND_INTERVAL  50
 
 int main() {
 
-    int bt_uart = uart_open_config(DEFAULT_UART_DEV, DEFAULT_UART_BAUD); // Opens pmod connections
-    set_conio_terminal_mode(); // turns on keyboard reading
+    int bt_uart = uart_open_config(DEFAULT_UART_DEV, DEFAULT_UART_BAUD); 
+    set_conio_terminal_mode();
     
     long last = 0;
 
@@ -33,6 +33,7 @@ int main() {
     long message_start = 0;
     long average_time = 0;
     long average_idx = 0;
+    int trial_count = 0;
 
     while(1){
         unsigned char rx_buffer[256]; 
@@ -58,13 +59,14 @@ int main() {
 
                 if (average_idx >= AVG_SAMPLES) {
                     long final_avg = average_time / AVG_SAMPLES;
-                    printf(" STATISTICS FOR %d PACKETS\r\n", AVG_SAMPLES);
-                    printf(" Packet Size: %d bytes\r\n", byte_test_size);
-                    printf(" Avg RTT:    %ld us (%.3f ms)\r\n", final_avg, (double)final_avg / 1000.0);
+                    printf(" Stats for every %d packets Trial Number: %d\r\n", AVG_SAMPLES, trial_count);
+                    printf(" Packet Size: %d bytes\r\n", byte_test_size+2);
+                    printf(" Avg RTT:    %ld us (%.3f ms)\r\n\r\n", final_avg, (double)final_avg / 1000.0);
 
                 
                     average_time = 0;
                     average_idx = 0;
+                    trial_count++;
                 }
             }
             fflush(stdout);
@@ -111,7 +113,8 @@ int main() {
             }
 
         }
-        long now = clock() / (CLOCKS_PER_SEC / 1000); // Current ms
+
+        long now = clock() / (CLOCKS_PER_SEC / 1000); 
         if (now - last >= SEND_INTERVAL) { 
             if (connected == 1) {
                 uint8_t packet[byte_test_size];
@@ -119,8 +122,6 @@ int main() {
                     packet[i] = (uint8_t)(i % 255); 
                 }
                 
-                // Keep your mandatory terminator
-                packet[byte_test_size - 1] = 0x0D;
                 /*
                 printf("Sending 256 bytes to UART:\r\n");
                 for (int i = 0; i < 156; i++) {
@@ -132,7 +133,7 @@ int main() {
 
                 
                 message_start = clock() / (CLOCKS_PER_SEC / 1000000);
-                ssize_t n = write(bt_uart, packet, byte_test_size);
+                int n = uart_send_encrypted(bt_uart, packet);
                 
                 if (n < 0) {
                     perror("UART Write Failed");

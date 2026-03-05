@@ -34,7 +34,7 @@
 #include "includes/cmd_parser/cmd_parser.h"
 #include "includes/json_uds/json_uds.h"
 
-#include "cJSON.h" // CHANGE                      // cJSON library header (vendored)
+#include "cJSON.h"                     // cJSON library header (vendored)
 // 004B1224B0A6
 // ------------------------- Defaults / Config -------------------------
 
@@ -178,10 +178,8 @@ int main(int argc, char **argv) {
           handle_encrypted_data(uart_fd, uds_client, buf);
         }
 
-
-
-        printf("UDS->C got JSON: %s\n", buf);
-        handle_node_json(uart_fd, uds_client, buf);         // Parse + pack + send to UART
+        printf("\r\n Recieved Data:\r\n");
+        printf("%s \r\n", buf);
 
         free(buf);                                         // Free buffer
       }
@@ -196,7 +194,7 @@ int main(int argc, char **argv) {
           uint64_t word = 0;                                // Output word
           //int got = uart_parser_feed(&up, tmp[i], &word);   // Parser state update
           //if (got == 1 && uds_client >= 0) {                // If we got a complete frame
-            robot_word_to_node_json(uds_client, word);      // Convert to JSON and send to Node
+            //robot_word_to_node_json(uds_client, word);      // Convert to JSON and send to Node
           //}
         }
       }

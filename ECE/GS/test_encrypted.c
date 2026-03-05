@@ -11,17 +11,17 @@
 #include "includes/cmd_parser/cmd_parser.h"
 //gcc -O2 -Wall -Wextra test_encrypted.c  includes/json_uds/json_uds.c includes/bt2/bt2.c includes/cmd_parser/cmd_parser.c ./cJSON-master/cJSON.c -I./includes/json_uds -I./includes/bt2 -I./includes/cmd_parser -I./includes/cmd_structure -I./cJSON-master -o test_encrypted
 
-// --- CONFIGURATION ---
-#define byte_test_size 156   // The size of the packet to send/receive
-#define AVG_SAMPLES    100    // Calculate average RTT every 50 packets
-#define SEND_INTERVAL  50    // Send a packet every 50ms
+
+#define byte_test_size 156   
+#define AVG_SAMPLES    100    
+#define SEND_INTERVAL  50    
 
 const char *hex_digits = "0123456789ABCDEF";
 
 int main() {
 
-    int bt_uart = uart_open_config(DEFAULT_UART_DEV, DEFAULT_UART_BAUD); // Opens pmod connections
-    set_conio_terminal_mode(); // turns on keyboard reading
+    int bt_uart = uart_open_config(DEFAULT_UART_DEV, DEFAULT_UART_BAUD); 
+    set_conio_terminal_mode(); 
     
     long last = 0;
 
@@ -36,6 +36,7 @@ int main() {
     long message_start = 0;
     long average_time = 0;
     long average_idx = 0;
+    int trial_count = 0;
 
     while(1){
         unsigned char rx_buffer[256]; 
@@ -61,13 +62,14 @@ int main() {
 
                 if (average_idx >= AVG_SAMPLES) {
                     long final_avg = average_time / AVG_SAMPLES;
-                    printf(" STATISTICS FOR %d PACKETS\r\n", AVG_SAMPLES);
+                    printf(" Stats for every %d packets Trial Number: %d\r\n", AVG_SAMPLES, trial_count);
                     printf(" Packet Size: %d bytes\r\n", byte_test_size);
-                    printf(" Avg RTT:    %ld us (%.3f ms)\r\n", final_avg, (double)final_avg / 1000.0);
+                    printf(" Avg RTT:    %ld us (%.3f ms)\r\n\r\n", final_avg, (double)final_avg / 1000.0);
 
                 
                     average_time = 0;
                     average_idx = 0;
+                    trial_count++;
                 }
             }
             fflush(stdout);
@@ -114,23 +116,21 @@ int main() {
             }
 
         }
-        long now = clock() / (CLOCKS_PER_SEC / 1000); // Current ms
+
+        long now = clock() / (CLOCKS_PER_SEC / 1000); 
         if (now - last >= SEND_INTERVAL) { 
             if (connected == 1) {
                 uint8_t packet[byte_test_size];
                 for (int i = 0; i < byte_test_size; i++) {
                     packet[i] = (uint8_t)(i % 255); 
                 }
-                
-                // Keep your mandatory terminator
-                packet[byte_test_size - 1] = 0x0D;
 
                 char hex_string[(byte_test_size * 2) + 1];
                 for (int i = 0; i < byte_test_size; i++) {
                     sprintf(&hex_string[i * 2], "%02X", packet[i]);
                 }
                 /*
-                printf("--- HEX STRING REPRESENTATION (312 Chars) ---\r\n");
+                printf("HEX STRING REPRESENTATION (312 Chars)\r\n");
                 for (int i = 0; i < (byte_test_size * 2); i++) {
                     printf("%c", hex_string[i]);
                     
