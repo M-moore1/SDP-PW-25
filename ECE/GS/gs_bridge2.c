@@ -41,7 +41,7 @@
 #define DEFAULT_UDS_PATH "/tmp/gs_bridge.sock" // Socket file path for Node<->C IPC
 #define DEFAULT_UART_DEV "/dev/ttyPS2"         // Default UART device (Zynq PS UART)
 #define DEFAULT_UART_BAUD B115200              // Default baud rate (termios constant)
-#define ESP32_MACADDRESS "441d64f17066"
+#define ESP32_MACADDRESS "441d64f11a86"
 
 
 int looks_like_json(const char *s) {

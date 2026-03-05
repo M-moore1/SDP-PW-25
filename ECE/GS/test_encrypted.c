@@ -13,7 +13,7 @@
 
 
 #define byte_test_size 156   
-#define AVG_SAMPLES    100    
+#define AVG_SAMPLES    50    
 #define SEND_INTERVAL  50    
 
 const char *hex_digits = "0123456789ABCDEF";
