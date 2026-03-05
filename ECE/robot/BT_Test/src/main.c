@@ -35,13 +35,12 @@ void bt_reciever_parser(void *pvParameters)
 
             for (int i = 0; i < 156; i++) {
                 printf("%02X ", received_packet[i]);
-                if ((i + 1) % 16 == 0) printf("\n"); // New line every 16 bytes for readability
+                if ((i + 1) % 16 == 0) printf("\n"); 
             }
             printf("\n");
             printf("End of Bytes");
 
-            // CUT OUT THE STOP AND START BYTES THEN DECRYPT
-
+            // Send to get decrypted if need bee
             if (security_flag) {
                 printf("Decrypting bits...\n");
                 
