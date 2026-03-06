@@ -13,10 +13,6 @@
 #include "pinout.h"
 #include "robot_commands.h"
 
-#include "sdkconfig.h"
-#include <wolfssl/wolfcrypt/settings.h>  // pulls in user_settings.h
-#include <wolfssl/wolfcrypt/aes.h>
-
 #include "aes_gcm_decrypt.h"
 
 step_mot_t test_motor;
