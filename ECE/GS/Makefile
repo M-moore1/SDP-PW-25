@@ -15,7 +15,7 @@ SRCS = gs_bridge2.c \
        includes/cmd_parser/cmd_parser.c \
        $(CJSON_DIR)/cJSON.c
 
-TARGET = gs_bridge2
+TARGET = gs_bridge2.o
 
 all: $(TARGET)
 

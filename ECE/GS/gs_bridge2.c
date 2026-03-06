@@ -11,8 +11,8 @@
 //   4-byte big-endian length, then JSON bytes
 //
 // Build example:
-//   gcc -O2 -Wall -Wextra gs_bridge2.c cJSON.c -o gs_bridge
-//   gcc -O2 -Wall -Wextra gs_bridge2.c includes/json_uds/json_uds.c includes/bt2/bt2.c includes/cmd_parser/cmd_parser.c -I./includes/json_uds -I./includes/bt2 -I./includes/cmd_parser -I./includes/cmd_structure -lcjson -o gs_bridge2
+//   make all
+//   make clean
 // -----------------------------------------------------------------------------
 
 #define _GNU_SOURCE                     // Enables some GNU extensions (safe on Linux)

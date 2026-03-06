@@ -8,7 +8,7 @@
 #include <time.h>
 #include "includes/bt2/bt2.h"
 #include "includes/cmd_structure.h"
-//gcc -O2 -Wall -Wextra test_2.c includes/bt2/bt2.c -I./includes/bt2 -I./includes/cmd_structure -o test_2
+//gcc -O2 -Wall -Wextra test_2.c includes/bt2/bt2.c -I./includes/bt2 -I./includes/cmd_structure -o test_2.o
 
 
 
