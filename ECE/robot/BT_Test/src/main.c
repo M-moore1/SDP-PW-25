@@ -13,6 +13,7 @@
 #include "pinout.h"
 #include "robot_commands.h"
 
+#include "aes_gcm_decrypt.h"
 
 step_mot_t test_motor;
 
@@ -43,7 +44,14 @@ void bt_reciever_parser(void *pvParameters)
             // Send to get decrypted if need bee
             if (security_flag) {
                 printf("Decrypting bits...\n");
-                
+                char plaintext[256];
+                size_t pt_len = 0;
+                int ret = aes_gcm_decrypt_packet(received_packet, plaintext, &pt_len);
+                if (ret == 0) {
+                    printf("Plaintext: %s\n", plaintext);
+                } else {
+                    printf("Decryption failed: %d\n", ret);
+                }
             }
 
             if (xQueueSend(cmd_queue, received_packet, 0) != pdPASS) {
