@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include "uart_queue.h"
 
 volatile int ble_cmd_state = 0;
 volatile int ble_connect_state = 0;
@@ -47,62 +48,61 @@ int uart_open_config(const char *dev, speed_t baud) {
   return fd;                                           // Return UART fd
 }
 
-
+int ble_uart_write(int uart_fd, const char *str, int size)
+{
+    int result = write(uart_fd, str, size);
+    if (result < 0)
+    {
+        perror("UART write failed");
+        return -1;
+    }
+    return result;
+}
 
 int ble_enter_cmd(int uart_fd){
-    char buffer[32];
+    char buffer[256];
     int n, results;
+
     ble_cmd_state = 0;
 
-    results = write(uart_fd, "$$$", 3);
-    if (results < 0) {
-        perror("UART write failed");
-        return -1;
-    }
+    if (ble_uart_write(uart_fd, "$$$", 3) < 0) return -1;
+
     msleep(25);
 
-    memset(buffer, 0, sizeof(buffer));
-    n = read(uart_fd, buffer, sizeof(buffer) - 1);
-    printf("[PMOD RESPONSE]: %s\r\n", buffer);
-    
+    n = uart_read_and_queue(uart_fd, buffer, sizeof(buffer));
+
     if (n > 0 && strstr(buffer, "CMD>")) {
         ble_cmd_state = 1;
-        return 0; 
+        return 0;
     }
 
-    results = write(uart_fd, "UNKNOWN\r", 8); 
-    if (results < 0) {
-        perror("UART write failed");
-        return -1;
-    }
+    if (ble_uart_write(uart_fd, "UNKNOWN\r", 8) < 0) return -1;
+
     msleep(25);
 
-    memset(buffer, 0, sizeof(buffer));
-    n = read(uart_fd, buffer, sizeof(buffer) - 1);
-    printf("[PMOD RESPONSE]: %s\r\n", buffer);
-    
+    n = uart_read_and_queue(uart_fd, buffer, sizeof(buffer));
+
     if (n > 0 && strstr(buffer, "Err") != NULL) {
         ble_cmd_state = 1;
-        return 1; 
+        return 1;
     }
 
-    return -1; 
+    return -1;
 }
 
 int ble_exit_cmd(int uart_fd) {
-    char buffer[16];
+    char buffer[256];
     
     if (write(uart_fd, "TESTING\r", 8) != 8) return -1;
     msleep(10);
     
-    tcflush(uart_fd, TCIFLUSH);
 
     if (write(uart_fd, "---\r", 5) != 5) return -1;
     msleep(500); 
 
     memset(buffer, 0, sizeof(buffer));
     if (read(uart_fd, buffer, sizeof(buffer) - 1) > 0) {
-      //printf("[PMOD RESPONSE]: %s\r\n", buffer);
+      printf("[PMOD RESPONSE]: %s\r\n", buffer);
       if (strstr(buffer, "END")) {
         ble_cmd_state = 0;
         return 0; 
@@ -284,8 +284,9 @@ int ble_disconnect(int uart_fd) {
 
 
 //TODO BLE INIT
-// THEN Connection Status Chevk print entire buffer
 int ble_init(int uart_fd){
+    uart_queue_init(&uart_queue);
+
     ble_enter_cmd(uart_fd);
     if (write(uart_fd, "K,1\r", 4) != 4) {
         perror("UART write failed");

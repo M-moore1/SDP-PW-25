@@ -8,7 +8,8 @@
 #include <time.h>
 #include "../includes/ble/ble.h"
 #include "../includes/cmd_structure.h"
-//gcc -O2 -Wall -Wextra test_ble.c ../includes/ble/ble.c -I../includes -o test_ble
+#include "../includes/ble/uart_queue.h"
+//gcc -O2 -Wall -Wextra test_ble.c ../includes/ble/ble.c ../includes/ble/uart_queue.c -I../includes -o test_ble.o
 
 
 #define byte_test_size 156   
@@ -38,31 +39,50 @@ int main() {
 
     int start = 0;
     int output_indx = 0;
+    unsigned char output[256];
     
     while(1){
-        unsigned char rx_buffer[256]; 
-        unsigned char output[256]; 
+        char msg[256];
+        if (uart_queue_pop(&uart_queue, msg) == 0)
+        {
+            printf("UART READ: %s\r\n", msg);
+            /*
+            size_t len = strlen(msg);
+            for (size_t i = 0; i < len; i++)
+            {
+                unsigned char c = msg[i];
 
-       ssize_t bytes_read = read(bt_uart, rx_buffer, sizeof(rx_buffer) - 1); // leave space for '\0'
-        if (bytes_read > 0) {
-            for (bytes_read){
-                if(bytes_read[i] = '%'){
-                    if(start == 0){
-                        output[0] = bytes_read[i];
-                        output_indx = 1;
-                        start = 1;
-                    }else{
-                        output[output_indx] = '%';
-                        output[output_indx+1] = '\0';
-                        print(output)
-                        output_indx = 0;
-                        start = 0;
-                    }
-                } 
+                if (c == '#')
+                {
+                    // Start of packet
+                    start = 1;
+                    output_indx = 0;
+                    output[output_indx++] = c;
+                }
+                else if (c == '%' && start)
+                {
+                    // End of packet
+                    if (output_indx < sizeof(output) - 1)
+                        output[output_indx++] = c;
+
+                    output[output_indx] = '\0';
+
+                    printf("Received packet: %s\r\n", output);
+
+                    start = 0;
+                    output_indx = 0;
+                }
+                else if (start)
+                {
+                    // Collect packet contents
+                    if (output_indx < sizeof(output) - 1)
+                        output[output_indx++] = c;
+                }
             }
-
+            */
         }
-        
+            
+            
         if(kbhit()){
             char c = getch();
             if (c == 'q')break;
