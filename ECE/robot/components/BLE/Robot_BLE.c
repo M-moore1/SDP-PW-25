@@ -15,7 +15,17 @@ static const uint8_t char_prop_read_write_notify   = ESP_GATT_CHAR_PROP_BIT_WRIT
 static const uint16_t character_client_config_uuid = ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
 static const uint8_t robot_measurement_ccc[2]      = {0x00, 0x00};
 
+typedef enum {
+    WAITING          = 0x00,  
+    COLLECTING       = 0x01,
+} data_retrieval_t;
+
+uint32_t spp_handle = 0;
+uint8_t rx_buf[156]; 
+int rx_idx = 0;
+data_retrieval_t data_collection_mode = WAITING;
 QueueHandle_t ble_recieve_queue = NULL;
+
 
 
 static uint8_t service_uuid[16] = {
@@ -106,7 +116,7 @@ void robot_ble_init(){
     ESP_ERROR_CHECK(esp_bluedroid_init());
     ESP_ERROR_CHECK(esp_bluedroid_enable());
 
-    ble_recieve_queue = xQueueCreate(10, sizeof(char *));
+    ble_recieve_queue = xQueueCreate(10, 156);
 
     if (ble_recieve_queue == NULL) {
         ESP_LOGE(GATTS_TABLE_TAG, "Queue creation failed!");
@@ -236,22 +246,12 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
                         notify_enabled = false;
                     }
                 }else if (param->write.handle == robot_handle_table[ROBOT_IDX_VAL]) {
+                    memcpy(rx_buf, param->write.value, param->write.len);
+                    rx_buf[param->write.len] = '\0';
 
-                    ESP_LOGI(GATTS_TABLE_TAG, "Robot Command Received:");
-
-                    //ESP_LOG_BUFFER_HEX(GATTS_TABLE_TAG, param->write.value, param->write.len);
-                    //ESP_LOGI(GATTS_TABLE_TAG, "Received Text: %.*s", param->write.len, (char *)param->write.value);
-
-                    char *msg_copy = malloc(param->write.len + 1);
-                    memcpy(msg_copy, param->write.value, param->write.len);
-                    msg_copy[param->write.len] = '\0';
-
-                    
-                    if (xQueueSend(ble_recieve_queue, &msg_copy, 0) != pdPASS) {
+                    if (xQueueSend(ble_recieve_queue, (void *)rx_buf, (TickType_t)0) != pdPASS) {
                         ESP_LOGE(GATTS_TABLE_TAG, "Queue full, freeing memory");
-                        free(msg_copy); 
                     }
-                    
                 }
                 
 

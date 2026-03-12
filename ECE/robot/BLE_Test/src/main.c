@@ -12,47 +12,20 @@ static QueueHandle_t cmd_queue = NULL;
 // Type "BACKWARD" to move the motor direction 1 for 1 second
 void ble_recieve_parser(void *pvParameters)
 {
-    char *received_cmd;
+    uint8_t received_packet[156]; 
 
     while (1) {
-        if (xQueueReceive(ble_recieve_queue, &received_cmd, portMAX_DELAY))
+        if (xQueueReceive(ble_recieve_queue, &received_packet, portMAX_DELAY))
         {   
-            // DECRYPTION ADDITION
-                // Could add some checks to see if encryption fits the length 
-            //TESTING NOT NEEDED IN FINAL
-            printf("\nInformation sent from BLE: %s\n", received_cmd);
-            char *str = received_cmd;
-            char *end;
+            printf("Received 156 bytes: \n");
 
-            if(strcmp(str, "FORWARD") == 0){
-                printf("Motor Start Move Forward");
-                for(int i = 0; i < 50; i++){
-                    motor_pulse(&test_motor, 50, 0);
-                    vTaskDelay(pdMS_TO_TICKS(50));
-                }
-                printf("Motor Stop Moving Forward");
-                
-            }else if (strcmp(str, "BACKWARD") == 0){
-                printf("Motor Start to Move Backward");
-                for(int i = 0; i < 50; i++){
-                    motor_pulse(&test_motor, 50, 1);
-                    vTaskDelay(pdMS_TO_TICKS(50));
-                }
-                printf("Motor Start to Move Backward");
+            for (int i = 0; i < 156; i++) {
+                printf("%02X ", received_packet[i]);
+                if ((i + 1) % 16 == 0) printf("\n"); 
             }
-            // END OF TEST ONLY CODE
-            uint64_t inst = strtoull(str, &end, 2); // Checks if all sent string is 1s and 0s
-
-            if (*end == '\0'){
-                // Check priority and add to command queue
-                if (xQueueSend(cmd_queue, &inst, 0) != pdPASS) {
-                    ESP_LOGW(GATTS_TABLE_TAG, "Command queue full");
-                }
-            } else {
-                ESP_LOGW(GATTS_TABLE_TAG, "Invalid binary string: %s", str);
-            }
-
-            free(received_cmd);
+            printf("\n");
+            printf("End of Bytes");
+          
         }
     }
 }
