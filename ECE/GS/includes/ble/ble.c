@@ -202,10 +202,10 @@ int ble_connect_mac(int uart_fd, const char *mac){
                 if (strstr(buffer, "DISCONNECT") != NULL){
                     return -1;
                 }
-                //if(!ble_enter_client_mode(uart_fd)){ 
-                    //ble_connect_state = 1;
-                    //return 0; 
-                //}
+                if(!ble_enter_client_mode(uart_fd)){ 
+                    ble_connect_state = 1;
+                    return 0; 
+                }
                 return 1;
             }
 
