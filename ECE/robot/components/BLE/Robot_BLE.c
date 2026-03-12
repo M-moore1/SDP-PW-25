@@ -233,7 +233,7 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
         case ESP_GATTS_WRITE_EVT:
         {
             if (!param->write.is_prep) {
-
+                /*
                 ESP_LOGI(GATTS_TABLE_TAG, "Write event, handle=%d len=%d", 
                         param->write.handle,
                         param->write.len);
@@ -241,7 +241,7 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
                 ESP_LOG_BUFFER_HEX(GATTS_TABLE_TAG,
                                 param->write.value,
                                 param->write.len);
-
+                */
                 if (param->write.handle == robot_handle_table[ROBOT_IDX_CFG]){
                     uint16_t descr_value =
                         param->write.value[1] << 8 |
