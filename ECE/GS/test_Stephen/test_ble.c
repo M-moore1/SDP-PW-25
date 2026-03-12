@@ -42,6 +42,7 @@ int main() {
     unsigned char output[256];
     
     while(1){
+        ble_uart_check(bt_uart);
         char msg[256];
         if (uart_queue_pop(&uart_queue, msg) == 0)
         {
@@ -133,6 +134,20 @@ int main() {
                 }else{
                     printf("Disconnection Failed\r\n");
                 }
+            }
+            if (c == 'b'){
+                printf("Checking Connection Status\r\n");
+                results = ble_connect_check(bt_uart);
+                if(results == 0){
+                    printf("Connected\r\n");
+                }else{
+                    printf("Not Connected\r\n");
+                }
+            }
+            if( c == 'a'){
+                char *msg_send = "464F5257415244";
+                printf("MSG: %s \r\n", msg_send);
+                uart_send_str(bt_uart, msg_send, strlen(msg_send));
             }
 
         }

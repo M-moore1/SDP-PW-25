@@ -21,5 +21,6 @@ void uart_queue_init(uart_queue_t *q);
 int uart_queue_push(uart_queue_t *q, const char *msg);
 int uart_queue_pop(uart_queue_t *q, char *out);
 int uart_read_and_queue(int uart_fd, char *buffer, size_t size);
+int ble_uart_check(int uart_fd);
 
 #endif

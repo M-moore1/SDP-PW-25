@@ -44,7 +44,6 @@ int uart_read_and_queue(int uart_fd, char *buffer, size_t size)
     int n;
 
     memset(buffer, 0, size);
-
     n = read(uart_fd, buffer, size - 1);
 
     if (n > 0)
@@ -57,4 +56,23 @@ int uart_read_and_queue(int uart_fd, char *buffer, size_t size)
     }
 
     return n;
+}
+
+int ble_uart_check(int uart_fd)
+{
+    char buffer[256];
+    int n;
+
+    n = read(uart_fd, buffer, sizeof(buffer) - 1);
+
+    if (n > 0)
+    {
+        buffer[n] = '\0';
+
+        uart_queue_push(&uart_queue, buffer);
+
+        return n;
+    }
+
+    return 0;
 }

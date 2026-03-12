@@ -59,15 +59,16 @@ int ble_uart_write(int uart_fd, const char *str, int size)
     return result;
 }
 
+
 int ble_enter_cmd(int uart_fd){
     char buffer[256];
-    int n, results;
+    int n;
 
     ble_cmd_state = 0;
 
     if (ble_uart_write(uart_fd, "$$$", 3) < 0) return -1;
 
-    msleep(25);
+    msleep(500);
 
     n = uart_read_and_queue(uart_fd, buffer, sizeof(buffer));
 
@@ -91,69 +92,68 @@ int ble_enter_cmd(int uart_fd){
 }
 
 int ble_exit_cmd(int uart_fd) {
-    char buffer[256];
-    
-    if (write(uart_fd, "TESTING\r", 8) != 8) return -1;
-    msleep(10);
-    
+    if (ble_cmd_state == 0){
+        return 0;
+    }
 
-    if (write(uart_fd, "---\r", 5) != 5) return -1;
+    char buffer[256];
+    if (ble_uart_write(uart_fd, "TESTING\r", 8) < 0) return -1;
+    msleep(150);
+    
+    if (ble_uart_write(uart_fd, "---\r", 5) < 0) return -1;
     msleep(500); 
 
-    memset(buffer, 0, sizeof(buffer));
-    if (read(uart_fd, buffer, sizeof(buffer) - 1) > 0) {
-      printf("[PMOD RESPONSE]: %s\r\n", buffer);
-      if (strstr(buffer, "END")) {
+    int n = uart_read_and_queue(uart_fd, buffer, sizeof(buffer));
+    if (n > 0 && strstr(buffer, "END") != NULL){
         ble_cmd_state = 0;
         return 0; 
-      }
     }
 
     return -1; 
 }
 
+int ble_reset(int uart_fd){
+    char buffer[256];
+    int n;
+
+    if (ble_uart_write(uart_fd, "\rR,1\r", 5) < 0) return -1;
+    msleep(500);
+
+    n = uart_read_and_queue(uart_fd, buffer, sizeof(buffer));
+    if (n > 0 && strstr(buffer, "REBOOT") != NULL) {
+        return ble_enter_cmd(uart_fd);
+    }
+
+    return -1;
+}
 
 int ble_enter_client_mode(int uart_fd)
 {
-    
     const char *ci_cmd = "CI\r";
-    const char *notify_cmd = "CHW,002B,0100\r";
+    const char *notify_cmd = "CHW,002B,0100\r"; // Notification Turn On CMD
 
     char buffer[128];
     ssize_t n;
     int attempts = 0;
 
-    if (write(uart_fd, ci_cmd, strlen(ci_cmd)) != (ssize_t)strlen(ci_cmd)) {
-        perror("Failed to send CI command");
-        return -1;
-    }
 
+    if (ble_uart_write(uart_fd,  ci_cmd, strlen(ci_cmd)) < 0) return -1;
     //printf("Sent CI command, entering data mode\r\n");
+    msleep(200); 
 
-    usleep(200000);   // 200 ms
-    tcflush(uart_fd, TCIFLUSH);
-
-    if (write(uart_fd, notify_cmd, strlen(notify_cmd)) != (ssize_t)strlen(notify_cmd)) {
-        perror("Failed to send CHW command");
-        return -1;
-    }
-
+    if (ble_uart_write(uart_fd,  notify_cmd, strlen(notify_cmd)) < 0) return -1;
     //printf("Enabling notifications\r\n");
 
     while (attempts < 10)
     {
-        memset(buffer, 0, sizeof(buffer));
-
-        n = read(uart_fd, buffer, sizeof(buffer) - 1);
-
+        n = uart_read_and_queue(uart_fd, buffer, sizeof(buffer));
         if (n > 0)
         {
             buffer[n] = '\0';
-            printf("[PMOD RESPONSE]: %s\r\n", buffer);
 
             if (strstr(buffer, "AOK") != NULL) {
                 printf("Notifications enabled successfully\r\n");
-                return 1;
+                return 0;
             }
 
             if (strstr(buffer, "ERR") != NULL) {
@@ -162,13 +162,14 @@ int ble_enter_client_mode(int uart_fd)
             }
         }
 
-        usleep(100000);
+        msleep(100); 
         attempts++;
     }
 
     printf("Timeout waiting for CHW response\r\n");
     return -1;
 }
+
 
 int ble_connect_mac(int uart_fd, const char *mac){
     if(ble_connect_state){
@@ -181,92 +182,67 @@ int ble_connect_mac(int uart_fd, const char *mac){
     int attempts = 0;
 
     if (!ble_cmd_state) {
-        if (ble_enter_cmd(uart_fd) < 0) {
-            //printf("Failed to enter BLE command mode\n");
-            return -3;
-        }
+        ble_enter_cmd(uart_fd);
     }
-
-    tcflush(uart_fd, TCIFLUSH);
-
 
     snprintf(cmd, sizeof(cmd), "C,0,%s\r", mac);
 
-    if (write(uart_fd, cmd, strlen(cmd)) != (ssize_t)strlen(cmd)) {
-        perror("UART write failed");
-        return -1;
-    }
-
+    if (ble_uart_write(uart_fd, cmd, strlen(cmd)) < 0) return -1;
     //printf("Connecting to %s...\n", mac);
 
     while (attempts < 20)
     {
-        memset(buffer, 0, sizeof(buffer));
-
-        n = read(uart_fd, buffer, sizeof(buffer) - 1);
+        n = uart_read_and_queue(uart_fd, buffer, sizeof(buffer));
 
         if (n > 0)
         {
             buffer[n] = '\0';
 
-            //printf("[PMOD RESPONSE]: %s\r\n", buffer);
-
-            /* Success case */
             if (strstr(buffer, "CONNECT") != NULL) {
-                printf("BLE connection established\r\n");
-                ble_connect_state = 1;
-                if(ble_enter_client_mode(uart_fd)){ return 0; }
+                if (strstr(buffer, "DISCONNECT") != NULL){
+                    return -1;
+                }
+                if(!ble_enter_client_mode(uart_fd)){ 
+                    ble_connect_state = 1;
+                    return 0; 
+                }
                 return 1;
             }
 
-            /* Error cases */
             if (strstr(buffer, "Err") != NULL) {
-                //printf("BLE connection failed\r\n");
                 return -1;
             }
         }
 
-        usleep(200000);  // 200 ms
+        msleep(1000); 
         attempts++;
     }
 
-    printf("BLE connection timeout\r\n");
     return -2;
 }
 
 int ble_disconnect(int uart_fd) {
-    if (!ble_connect_state) {
-        printf("Connection Status: %d", ble_connect_state);
-        return 1;
-    }
 
     char buffer[128];
     ssize_t n;
     int attempts = 0;
 
     if (!ble_cmd_state) {
-        if (ble_enter_cmd(uart_fd) < 0) {
-            //printf("Failed to enter BLE command mode\n");
-            return -3;
-        }
+        ble_enter_cmd(uart_fd);
     }
 
-    if (write(uart_fd, "K,1\r", 4) != 4) {
-        perror("UART write failed");
-        return -1;
-    }
+    if (ble_uart_write(uart_fd, "K,1\r", 4) < 0) return -1;
     msleep(100);
 
     // Read response with a short retry loop
     while (attempts < 10) {
-        memset(buffer, 0, sizeof(buffer));
-        n = read(uart_fd, buffer, sizeof(buffer) - 1);
+        n = uart_read_and_queue(uart_fd, buffer, sizeof(buffer));
+
         if (n > 0) {
             buffer[n] = '\0';
-            printf("[PMOD RESPONSE]: %s\r\n", buffer);
-
             if (strstr(buffer, "DISCONNECT") != NULL) {
                 ble_connect_state = 0;  // update state
+                msleep(2000);
                 return 0;
             }
 
@@ -278,20 +254,51 @@ int ble_disconnect(int uart_fd) {
         attempts++;
     }
 
-    // If we get here, we timed out waiting for DISCONNECT
     return -1;
 }
 
+int ble_connect_check(int uart_fd)
+{
+    char buffer[128];
+    ssize_t n;
 
-//TODO BLE INIT
-int ble_init(int uart_fd){
-    uart_queue_init(&uart_queue);
-
-    ble_enter_cmd(uart_fd);
-    if (write(uart_fd, "K,1\r", 4) != 4) {
-        perror("UART write failed");
-        return -1;
+    if (!ble_cmd_state) {
+        ble_enter_cmd(uart_fd);
     }
-    msleep(100);
+    msleep(1000);
+
+    if (ble_uart_write(uart_fd, "\rGK\r", 4)  < 0) return -1;
+    msleep(10);
+
+    n = uart_read_and_queue(uart_fd, buffer, sizeof(buffer));
+    if (n > 0) {
+        buffer[n] = '\0';
+        if (strstr(buffer, "none") != NULL) {
+            ble_connect_state = 0;
+            return -1;
+        }
+        ble_connect_state = 0;
+        return 0;
+    }
+    return -1;
+}
+
+int ble_init(int uart_fd){
+    
+    uart_queue_init(&uart_queue);
+    ble_reset(uart_fd);
+
     return 0;
 }
+
+int uart_send_str(int uart_fd, char * str, int str_len){
+    const char *start_write = "\rCHW,002A,";
+    const char *enter = "\r,";
+    if (ble_uart_write(uart_fd,  start_write, strlen(start_write)) < 0) return -1;
+    
+    if (ble_uart_write(uart_fd,  str, str_len) < 0) return -1;
+    if (ble_uart_write(uart_fd,  enter, strlen(enter)) < 0) return -1;
+
+
+}
+
