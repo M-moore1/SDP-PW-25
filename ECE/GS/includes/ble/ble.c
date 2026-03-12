@@ -295,10 +295,8 @@ int uart_send_str(int uart_fd, char * str, int str_len){
     const char *start_write = "\rCHW,002A,";
     const char *enter = "\r,";
     if (ble_uart_write(uart_fd,  start_write, strlen(start_write)) < 0) return -1;
-    
     if (ble_uart_write(uart_fd,  str, str_len) < 0) return -1;
     if (ble_uart_write(uart_fd,  enter, strlen(enter)) < 0) return -1;
-
 
 }
 

@@ -208,6 +208,16 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
             robot_conn_id = param->connect.conn_id;
             robot_gatts_if = gatts_if;
             device_connected = true;
+
+            esp_ble_conn_update_params_t conn_params = {0};
+            memcpy(conn_params.bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
+            conn_params.min_int = 0x0C; 
+            conn_params.max_int = 0x18;
+            conn_params.latency = 0;
+            conn_params.timeout = 1000; 
+
+            esp_ble_gap_update_conn_params(&conn_params);
+
             break;
 
         // Disconnect Event

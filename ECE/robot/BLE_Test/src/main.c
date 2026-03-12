@@ -89,7 +89,7 @@ void app_main()
     xTaskCreatePinnedToCore( command_parser, "robot_command_parser", 4096, NULL, 5, NULL, 1);
 
     while (1) {
-        /*
+        
         if (device_connected && notify_enabled) {
             send_string(msg2);  
             vTaskDelay(pdMS_TO_TICKS(200));
@@ -97,7 +97,7 @@ void app_main()
         }
 
         vTaskDelay(pdMS_TO_TICKS(2000)); // 2 seconds
-        */
+        
     }
     return;
 }

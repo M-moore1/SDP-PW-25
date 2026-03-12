@@ -14,7 +14,7 @@
 
 #define byte_test_size 156   
 #define AVG_SAMPLES    50    
-#define SEND_INTERVAL  50
+#define SEND_INTERVAL  60
 
 int main() {
 
@@ -40,47 +40,40 @@ int main() {
     int start = 0;
     int output_indx = 0;
     unsigned char output[256];
+
+    char *msg_send = "464F5257415244";
     
     while(1){
         ble_uart_check(bt_uart);
         char msg[256];
         if (uart_queue_pop(&uart_queue, msg) == 0)
         {
-            printf("UART READ: %s\r\n", msg);
-            /*
-            size_t len = strlen(msg);
-            for (size_t i = 0; i < len; i++)
+            if (strstr(msg, "NOTI") != NULL) 
             {
-                unsigned char c = msg[i];
-
-                if (c == '#')
-                {
-                    // Start of packet
-                    start = 1;
-                    output_indx = 0;
-                    output[output_indx++] = c;
-                }
-                else if (c == '%' && start)
-                {
-                    // End of packet
-                    if (output_indx < sizeof(output) - 1)
-                        output[output_indx++] = c;
-
-                    output[output_indx] = '\0';
-
-                    printf("Received packet: %s\r\n", output);
-
-                    start = 0;
-                    output_indx = 0;
-                }
-                else if (start)
-                {
-                    // Collect packet contents
-                    if (output_indx < sizeof(output) - 1)
-                        output[output_indx++] = c;
+                // 1. Capture end time and calculate current latency
+                message_end = clock() / (CLOCKS_PER_SEC / 1000000);
+                long latency = message_end - message_start;
+                
+                // 2. Accumulate for average
+                average_time += latency;
+                trial_count++;
+                
+                // 3. Check if we have enough samples to calculate average
+                if (trial_count >= AVG_SAMPLES) {
+                    long avg = average_time / trial_count;
+                    printf("\r\n=== STATS [%d Samples] ===\r\n", trial_count);
+                    printf("Average Latency: %.3f ms\r\n", avg / 1000.0);
+                    printf("==========================\r\n\n");
+                    
+                    // Reset variables for the next batch
+                    average_time = 0;
+                    trial_count = 0;
+                } else {
+                    // Optional: print individual latency and progress
+                    printf("Trial %d/%d - Latency: %.3f ms\r", trial_count, AVG_SAMPLES, latency / 1000.0);
+                    fflush(stdout);
                 }
             }
-            */
         }
             
             
@@ -145,13 +138,24 @@ int main() {
                 }
             }
             if( c == 'a'){
-                char *msg_send = "464F5257415244";
-                printf("MSG: %s \r\n", msg_send);
+                
+                //printf("MSG: %s \r\n", msg_send);
+                message_start = clock() / (CLOCKS_PER_SEC / 1000000);
                 uart_send_str(bt_uart, msg_send, strlen(msg_send));
             }
 
         }
 
+        long now = clock() / (CLOCKS_PER_SEC / 1000); 
+        if (now - last >= SEND_INTERVAL) { 
+            if (connected){
+                message_start = clock() / (CLOCKS_PER_SEC / 1000000);
+                uart_send_str(bt_uart, msg_send, strlen(msg_send));
+            }          
+            
+            
+            last = now;
+        } 
         
         
     }
