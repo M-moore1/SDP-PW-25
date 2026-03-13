@@ -231,7 +231,7 @@ int ble_disconnect(int uart_fd) {
         ble_enter_cmd(uart_fd);
     }
 
-    if (ble_uart_write(uart_fd, "K,1\r", 4) < 0) return -1;
+    if (ble_uart_write(uart_fd, "\rK,1\r", 5) < 0) return -1;
     msleep(100);
 
     // Read response with a short retry loop
@@ -265,10 +265,9 @@ int ble_connect_check(int uart_fd)
     if (!ble_cmd_state) {
         ble_enter_cmd(uart_fd);
     }
-    msleep(1000);
 
     if (ble_uart_write(uart_fd, "\rGK\r", 4)  < 0) return -1;
-    msleep(10);
+    msleep(100);
 
     n = uart_read_and_queue(uart_fd, buffer, sizeof(buffer));
     if (n > 0) {
@@ -291,12 +290,18 @@ int ble_init(int uart_fd){
     return 0;
 }
 
-int uart_send_str(int uart_fd, char * str, int str_len){
+int uart_send_str(int uart_fd, char *str, int str_len) {
     const char *start_write = "\rCHW,002A,";
     const char *enter = "\r,";
-    if (ble_uart_write(uart_fd,  start_write, strlen(start_write)) < 0) return -1;
-    if (ble_uart_write(uart_fd,  str, str_len) < 0) return -1;
-    if (ble_uart_write(uart_fd,  enter, strlen(enter)) < 0) return -1;
+    uint8_t start = 0x0A; // LF
+    uint8_t end   = 0x0D; // CR
 
+    if (ble_uart_write(uart_fd, start_write, strlen(start_write)) < 0) return -1;
+    if (ble_uart_write(uart_fd, (const char *)&start, 1) < 0) return -1;   // send 0x0A
+    if (ble_uart_write(uart_fd, str, str_len) < 0) return -1;
+    if (ble_uart_write(uart_fd, (const char *)&end, 1) < 0) return -1;     // send 0x0D
+    if (ble_uart_write(uart_fd, enter, strlen(enter)) < 0) return -1;
+
+
+    return 0;
 }
-

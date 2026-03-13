@@ -36,13 +36,23 @@ int main() {
     long average_time = 0;
     long average_idx = 0;
     int trial_count = 0;
+    int trail_amount = 0;
 
     int start = 0;
     int output_indx = 0;
     unsigned char output[256];
 
-    char *msg_send = "464F5257415244";
+    uint8_t packet[byte_test_size];
+    for (int i = 0; i < byte_test_size; i++) {
+        packet[i] = (uint8_t)(i % 255); 
+    }
+
+    char hex_string[(byte_test_size * 2) + 1];
+    for (int i = 0; i < byte_test_size; i++) {
+        sprintf(&hex_string[i * 2], "%02X", packet[i]);
+    }
     
+    char *msg_send = "8BDF573D3D50AF81FAD29D955B91D6BC09FF99709565F114ACDA91469379B86EC63824B37339EEC7AA903929137BD367D00B0A99534505FB3E603E24D02D77B1DBECA6931B981D18AE316FA14F2B32B8CB778305174D6961FDD3BEA0BE071223C75C3856286788AAEA14BCCD93A3F76FD1DDDD58C824E3467B73FF81F4D4AFAD61DB4398F119542F136E2C6AAB3B68615BCE9D26E148F04226C499";
     while(1){
         ble_uart_check(bt_uart);
         char msg[256];
@@ -61,13 +71,14 @@ int main() {
                 // 3. Check if we have enough samples to calculate average
                 if (trial_count >= AVG_SAMPLES) {
                     long avg = average_time / trial_count;
-                    printf("\r\n=== STATS [%d Samples] ===\r\n", trial_count);
+                    printf("\r\n=== STATS #%d [SEND RATE %d][%d Samples] ===\r\n", trail_amount, SEND_INTERVAL, trial_count);
                     printf("Average Latency: %.3f ms\r\n", avg / 1000.0);
                     printf("==========================\r\n\n");
                     
                     // Reset variables for the next batch
                     average_time = 0;
                     trial_count = 0;
+                    trail_amount++;
                 } else {
                     // Optional: print individual latency and progress
                     printf("Trial %d/%d - Latency: %.3f ms\r", trial_count, AVG_SAMPLES, latency / 1000.0);
@@ -114,6 +125,7 @@ int main() {
                     connected = 1;
                 }else{
                     printf("\nAttempt Failed\r\n");
+                    connected = 0;
                 }
             }
             if(c == 'x'){
@@ -139,18 +151,19 @@ int main() {
             }
             if( c == 'a'){
                 
-                //printf("MSG: %s \r\n", msg_send);
+                printf("MSG: %s \r\n", hex_string);
                 message_start = clock() / (CLOCKS_PER_SEC / 1000000);
-                uart_send_str(bt_uart, msg_send, strlen(msg_send));
+                uart_send_str(bt_uart, hex_string, strlen(hex_string));
             }
 
         }
 
         long now = clock() / (CLOCKS_PER_SEC / 1000); 
+        
         if (now - last >= SEND_INTERVAL) { 
             if (connected){
-                message_start = clock() / (CLOCKS_PER_SEC / 1000000);
-                uart_send_str(bt_uart, msg_send, strlen(msg_send));
+                //message_start = clock() / (CLOCKS_PER_SEC / 1000000);
+                //uart_send_str(bt_uart, msg_send, strlen(msg_send));
             }          
             
             
