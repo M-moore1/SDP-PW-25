@@ -16,8 +16,10 @@ static const uint16_t character_client_config_uuid = ESP_GATT_UUID_CHAR_CLIENT_C
 static const uint8_t robot_measurement_ccc[2]      = {0x00, 0x00};
 
 typedef enum {
-    WAITING          = 0x00,  
-    COLLECTING       = 0x01,
+    WAITING          = 0x00, 
+    START            = 0x01, 
+    COLLECTING       = 0x02,
+    FINISH           = 0x03,
 } data_retrieval_t;
 
 uint32_t spp_handle = 0;
@@ -273,60 +275,61 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
                         rx_idx = 0; 
                         return;
                     }
+                    
+
+                    // UnSecure No injection protection
+                    // TODO EDIT tos skip over the start and stop bytes
+                    /*
                     memcpy(&rx_buf[rx_idx], incoming_data, incoming_len);
                     rx_idx += incoming_len;
-
-                    // No injection protection
                     if (rx_idx >= 160) {
                         if (xQueueSend(ble_recieve_queue, (void *)rx_buf, (TickType_t)0) != pdPASS) {
                             ESP_LOGE(GATTS_TABLE_TAG, "Queue full, data dropped");
                         }
                         rx_idx = 0;
                     }
+                    */
 
-                    /*
+                    // Secure Realignment
                     for (int i = 0; i < incoming_len; i++){
                         uint8_t current_byte = incoming_data[i];
 
-                        if (data_collection_mode == WAITING) {
-                            if (current_byte == 0x0A) {
-                                rx_idx++;
-                                data_collection_mode = COLLECTING;
-                            }
-                        }else if (data_collection_mode == COLLECTING){
-                            if (rx_idx < 159) {
-                                rx_buf[rx_idx] = current_byte;
-                                rx_idx++;
-                            }else{
-                                printf("\nThe value is %02X\n", current_byte);
-                                //if (current_byte == 0x0D){
+                        switch (data_collection_mode){
+                            case WAITING:
+                                if (current_byte == 0x0A) {
+                                    data_collection_mode = START;
+                                }
+                            break;
+                            case START:
+                                if (current_byte == 0xD0) {
+                                    data_collection_mode = COLLECTING;
+                                }else{
+                                    data_collection_mode = WAITING;
+                                }
+                                rx_idx = 0;
+                            break;
+                            case COLLECTING:
+                                if (rx_idx < 156){
+                                    rx_buf[rx_idx] = current_byte;
+                                    rx_idx++;
+                                }else if (current_byte == 0xDA){
+                                    rx_idx++;
+                                    data_collection_mode = FINISH;
+                                }else{
+                                    data_collection_mode = WAITING;
+                                }
+                            break;
+                            case FINISH:
+                                if (current_byte == 0x0D) {
                                     if (xQueueSend(ble_recieve_queue, (void *)rx_buf, (TickType_t)0) != pdPASS) {
                                         ESP_LOGW(GATTS_TABLE_TAG, "BT Queue full, dropping packet");
                                     }
-                                //}else{
-                                  //  ESP_LOGW(GATTS_TABLE_TAG, "Packet reached 160 bytes but missing termination marker");
-                                //}
-                                rx_idx = 0; 
+                                    rx_idx =0;
+                                }
                                 data_collection_mode = WAITING;
-                            }
+                            break;
                         }
                     }
-                    */
-
-                   
-                    /*
-
-                    
-                    
-                    memcpy(rx_buf, param->write.value, param->write.len);
-                    rx_buf[param->write.len] = '\0';
-
-                    if (xQueueSend(ble_recieve_queue, (void *)rx_buf, (TickType_t)0) != pdPASS) {
-                        ESP_LOGE(GATTS_TABLE_TAG, "Queue full, freeing memory");
-                    }
-                    
-                   
-                    */
                 }         
 
                 if (param->write.need_rsp) {
