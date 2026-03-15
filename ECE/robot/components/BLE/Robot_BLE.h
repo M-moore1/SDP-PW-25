@@ -50,7 +50,7 @@ extern esp_ble_adv_data_t adv_data;
 extern esp_ble_adv_params_t adv_params;
 
 extern uint32_t spp_handle;
-extern uint8_t rx_buf[156];
+extern uint8_t rx_buf[200];
 extern int rx_index;
 extern QueueHandle_t ble_recieve_queue;
 

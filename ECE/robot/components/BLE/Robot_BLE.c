@@ -21,7 +21,7 @@ typedef enum {
 } data_retrieval_t;
 
 uint32_t spp_handle = 0;
-uint8_t rx_buf[156]; 
+uint8_t rx_buf[200]; 
 int rx_idx = 0;
 data_retrieval_t data_collection_mode = WAITING;
 QueueHandle_t ble_recieve_queue = NULL;
@@ -116,18 +116,19 @@ void robot_ble_init(){
     ESP_ERROR_CHECK(esp_bluedroid_init());
     ESP_ERROR_CHECK(esp_bluedroid_enable());
 
-    ble_recieve_queue = xQueueCreate(10, 156);
+    ble_recieve_queue = xQueueCreate(10, 160);
 
     if (ble_recieve_queue == NULL) {
         ESP_LOGE(GATTS_TABLE_TAG, "Queue creation failed!");
         return;
     }
 
+    esp_ble_gatt_set_local_mtu(200); 
+
     esp_ble_gatts_register_callback(gatts_event_handler); // SET UP PROFILE and SERVICES on INITIALIZATION
     esp_ble_gap_register_callback(gap_event_handler); // STARTS ADVERTISING ON Initilization
     esp_ble_gatts_app_register(ESP_ROBOT_APP_ID);
 
-    esp_ble_gatt_set_local_mtu(247); 
 }
 
 void send_string(char *txt){
@@ -206,6 +207,8 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
         // Connection Event
         case ESP_GATTS_CONNECT_EVT:
             ESP_LOGI(GATTS_TABLE_TAG,"Device connected, conn_id=%d", param->connect.conn_id);
+            memset(rx_buf, 0, sizeof(rx_buf));
+            rx_idx = 0;
             esp_ble_gap_stop_advertising();
             robot_conn_id = param->connect.conn_id;
             robot_gatts_if = gatts_if;
@@ -214,7 +217,7 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
             esp_ble_conn_update_params_t conn_params = {0};
             memcpy(conn_params.bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
             conn_params.min_int = 0x06;  // 7.5 ms
-            conn_params.max_int = 0x08; 
+            conn_params.max_int = 0x08;  // 10 ms
             conn_params.latency = 0;
             conn_params.timeout = 1000; 
 
@@ -229,6 +232,8 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
 
             device_connected = false;
             notify_enabled = false;
+            memset(rx_buf, 0, sizeof(rx_buf));
+            rx_idx = 0;
             esp_ble_gap_start_advertising(&adv_params);
             break;
 
@@ -258,34 +263,70 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
                         notify_enabled = false;
                     }
                 }else if (param->write.handle == robot_handle_table[ROBOT_IDX_VAL]) {
-                    for (int i = 0; i < param->write.len; i++) {
-                        uint8_t current_byte = param->write.value[i];
+
+
+                    uint16_t incoming_len = param->write.len;
+                    uint8_t *incoming_data = param->write.value;
+
+                    if (rx_idx + incoming_len > sizeof(rx_buf)) {
+                        ESP_LOGE(GATTS_TABLE_TAG, "Incoming data exceeds buffer, resetting index");
+                        rx_idx = 0; 
+                        return;
+                    }
+                    memcpy(&rx_buf[rx_idx], incoming_data, incoming_len);
+                    rx_idx += incoming_len;
+
+                    // No injection protection
+                    if (rx_idx >= 160) {
+                        if (xQueueSend(ble_recieve_queue, (void *)rx_buf, (TickType_t)0) != pdPASS) {
+                            ESP_LOGE(GATTS_TABLE_TAG, "Queue full, data dropped");
+                        }
+                        rx_idx = 0;
+                    }
+
+                    /*
+                    for (int i = 0; i < incoming_len; i++){
+                        uint8_t current_byte = incoming_data[i];
 
                         if (data_collection_mode == WAITING) {
-                            if (current_byte == 0x0A) { // start byte
-                                rx_idx = 0;
+                            if (current_byte == 0x0A) {
+                                rx_idx++;
                                 data_collection_mode = COLLECTING;
                             }
-                        } else if (data_collection_mode == COLLECTING) {
-                            if (current_byte == 0x0D) { // stop byte
-                                // Push the collected packet into the queue
-                                if (xQueueSend(ble_recieve_queue, (void *)rx_buf, (TickType_t)0) != pdPASS) {
-                                    ESP_LOGW(GATTS_TABLE_TAG, "BLE queue full, dropping packet");
-                                }
-                                rx_idx = 0;
+                        }else if (data_collection_mode == COLLECTING){
+                            if (rx_idx < 159) {
+                                rx_buf[rx_idx] = current_byte;
+                                rx_idx++;
+                            }else{
+                                printf("\nThe value is %02X\n", current_byte);
+                                //if (current_byte == 0x0D){
+                                    if (xQueueSend(ble_recieve_queue, (void *)rx_buf, (TickType_t)0) != pdPASS) {
+                                        ESP_LOGW(GATTS_TABLE_TAG, "BT Queue full, dropping packet");
+                                    }
+                                //}else{
+                                  //  ESP_LOGW(GATTS_TABLE_TAG, "Packet reached 160 bytes but missing termination marker");
+                                //}
+                                rx_idx = 0; 
                                 data_collection_mode = WAITING;
-                            } else {
-                                // Store the byte if buffer has space
-                                if (rx_idx < GATTS_DEMO_CHAR_VAL_LEN_MAX) {
-                                    rx_buf[rx_idx++] = current_byte;
-                                } else {
-                                    ESP_LOGW(GATTS_TABLE_TAG, "Packet exceeded buffer size, dropping remainder");
-                                    rx_idx = 0;
-                                    data_collection_mode = WAITING;
-                                }
                             }
                         }
                     }
+                    */
+
+                   
+                    /*
+
+                    
+                    
+                    memcpy(rx_buf, param->write.value, param->write.len);
+                    rx_buf[param->write.len] = '\0';
+
+                    if (xQueueSend(ble_recieve_queue, (void *)rx_buf, (TickType_t)0) != pdPASS) {
+                        ESP_LOGE(GATTS_TABLE_TAG, "Queue full, freeing memory");
+                    }
+                    
+                   
+                    */
                 }         
 
                 if (param->write.need_rsp) {

@@ -12,13 +12,13 @@
 //gcc -O2 -Wall -Wextra test_ble.c ../includes/ble/ble.c ../includes/ble/uart_queue.c -I../includes -o test_ble.o
 
 
-#define byte_test_size 156   
+#define byte_test_size  156
 #define AVG_SAMPLES    50    
-#define SEND_INTERVAL  60
+#define SEND_INTERVAL  50
 
 int main() {
 
-    int bt_uart = uart_open_config(DEFAULT_UART_DEV, DEFAULT_UART_BAUD); 
+    int bt_uart = uart_open_config(DEFAULT_UART_DEV, B921600); 
     int test = ble_init(bt_uart);
     set_conio_terminal_mode();
     
@@ -52,7 +52,7 @@ int main() {
         sprintf(&hex_string[i * 2], "%02X", packet[i]);
     }
     
-    char *msg_send = "8BDF573D3D50AF81FAD29D955B91D6BC09FF99709565F114ACDA91469379B86EC63824B37339EEC7AA903929137BD367D00B0A99534505FB3E603E24D02D77B1DBECA6931B981D18AE316FA14F2B32B8CB778305174D6961FDD3BEA0BE071223C75C3856286788AAEA14BCCD93A3F76FD1DDDD58C824E3467B73FF81F4D4AFAD61DB4398F119542F136E2C6AAB3B68615BCE9D26E148F04226C499";
+    char *msg_send = "8BDF573D3D50AF81FAD29D955B91D6BC09FF99709565F114ACDA91469379B86EC63824B37339EEC7AA903929137BD367D00B0A99534505FB3E603E24D02D77B1DBECA6931B981D18AE316FA14F2B32B8CB778305174D6961FDD3BEA0BE071223C75C3856286788AAEA14BCCD93A3F76FD1DDDD58C824E3467B73FF81F4D4AFAD61DB4398F119542F136E2C6AAB3B68615BCE9D26E148F04226C4994C";
     while(1){
         ble_uart_check(bt_uart);
         char msg[256];
@@ -60,15 +60,16 @@ int main() {
         {
             if (strstr(msg, "NOTI") != NULL) 
             {
-                // 1. Capture end time and calculate current latency
-                message_end = clock() / (CLOCKS_PER_SEC / 1000000);
+                
+                message_end = (clock() / (CLOCKS_PER_SEC / 1000000));
+
                 long latency = message_end - message_start;
                 
-                // 2. Accumulate for average
+        
                 average_time += latency;
                 trial_count++;
                 
-                // 3. Check if we have enough samples to calculate average
+
                 if (trial_count >= AVG_SAMPLES) {
                     long avg = average_time / trial_count;
                     printf("\r\n=== STATS #%d [SEND RATE %d][%d Samples] ===\r\n", trail_amount, SEND_INTERVAL, trial_count);
@@ -154,6 +155,7 @@ int main() {
                 printf("MSG: %s \r\n", hex_string);
                 message_start = clock() / (CLOCKS_PER_SEC / 1000000);
                 uart_send_str(bt_uart, hex_string, strlen(hex_string));
+                
             }
 
         }
@@ -161,9 +163,10 @@ int main() {
         long now = clock() / (CLOCKS_PER_SEC / 1000); 
         
         if (now - last >= SEND_INTERVAL) { 
+            
             if (connected){
-                //message_start = clock() / (CLOCKS_PER_SEC / 1000000);
-                //uart_send_str(bt_uart, msg_send, strlen(msg_send));
+                message_start = clock() / (CLOCKS_PER_SEC / 1000000);
+                uart_send_str(bt_uart, msg_send, strlen(msg_send));
             }          
             
             

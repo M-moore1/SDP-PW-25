@@ -8,20 +8,22 @@ step_mot_t test_motor;
 
 static QueueHandle_t cmd_queue = NULL;
 
+#define packet_size  160
+
 // Type "FORWARD" to move the motor direction 0 for 1 seconds
 // Type "BACKWARD" to move the motor direction 1 for 1 second
 void ble_recieve_parser(void *pvParameters)
 {
-    uint8_t received_packet[156]; 
+    uint8_t received_packet[packet_size]; 
     char *msg1 = "got it!";
 
     while (1) {
         if (xQueueReceive(ble_recieve_queue, &received_packet, portMAX_DELAY))
         {   
             send_string(msg1);
-            printf("Received 156 bytes: \n");
+            printf("Received %d bytes: \n", packet_size);
 
-            for (int i = 0; i < 156; i++) {
+            for (int i = 0; i < packet_size; i++) {
                 printf("%02X ", received_packet[i]);
                 if ((i + 1) % 16 == 0) printf("\n"); 
             }
@@ -89,13 +91,13 @@ void app_main()
     xTaskCreatePinnedToCore( command_parser, "robot_command_parser", 4096, NULL, 5, NULL, 1);
 
     while (1) {
-        
+        /*
         if (device_connected && notify_enabled) {
             send_string(msg2);  
             vTaskDelay(pdMS_TO_TICKS(200));
             send_string(msg1);
         }
-
+        */
         vTaskDelay(pdMS_TO_TICKS(2000)); // 2 seconds
         
     }

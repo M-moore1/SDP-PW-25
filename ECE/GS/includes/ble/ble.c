@@ -72,7 +72,7 @@ int ble_enter_cmd(int uart_fd){
 
     n = uart_read_and_queue(uart_fd, buffer, sizeof(buffer));
 
-    if (n > 0 && strstr(buffer, "CMD>")) {
+    if (n > 0 && strstr(buffer, "CMD")) {
         ble_cmd_state = 1;
         return 0;
     }
@@ -290,18 +290,74 @@ int ble_init(int uart_fd){
     return 0;
 }
 
-int uart_send_str(int uart_fd, char *str, int str_len) {
-    const char *start_write = "\rCHW,002A,";
-    const char *enter = "\r,";
-    uint8_t start = 0x0A; // LF
-    uint8_t end   = 0x0D; // CR
+#define CHUNK_SIZE 40
+#define PACKET_HEX_LEN 320
+#define PAYLOAD_HEX_LEN 312
 
-    if (ble_uart_write(uart_fd, start_write, strlen(start_write)) < 0) return -1;
-    if (ble_uart_write(uart_fd, (const char *)&start, 1) < 0) return -1;   // send 0x0A
-    if (ble_uart_write(uart_fd, str, str_len) < 0) return -1;
-    if (ble_uart_write(uart_fd, (const char *)&end, 1) < 0) return -1;     // send 0x0D
-    if (ble_uart_write(uart_fd, enter, strlen(enter)) < 0) return -1;
+int uart_send_str(int uart_fd, char *str, int str_len)
+{
+    if (str_len != PAYLOAD_HEX_LEN)
+    {
+        printf("Payload must be 156 bytes (312 hex chars)\n");
+        return -1;
+    }
 
+    char buffer[50];                 // "CHW,002A," + 40 chars + '\r'
+    memcpy(buffer, "CHW,002A,", 9);
+    buffer[49] = '\r';
+
+    /* Build final packet */
+    char packet[PACKET_HEX_LEN];
+    memset(packet, '0', PACKET_HEX_LEN);
+    // Start marker
+    packet[0] = '0'; packet[1] = 'A';
+    packet[2] = 'D'; packet[3] = '0';
+
+    // Payload (156 bytes = 312 hex chars)
+    memcpy(packet + 4, str, PAYLOAD_HEX_LEN);
+
+    // End marker
+    packet[316] = 'D'; packet[317] = 'A';
+    packet[318] = '0'; packet[319] = 'D';
+
+    int offset = 0;
+    char recv_buf[128];
+    while (offset < PACKET_HEX_LEN)
+    {
+        int this_chunk = (PACKET_HEX_LEN - offset > CHUNK_SIZE) ?
+                         CHUNK_SIZE : (PACKET_HEX_LEN - offset);
+
+        memcpy(buffer + 9, packet + offset, this_chunk);
+
+        if (ble_uart_write(uart_fd, buffer, 9 + this_chunk + 1) < 0)
+            return -1;
+
+        int ready_to_send = 0;
+
+        while (!ready_to_send)
+        {
+            ssize_t n = uart_read_and_queue(
+                uart_fd,
+                recv_buf,
+                sizeof(recv_buf) - 1);
+
+            if (n > 0)
+            {
+                recv_buf[n] = '\0';
+
+                if (strstr(recv_buf, "AOK"))
+                {
+                    ready_to_send = 1;
+                    break;
+                }
+
+                if (strstr(recv_buf, "Err"))
+                    return -1;
+            }
+        }
+
+        offset += this_chunk;
+    }
 
     return 0;
 }

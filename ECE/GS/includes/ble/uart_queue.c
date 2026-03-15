@@ -52,7 +52,7 @@ int uart_read_and_queue(int uart_fd, char *buffer, size_t size)
 
         uart_queue_push(&uart_queue, buffer);
 
-        printf("[PMOD RESPONSE]: %s\r\n", buffer);
+        //printf("[PMOD RESPONSE]: %s\r\n", buffer);
     }
 
     return n;

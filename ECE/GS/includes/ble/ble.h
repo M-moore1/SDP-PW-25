@@ -24,10 +24,12 @@ int ble_reset(int uart_fd);
 int ble_enter_client_mode(int uart_fd);
 int ble_connect_mac(int uart_fd, const char *mac);
 int ble_disconnect(int uart_fd);
+
 int uart_send_str(int uart_fd, char * str, int str_len);
 int uart_send_str_hex(int uart_fd, const char *hex_str);
+int uart_send_raw(int uart_fd, unsigned char *data, int data_len);
 // ADD MAC BUFFER
-// RSSI CHECK
+// RSSI CHECK;
 int ble_connect_check(int uart_fd);
 
 int ble_init(int uart_fd);
