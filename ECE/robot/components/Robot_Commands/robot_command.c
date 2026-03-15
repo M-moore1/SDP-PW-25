@@ -1,5 +1,5 @@
 #include "robot_commands.h"
-#include "robot_bt.h"
+#include "Robot_BLE.h"
 
 volatile int security_flag = 0;
 volatile uint16_t AC = 0x3FF;
@@ -56,7 +56,7 @@ void system_cmd(system_format_t sys, step_mot_t* F_L, step_mot_t* F_R, step_mot_
     if (AC != authorization_code) { 
         printf("Unathorized System Change");
         ack.result_code = RESULT_AUTH_FAIL;
-        esp_spp_write(spp_handle, sizeof(ack), (uint8_t *)&ack);
+        //esp_spp_write(spp_handle, sizeof(ack), (uint8_t *)&ack);
         return;
     }
     
@@ -76,7 +76,7 @@ void system_cmd(system_format_t sys, step_mot_t* F_L, step_mot_t* F_R, step_mot_
             break;
     }
 
-    esp_spp_write(spp_handle, sizeof(ack), (uint8_t *)&ack);
+    //esp_spp_write(spp_handle, sizeof(ack), (uint8_t *)&ack);
 }
 void query_cmd(query_format_t query, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* B_L, step_mot_t* B_R){
     printf("\nExecuting a Query CMD\n");
@@ -86,6 +86,6 @@ void query_cmd(query_format_t query, step_mot_t* F_L, step_mot_t* F_R, step_mot_
     ack.id = 0;    
     ack.result_code = RESULT_UNSUPPORTED_CMD;
 
-    esp_spp_write(spp_handle, sizeof(ack), (uint8_t *)&ack);
+    //esp_spp_write(spp_handle, sizeof(ack), (uint8_t *)&ack);
 
 }

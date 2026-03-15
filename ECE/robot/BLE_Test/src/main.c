@@ -57,7 +57,7 @@ void ble_recieve_parser(void *pvParameters)
             }
 
             if (xQueueSend(cmd_queue, received_packet, 0) != pdPASS) {
-                ESP_LOGW(TAG, "cmd_queue full");
+                ESP_LOGW(GATTS_TABLE_TAG, "cmd_queue full");
             }
         }
     }
@@ -77,7 +77,7 @@ void command_parser(void *pvParameters)
             command_type_t cmd_type = (command_type_t)cmd.ctrl.type;
             ESP_LOGI("CMD", "Extracted type: %u", cmd_type);
 
-            switch (type){
+            switch (cmd_type){
                 case CONTROL_CMD:
                     printf("I got a control instruction");
                     control_cmd(cmd.ctrl, &front_left, &front_right, &back_left, &back_right);
