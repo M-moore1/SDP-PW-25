@@ -36,6 +36,9 @@
 #define BR_MOTOR_EN      GPIO_NUM_23
 #define BR_MOTOR_PWM     LEDC_CHANNEL_3
 
+// Packet Info
+#define packet_size  156
+
 // Command Types
 typedef enum {
     CONTROL_CMD      = 0x01,  

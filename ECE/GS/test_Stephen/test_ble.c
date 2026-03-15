@@ -153,10 +153,10 @@ int main() {
             }
             if( c == 'a'){
                 
-                printf("MSG: %s \r\n", hex_string);
+                printf("MSG: %s \r\n", msg_send);
                 message_start = clock() / (CLOCKS_PER_SEC / 1000000);
-                //uart_send_str(bt_uart, hex_string, strlen(hex_string));
-                uart_send_instruction(bt_uart, instruction);
+                uart_send_str(bt_uart, msg_send, strlen(msg_send));
+                //uart_send_instruction(bt_uart, instruction);
                 
             }
 
@@ -165,13 +165,12 @@ int main() {
         long now = clock() / (CLOCKS_PER_SEC / 1000); 
         
         if (now - last >= SEND_INTERVAL) { 
-            /*
+            
             if (connected){
                 message_start = clock() / (CLOCKS_PER_SEC / 1000000);
                 uart_send_str(bt_uart, msg_send, strlen(msg_send));
             }          
             
-            */
             last = now;
         } 
         
