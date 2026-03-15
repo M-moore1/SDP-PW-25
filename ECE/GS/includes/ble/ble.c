@@ -303,7 +303,7 @@ int uart_send_str(int uart_fd, char *str, int str_len)
     memcpy(buffer, "CHW,002A,", 9);
     buffer[49] = '\r';
 
-    /* Build final packet */
+    //Final Packet Structure
     char packet[PACKET_HEX_LEN];
     memset(packet, '0', PACKET_HEX_LEN);
     // Start marker
