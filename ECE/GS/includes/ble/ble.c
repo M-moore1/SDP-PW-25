@@ -296,11 +296,8 @@ int ble_init(int uart_fd){
 
 int uart_send_str(int uart_fd, char *str, int str_len)
 {
-    if (str_len != PAYLOAD_HEX_LEN)
-    {
-        printf("Payload must be 156 bytes (312 hex chars)\n");
-        return -1;
-    }
+    if (str_len != PAYLOAD_HEX_LEN) return -1;
+    if (ble_connect_check(uart_fd) < 0) return -1;
 
     char buffer[50];                 // "CHW,002A," + 40 chars + '\r'
     memcpy(buffer, "CHW,002A,", 9);
@@ -313,7 +310,7 @@ int uart_send_str(int uart_fd, char *str, int str_len)
     packet[0] = '0'; packet[1] = 'A';
     packet[2] = 'D'; packet[3] = '0';
 
-    // Payload (156 bytes = 312 hex chars)
+   // Payload (156 bytes = 312 hex chars) 
     memcpy(packet + 4, str, PAYLOAD_HEX_LEN);
 
     // End marker
@@ -360,4 +357,18 @@ int uart_send_str(int uart_fd, char *str, int str_len)
     }
 
     return 0;
+}
+
+int uart_send_instruction(int uart_fd, uint8_t instruction[8]) {
+    char hex_str[312 + 1]; // Payload (156 bytes = 312 hex chars) 
+
+    //Convert instruction to hex_string
+    for (int i = 0; i < 156; i++) {
+        uint8_t byte = (i < 8) ? instruction[i] : 0x00;
+        sprintf(&hex_str[i * 2], "%02X", byte);
+    }
+    hex_str[312] = '\0';
+
+    return uart_send_str(uart_fd, hex_str, strlen(hex_str));
+
 }

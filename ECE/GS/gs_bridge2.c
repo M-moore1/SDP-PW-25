@@ -30,7 +30,8 @@
 #include <termios.h>                    // termios UART config
 #include <unistd.h>                     // read(), write(), close(), unlink()
 #include "includes/cmd_structure.h"
-#include "includes/bt2/bt2.h"
+#include "includes/ble/ble.h"
+#include "includes/ble/uart_queue.h"
 #include "includes/cmd_parser/cmd_parser.h"
 #include "includes/json_uds/json_uds.h"
 
@@ -40,7 +41,6 @@
 
 #define DEFAULT_UDS_PATH "/tmp/gs_bridge.sock" // Socket file path for Node<->C IPC
 #define DEFAULT_UART_DEV "/dev/ttyPS2"         // Default UART device (Zynq PS UART)
-#define DEFAULT_UART_BAUD B115200              // Default baud rate (termios constant)
 #define ESP32_MACADDRESS "441d64f11a86"
 
 
@@ -67,6 +67,8 @@ int main(int argc, char **argv) {
 
   int uart_fd = uart_open_config(uart_dev, DEFAULT_UART_BAUD); // Open/config UART
   if (uart_fd < 0) return 1;                               // If failed, exit
+  if (ble_init(uart_fd) < 0) return 1; // Init BLE
+  
 
   int uds_listen = uds_server_listen(uds_path);            // Create UDS listening socket
   if (uds_listen < 0) return 1;                            // If failed, exit
@@ -97,11 +99,11 @@ int main(int argc, char **argv) {
         const char *esp32_mac = ESP32_MACADDRESS;  
         
         printf("Entering cmd\n");
-        printf("RN-42: connecting to ESP32 MAC %s...\n", esp32_mac);
-        if (rn42_connect_mac(uart_fd, esp32_mac) != 0) {
-          printf("RN-42: connect attempt failed (will not retry unless Node reconnects)\n");
+        printf("BLE: connecting to ESP32 MAC %s...\n", esp32_mac);
+        if (ble_connect_mac(uart_fd, "441D64F11A86") != 0) {
+          printf("BLE: connect attempt failed (will not retry unless Node reconnects)\n");
         } else {
-          printf("RN-42: connect command sent.\n");
+          printf("BLE: connect command sent.\n");
         }
         
       }
@@ -163,7 +165,7 @@ int main(int argc, char **argv) {
 
         // Fast path: if it looks like JSON and parses, treat as plaintext JSON
         if (looks_like_json(buf)) {
-          printf("I GOT a JSON\r\n");
+          //printf("I GOT a JSON\r\n");
           cJSON *probe = cJSON_Parse(buf);
           if (probe) {
             cJSON_Delete(probe);

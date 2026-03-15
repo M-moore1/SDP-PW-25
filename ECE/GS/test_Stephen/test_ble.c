@@ -53,6 +53,7 @@ int main() {
     }
     
     char *msg_send = "8BDF573D3D50AF81FAD29D955B91D6BC09FF99709565F114ACDA91469379B86EC63824B37339EEC7AA903929137BD367D00B0A99534505FB3E603E24D02D77B1DBECA6931B981D18AE316FA14F2B32B8CB778305174D6961FDD3BEA0BE071223C75C3856286788AAEA14BCCD93A3F76FD1DDDD58C824E3467B73FF81F4D4AFAD61DB4398F119542F136E2C6AAB3B68615BCE9D26E148F04226C4994C";
+    uint8_t instruction[8] = { 0x12, 0x34, 0x56, 0x78, 0x54, 0x23, 0x08, 0x04 };
     while(1){
         ble_uart_check(bt_uart);
         char msg[256];
@@ -154,7 +155,8 @@ int main() {
                 
                 printf("MSG: %s \r\n", hex_string);
                 message_start = clock() / (CLOCKS_PER_SEC / 1000000);
-                uart_send_str(bt_uart, hex_string, strlen(hex_string));
+                //uart_send_str(bt_uart, hex_string, strlen(hex_string));
+                uart_send_instruction(bt_uart, instruction);
                 
             }
 
@@ -163,13 +165,13 @@ int main() {
         long now = clock() / (CLOCKS_PER_SEC / 1000); 
         
         if (now - last >= SEND_INTERVAL) { 
-            
+            /*
             if (connected){
                 message_start = clock() / (CLOCKS_PER_SEC / 1000000);
                 uart_send_str(bt_uart, msg_send, strlen(msg_send));
             }          
             
-            
+            */
             last = now;
         } 
         

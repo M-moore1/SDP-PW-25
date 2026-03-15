@@ -11,7 +11,7 @@
 #include <inttypes.h>
 
 #define DEFAULT_UART_DEV "/dev/ttyPS2"         // Default UART device (Zynq PS UART)
-#define DEFAULT_UART_BAUD B115200              // Default baud rate (termios constant)
+#define DEFAULT_UART_BAUD B921600             // Default baud rate (termios constant)
 
 extern volatile int ble_cmd_state;
 
@@ -25,9 +25,8 @@ int ble_enter_client_mode(int uart_fd);
 int ble_connect_mac(int uart_fd, const char *mac);
 int ble_disconnect(int uart_fd);
 
+int uart_send_instruction(int uart_fd, uint8_t instruction[8]);
 int uart_send_str(int uart_fd, char * str, int str_len);
-int uart_send_str_hex(int uart_fd, const char *hex_str);
-int uart_send_raw(int uart_fd, unsigned char *data, int data_len);
 // ADD MAC BUFFER
 // RSSI CHECK;
 int ble_connect_check(int uart_fd);
@@ -35,8 +34,7 @@ int ble_connect_check(int uart_fd);
 int ble_init(int uart_fd);
 
 
-int uart_send_encrypted(int uart_fd, uint8_t *packet);
-int uart_send_instruction(int uart_fd, uint64_t instruction);
+
 
 
 

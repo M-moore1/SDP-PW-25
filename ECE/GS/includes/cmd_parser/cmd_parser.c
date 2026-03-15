@@ -12,12 +12,12 @@ void sys_cmd(int uart_fd, system_format_t sys_inst){
 
       break;
     case Connect_Reconnect:
-      rn42_connect_mac(uart_fd, "441d64f17066");
+      ble_connect_mac(uart_fd, "441d64f17066");
 
       break;
 
     case DISCONNECT:
-      rn42_disconnect(uart_fd);
+      ble_disconnect(uart_fd);
       break;
   }
   
@@ -31,25 +31,12 @@ int handle_encrypted_data(int uart_fd, int uds_fd, const char *encrypt_str){
   // TEST WITH NO GS ENCRYPTION JUST SEND to ROBOT NO MATTER WHAT
   // DO NOT CHANGE
   // START
-    uint8_t raw_packet[156];
-    memset(raw_packet, 0, sizeof(raw_packet));
 
-    for (int i = 0; i < 156; i++) {
-        if (sscanf(&encrypt_str[i * 2], "%2hhx", &raw_packet[i]) != 1) {
-            break; 
-        }
-    }
+  uart_send_str(uart_fd, encrypt_str, 312);
+  // END
+  // Implement DECRYPTION then send to handle json also add json send back feedback
 
-    //Now send the raw bytes to the UART
-    ssize_t n = uart_send_encrypted(uart_fd, raw_packet);
-    if (n < 0) {
-        perror("UART Write Error");
-       return -1;
-    }
-    // END
-    // Implement DECRYPTION then send to handle json also add json send back feedback
-
-    return 0;
+  return 0;
 }
 
 // ------------------------- Handle Node JSON -------------------------
@@ -175,7 +162,8 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
     
   }
   // TODO add priority Queue   
-  return uart_send_instruction(uart_fd, packet.raw);
+  
+  return uart_send_instruction(uart_fd, packet.bytes);
     
 
   return 0;
