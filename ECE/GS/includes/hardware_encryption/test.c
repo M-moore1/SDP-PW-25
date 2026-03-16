@@ -1,64 +1,96 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <fcntl.h>
 #include <unistd.h>
+#include <sys/socket.h>
+#include <linux/if_alg.h>
+#include <linux/socket.h>
+#include <string.h>
+#include <stdint.h>
+#include <errno.h>
 
-#define CSU_CONFIG_REG "/sys/firmware/zynqmp/config_reg"
-#define AES_CFG_ADDR 0x00FFCA1018
+#ifndef SOL_ALG
+#define SOL_ALG 279
+#endif
 
-// Read register using echo+cat method (write address, then read)
-uint32_t read_csu_reg(uint64_t addr) {
-    char cmd[128];
-    snprintf(cmd, sizeof(cmd), "echo 0x%lX > %s", addr, CSU_CONFIG_REG);
-    int ret = system(cmd);
-    if(ret != 0) {
-        perror("echo address");
-        return 0xFFFFFFFF;
+#define TOTAL_SZ 156
+#define IV_SZ    12
+#define TAG_SZ   16
+#define CT_SZ    (TOTAL_SZ - IV_SZ - TAG_SZ) // Exactly 128 bytes
+
+int main(void) {
+    int opfd, tfmfd;
+    struct sockaddr_alg sa = {.salg_family = AF_ALG, .salg_type = "aead", .salg_name = "gcm(aes)"};
+    struct msghdr msg = {0};
+    struct cmsghdr *cmsg;
+    char cbuf[CMSG_SPACE(4) + CMSG_SPACE(sizeof(struct af_alg_iv) + IV_SZ)] = {0};
+    uint8_t output[CT_SZ + 1];
+
+    // Your raw 156-byte buffer
+    uint8_t raw[TOTAL_SZ] = {
+        0x8B, 0xDF, 0x57, 0x3D, 0x3D, 0x50, 0xAF, 0x81, 0xFA, 0xD2, 0x9D, 0x95, // IV
+        0x5B, 0x91, 0xD6, 0xBC, 0x09, 0xFF, 0x99, 0x70, 0x95, 0x65, 0xF1, 0x14, 0xAC, 0xDA, 0x91, 0x46, 
+        0x93, 0x79, 0xB8, 0x6E, 0xC6, 0x38, 0x24, 0xB3, 0x73, 0x39, 0xEE, 0xC7, 0xAA, 0x90, 0x39, 0x29, 
+        0x13, 0x7B, 0xD3, 0x67, 0xD0, 0x0B, 0x0A, 0x99, 0x53, 0x45, 0x05, 0xFB, 0x3E, 0x60, 0x3E, 0x24, 
+        0xD0, 0x2D, 0x77, 0xB1, 0xDB, 0xEC, 0xA6, 0x93, 0x1B, 0x98, 0x1D, 0x18, 0xAE, 0x31, 0x6F, 0xA1, 
+        0x4F, 0x2B, 0x32, 0xB8, 0xCB, 0x77, 0x83, 0x05, 0x17, 0x4D, 0x69, 0x61, 0xFD, 0xD3, 0xBE, 0xA0, 
+        0xBE, 0x07, 0x12, 0x23, 0xC7, 0x5C, 0x38, 0x56, 0x28, 0x67, 0x88, 0xAA, 0xEA, 0x14, 0xBC, 0xCD, 
+        0x93, 0xA3, 0xF7, 0x6F, 0xD1, 0xDD, 0xDD, 0x58, 0xC8, 0x24, 0xE3, 0x46, 0x7B, 0x73, 0xFF, 0x81, 
+        0xF4, 0xD4, 0xAF, 0xAD, 0x61, 0xDB, 0x43, 0x98, 0xF1, 0x19, 0x54, 0x2F, 0x13, 0x6E, 0x2C, 0x6A, // CT ends
+        0xAB, 0x3B, 0x68, 0x61, 0x5B, 0xCE, 0x9D, 0x26, 0xE1, 0x48, 0xF0, 0x42, 0x26, 0xC4, 0x99, 0x4C  // Tag
+    };
+
+    uint8_t key[32] = {
+        0xa1, 0xb2, 0xc3, 0xd4, 0xe5, 0xf6, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56,
+        0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56
+    };
+    uint8_t key_type = 0;
+
+    tfmfd = socket(AF_ALG, SOCK_SEQPACKET, 0);
+    bind(tfmfd, (struct sockaddr *)&sa, sizeof(sa));
+
+    uint32_t authsize = TAG_SZ;
+    setsockopt(tfmfd, SOL_ALG, ALG_SET_AEAD_AUTHSIZE, &authsize, sizeof(authsize));
+    setsockopt(tfmfd, SOL_ALG, ALG_SET_KEY, &key_type, 1);
+    setsockopt(tfmfd, SOL_ALG, ALG_SET_KEY, key, 32);
+
+    opfd = accept(tfmfd, NULL, 0);
+
+    msg.msg_control = cbuf;
+    msg.msg_controllen = sizeof(cbuf);
+
+    // Op
+    cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_level = SOL_ALG;
+    cmsg->cmsg_type = ALG_SET_OP;
+    cmsg->cmsg_len = CMSG_LEN(4);
+    *(uint32_t *)CMSG_DATA(cmsg) = ALG_OP_DECRYPT;
+
+    // IV
+    cmsg = CMSG_NXTHDR(&msg, cmsg);
+    cmsg->cmsg_level = SOL_ALG;
+    cmsg->cmsg_type = ALG_SET_IV;
+    cmsg->cmsg_len = CMSG_LEN(sizeof(struct af_alg_iv) + IV_SZ);
+    struct af_alg_iv *iv_ptr = (void *)CMSG_DATA(cmsg);
+    iv_ptr->ivlen = IV_SZ;
+    memcpy(iv_ptr->iv, raw, IV_SZ);
+
+    // Ciphertext + Tag
+    struct iovec iov = {.iov_base = raw + IV_SZ, .iov_len = CT_SZ + TAG_SZ};
+    msg.msg_iov = &iov;
+    msg.msg_iovlen = 1;
+
+    sendmsg(opfd, &msg, 0);
+    int res = read(opfd, output, CT_SZ);
+
+    if (res < 0) {
+        printf("Decryption failed: %s\n", strerror(errno));
+    } else {
+        output[res] = '\0';
+        printf("Decrypted (String): %s\n", output);
+        printf("Decrypted (Hex): ");
+        for(int i=0; i<res; i++) printf("%02x", output[i]);
+        printf("\n");
     }
 
-    FILE *f = fopen(CSU_CONFIG_REG, "r");
-    if(!f) {
-        perror("fopen");
-        return 0xFFFFFFFF;
-    }
-    uint32_t val;
-    if(fscanf(f, "%x", &val) != 1) val = 0xFFFFFFFF;
-    fclose(f);
-    return val;
-}
-
-// Write register using ASCII string
-int write_csu_reg(uint64_t addr, uint32_t mask, uint32_t value) {
-    char cmd[256];
-    snprintf(cmd, sizeof(cmd), "echo 0x%lX 0x%X 0x%X > %s", addr, mask, value, CSU_CONFIG_REG);
-    int ret = system(cmd);
-    if(ret != 0) {
-        perror("write command");
-        return -1;
-    }
-    return 0;
-}
-
-int main() {
-    printf("Reading AES_CFG register...\n");
-    uint32_t val = read_csu_reg(AES_CFG_ADDR);
-    printf("AES_CFG initial = 0x%08X\n", val);
-
-    printf("Writing 0x0 to AES_CFG register (set Decryption)...\n");
-    if(write_csu_reg(AES_CFG_ADDR, 0xFFFFFFFF, 0x01) != 0) {
-        printf("Failed to write AES_CFG\n");
-        return 1;
-    }
-
-    printf("Reading AES_CFG register again...\n");
-    val = read_csu_reg(AES_CFG_ADDR);
-    printf("AES_CFG after write = 0x%08X\n", val);
-
-    if (val & 0x1)
-        printf("AES Mode: Encryption\n");
-    else
-        printf("AES Mode: Decryption\n");
-
+    close(opfd); close(tfmfd);
     return 0;
 }
