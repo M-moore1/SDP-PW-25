@@ -15,6 +15,7 @@
 #define IV_SZ    12
 #define TAG_SZ   16
 #define CT_SZ    (TOTAL_SZ - IV_SZ - TAG_SZ) // Exactly 128 bytes
+#define KEY_SIZE        32
 
 int main(void) {
     int opfd, tfmfd;

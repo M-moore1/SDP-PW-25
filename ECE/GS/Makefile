@@ -7,6 +7,7 @@ INCLUDES = -I./includes/json_uds \
            -I./includes/ble \
            -I./includes/cmd_parser \
            -I./includes/cmd_structure \
+           -I./includes/hardware_crypto \
            -I$(CJSON_DIR)
 
 SRCS = gs_bridge2.c \
@@ -14,6 +15,7 @@ SRCS = gs_bridge2.c \
        includes/cmd_parser/cmd_parser.c \
        includes/ble/ble.c \
        includes/ble/uart_queue.c \
+       includes/hardware_crypto/software_cryptography.c \
        $(CJSON_DIR)/cJSON.c
 
 TARGET = gs_bridge2.o

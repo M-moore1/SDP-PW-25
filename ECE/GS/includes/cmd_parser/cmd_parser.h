@@ -5,6 +5,7 @@
 
 #include "../cmd_structure.h"
 #include "../ble/ble.h"
+#include "../hardware_crypto/software_cryptography.h"
 //#include "../json_uds/json_uds.h"
 
 extern volatile int security_level;

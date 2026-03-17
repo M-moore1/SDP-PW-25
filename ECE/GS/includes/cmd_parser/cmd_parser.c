@@ -28,13 +28,23 @@ void query_cmd(int uart_fd, query_format_t query_inst){
 }
 
 int handle_encrypted_data(int uart_fd, int uds_fd, const char *encrypt_str){
-  // TEST WITH NO GS ENCRYPTION JUST SEND to ROBOT NO MATTER WHAT
-  // DO NOT CHANGE
-  // START
-
-  uart_send_str(uart_fd, encrypt_str, 312);
+  // TEST WITH NO GS CRYPTOGRAPHY JUST SEND to ROBOT
+  //uart_send_str(uart_fd, encrypt_str, str_len(encrypt_str));
   // END
   // Implement DECRYPTION then send to handle json also add json send back feedback
+
+  //Do Decrypt
+  uint8_t decrypted_raw[CT_SZ + 1] = {0};
+  int len = sw_decryption(encrypt_str, decrypted_raw);
+
+  if (len < 0) { return - 1; }
+
+  int json_len = strip_pad(decrypted_raw, len);
+  decrypted_raw[json_len] = '\0';
+
+  printf("Decrypted JSON (%d bytes): %s\n", json_len, (const char *)decrypted_raw);
+  handle_node_json(uart_fd, uds_fd, (const char *)decrypted_raw);
+
 
   return 0;
 }
@@ -46,13 +56,6 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
   if (!root) {
     uds_send_json(uds_fd, "{\"type\":\"ERR\",\"msg\":\"bad json\"}");
     return -1;
-  }
-
-  // Placeholder for future AES-GCM decryption
-  if (security_level) {
-    // TODO: decrypt json_str if your team moves to encrypted JSON
-    
-
   }
 
   cJSON *type_item = cJSON_GetObjectItemCaseSensitive(root, "type");
@@ -156,15 +159,17 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
   cJSON_Delete(root);
 
   if (security_level) {
-    // TODO: Wrap packet.raw in AES-GCM 33-byte envelope here
+    char encrypted_string[PAYLOAD_HEX_STR_LEN + 1] = {0};
+    if (encrypt_instr(packet.bytes, encrypted_string) != 0) {
+      printf("ERROR: encryption failed\n");
+      return 1;
+    }
     
-        // return uart_send_encrypted(uart_fd, packet.raw);
+    return uart_send_str(uart_fd, encrypted_string, strlen(encrypted_string));
     
   }
   // TODO add priority Queue   
   
   return uart_send_instruction(uart_fd, packet.bytes);
-    
-
-  return 0;
+  
 }
