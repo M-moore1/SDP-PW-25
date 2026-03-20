@@ -138,6 +138,17 @@ void send_string(char *txt){
                 strlen(txt), (uint8_t *)txt, false); 
 }
 
+void send_instr(uint8_t pkt[8]) {
+    esp_ble_gatts_send_indicate(
+        robot_gatts_if, 
+        robot_conn_id, 
+        robot_handle_table[ROBOT_IDX_VAL],
+        8,              
+        pkt,     
+        false      
+    ); 
+}
+
 // GAP Callback - handles advertising start and stop
 void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {

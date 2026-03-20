@@ -15,6 +15,7 @@
 #include "esp_bt_main.h"
 #include "esp_bt_device.h"
 #include "esp_gatt_common_api.h"
+#include "pinout.h"
 
 #define GATTS_TABLE_TAG "ROBOT_SDP2635"
 #define ROBOT_PROFILE_NUM                       1
@@ -57,6 +58,7 @@ extern QueueHandle_t ble_recieve_queue;
 // Function declarations
 void robot_ble_init();
 void send_string(char *txt);
+void send_instr(uint8_t pkt[8]);
 void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
 void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
 

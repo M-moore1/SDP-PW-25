@@ -57,8 +57,7 @@ void app_main(void) {
 
             ESP_LOGI(IMU_TAG, "EULER  yaw=%7.2f  pitch=%7.2f  roll=%7.2f deg",
                      g_imu_euler.yaw, g_imu_euler.pitch, g_imu_euler.roll);
-
-            ESP_LOGI(IMU_TAG, "---");
+            
         }
 
         vTaskDelay(pdMS_TO_TICKS(5));

@@ -35,7 +35,7 @@ void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_m
 
 }
 
-void pose_cmd(uint64_t inst, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* B_L, step_mot_t* B_R){
+void arm_cmd(uint64_t inst, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* B_L, step_mot_t* B_R){
     printf("\nExecuting a Pose CMD\n");
 }
 

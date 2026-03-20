@@ -5,6 +5,7 @@ vec3_t       g_imu_accel = {0};
 gyro_t       g_imu_gyro  = {0};
 euler_t      g_imu_euler = {0};
 
+
 size_t shtp_read(i2c_master_dev_handle_t dev, uint8_t *buf, size_t buf_len) {
     uint8_t header[4] = {0};
     vTaskDelay(pdMS_TO_TICKS(2));

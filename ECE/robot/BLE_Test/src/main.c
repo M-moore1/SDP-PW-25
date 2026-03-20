@@ -13,7 +13,8 @@
 #include "Robot_BLE.h"
 #include "pinout.h"
 #include "robot_commands.h"
-
+#include "i2c.h"
+#include "imu.h"
 //#include "aes_gcm_decrypt.h"
 
 step_mot_t test_motor;
@@ -83,9 +84,9 @@ void command_parser(void *pvParameters)
                     control_cmd(cmd.ctrl, &front_left, &front_right, &back_left, &back_right);
                 break;
 
-                case POSE_CMD:
+                case ARM_CMD:
                     printf("I got a Pose instruction");
-                    pose_cmd(inst, &test_motor, &test_motor, &test_motor, &test_motor);
+                    arm_cmd(inst, &test_motor, &test_motor, &test_motor, &test_motor);
                 break;
 
                 case System_CMD:
@@ -117,7 +118,14 @@ void command_parser(void *pvParameters)
 
 void app_main()
 {
-    
+    i2c_master_bus_handle_t i2c_bus = i2c_init();
+    i2c_master_dev_handle_t imu     = device_init(i2c_bus, IMU_ADDR);
+
+    if (!bno08x_init(imu)) {
+        ESP_LOGE(IMU_TAG, "Failed to init BNO08x, halting");
+        while (1) { vTaskDelay(pdMS_TO_TICKS(1000)); }
+    }
+
     ESP_ERROR_CHECK(nvs_flash_init()); // Initialize NVS
     robot_ble_init();                  // Initialize BLE
 
@@ -130,18 +138,56 @@ void app_main()
     
     char *msg1 = "hello";
     char *msg2 = "testing";
+    robot_bt_packet_t status_pkt = {0};
+    status_pkt.nav.type  = 0x05;
 
     xTaskCreatePinnedToCore( ble_recieve_parser, "ble_recieve_parser", 4096, NULL, 5, NULL, 1);
     xTaskCreatePinnedToCore( command_parser, "robot_command_parser", 4096, NULL, 5, NULL, 1);
 
     while (1) {
-        /*
+        imu_check(imu);
+        
+        
         if (device_connected && notify_enabled) {
-            send_string(msg2);  
-            vTaskDelay(pdMS_TO_TICKS(200));
-            send_string(msg1);
+
+            status_pkt.nav.pl    = 1;
+            status_pkt.nav.type  = ROBOT_UPDATE_CMD; 
+            status_pkt.nav.part  = 0;                
+            status_pkt.nav.speed = 50; 
+
+            status_pkt.nav.pos_x = 0; // Signed mm
+            status_pkt.nav.pos_y = 0; // Signed mm
+            status_pkt.nav.pos_z = 0; // Signed mm
+            send_instr(status_pkt.bytes);
+            vTaskDelay(pdMS_TO_TICKS(10));
+
+            status_pkt.pose.pl    = 1;
+            status_pkt.pose.type  = ROBOT_UPDATE_CMD; // 0x05
+            status_pkt.pose.part  = 1;                // 0b01
+
+            status_pkt.pose.yaw   = (uint32_t)(g_imu_euler.yaw * 100);   // Unsigned
+            status_pkt.pose.pitch = (int32_t)(g_imu_euler.pitch * 100);  // Signed
+            status_pkt.pose.roll  = (int32_t)(g_imu_euler.roll * 100);   // Signed
+            send_instr(status_pkt.bytes);
+            vTaskDelay(pdMS_TO_TICKS(10));
+
+            status_pkt.inert.pl   = 1;
+            status_pkt.inert.type = ROBOT_UPDATE_CMD; // 0x05
+            status_pkt.inert.part = 2;                // 0b10
+
+            // Acceleration (m/s²) - Signed
+            status_pkt.inert.accel_x = (int16_t)(g_imu_accel.x * 10);
+            status_pkt.inert.accel_y = (int16_t)(g_imu_accel.y * 10);
+            status_pkt.inert.accel_z = (int16_t)(g_imu_accel.z * 10);
+
+            // Gyroscope (deg/s) - Signed
+            status_pkt.inert.gyro_x  = (int16_t)(g_imu_gyro.x_degs * 10);
+            status_pkt.inert.gyro_y  = (int16_t)(g_imu_gyro.y_degs * 10);
+            status_pkt.inert.gyro_z  = (int16_t)(g_imu_gyro.z_degs * 10);
+            send_instr(status_pkt.bytes);
+            vTaskDelay(pdMS_TO_TICKS(10));
         }
-        */
+        
         vTaskDelay(pdMS_TO_TICKS(2000)); // 2 seconds
         
     }
