@@ -61,6 +61,6 @@ int uart_read_and_queue(int uart_fd, char *buffer, size_t size)
 
 int ble_uart_check(int uart_fd)
 {
-    char buffer[256];
+    char buffer[1024];
     return uart_read_to_queue(uart_fd, buffer, sizeof(buffer));
 }

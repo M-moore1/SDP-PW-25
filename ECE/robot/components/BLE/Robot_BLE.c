@@ -138,6 +138,25 @@ void send_string(char *txt){
                 strlen(txt), (uint8_t *)txt, false); 
 }
 
+void send_payload(uint8_t pkt[156]) {
+    
+    char hex[313] = {0}; 
+
+    for (int i = 0; i < 156; i++) {
+        snprintf(&hex[i * 2], 3, "%02X", pkt[i]);
+    }
+
+
+    esp_ble_gatts_send_indicate(
+        robot_gatts_if, 
+        robot_conn_id, 
+        robot_handle_table[ROBOT_IDX_VAL],
+        312, // 156 * 2
+        (uint8_t *)hex, 
+        false
+    );
+}
+
 void send_instr(uint8_t pkt[8]) {
     char hex[17] = {0}; // 8 bytes * 2 hex chars + null
     for (int i = 0; i < 8; i++) {
@@ -222,6 +241,7 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
             rx_idx = 0;
             esp_ble_gap_stop_advertising();
             robot_conn_id = param->connect.conn_id;
+            esp_ble_gap_set_pkt_data_len(param->connect.remote_bda, 251);
             robot_gatts_if = gatts_if;
             device_connected = true;
 
@@ -251,7 +271,7 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
         case ESP_GATTS_WRITE_EVT:
         {
             if (!param->write.is_prep) {
-                
+                /*
                 ESP_LOGI(GATTS_TABLE_TAG, "Write event, handle=%d len=%d", 
                         param->write.handle,
                         param->write.len);
@@ -259,7 +279,7 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
                 ESP_LOG_BUFFER_HEX(GATTS_TABLE_TAG,
                                 param->write.value,
                                 param->write.len);
-                
+                */
                 //printf("Results %s\n ", (char *)(param->write.value)[1]);
                 if (param->write.handle == robot_handle_table[ROBOT_IDX_CFG]){
                     uint16_t descr_value =
@@ -275,8 +295,6 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
                         notify_enabled = false;
                     }
                 }else if (param->write.handle == robot_handle_table[ROBOT_IDX_VAL]) {
-
-                    printf("GOT TO ROBOT SERVICE WRITE");
                     uint16_t incoming_len = param->write.len;
                     uint8_t *incoming_data = param->write.value;
 

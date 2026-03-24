@@ -13,7 +13,7 @@
 
 #define byte_test_size  156
 #define AVG_SAMPLES    100   
-#define SEND_INTERVAL  50
+#define SEND_INTERVAL  1000
 
 //gcc -O2 -Wall -Wextra test_esp32.c ../includes/ble/pmod_esp32.c -I.../includes/cmd_structure ../includes/ble/uart_queue.c -o test_esp.o
 
@@ -51,7 +51,7 @@ int main() {
         char rx_buffer[256]; 
 
         if (uart_queue_pop(&uart_queue, rx_buffer) == 0){
-            //printf("[UART OUTPUT] %s\r\n", rx_buffer);
+            printf("[UART OUTPUT] %s\r\n", rx_buffer);
             if (strstr(rx_buffer, "NOTIFY") != NULL) 
             {
                 
@@ -111,7 +111,7 @@ int main() {
                 memset(conn_results, 0, sizeof(conn_results));
 
                 if (send_at_cmd(bt_uart, "AT+BLECONNPARAM?\r\n", "+BLECONNPARAM:", conn_results, 1000) == 0) {
-                    printf("Current Params: %s\r\n", conn_results);
+                    //printf("Current Params: %s\r\n", conn_results);
                 } else {
                     printf("Failed to retrieve parameters. (Are you connected?)\r\n");
                 }
