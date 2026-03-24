@@ -12,12 +12,12 @@ void sys_cmd(int uart_fd, system_format_t sys_inst){
 
       break;
     case Connect_Reconnect:
-      ble_connect_mac(uart_fd, "441d64f17066");
+      ble_connect(uart_fd, ESP32_MAC);
 
       break;
 
     case DISCONNECT:
-      ble_disconnect(uart_fd);
+      ble_discon(uart_fd);
       break;
   }
   
@@ -164,12 +164,17 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
       printf("ERROR: encryption failed\n");
       return 1;
     }
+
+    uint8_t payload[PAYLOAD_BYTES];
+    for (int i = 0; i < PAYLOAD_BYTES; i++) {
+      char byte_str[3] = { encrypted_string[i * 2], encrypted_string[i * 2 + 1], '\0' };
+      payload[i] = (uint8_t)strtol(byte_str, NULL, 16);
+    }
     
-    return uart_send_str(uart_fd, encrypted_string, strlen(encrypted_string));
+    return ble_send_pkt(uart_fd, payload, PAYLOAD_BYTES);
     
   }
   // TODO add priority Queue   
   
-  return uart_send_instruction(uart_fd, packet.bytes);
-  
+  return ble_send_instruction(uart_fd, packet.bytes);
 }

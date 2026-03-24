@@ -6,9 +6,10 @@
 #include <termios.h>
 #include <stdint.h>
 #include <time.h>
+
 #include "../includes/ble/ble.h"
-#include "../includes/cmd_structure.h"
 #include "../includes/ble/uart_queue.h"
+#include "../includes/cmd_structure.h"
 //gcc -O2 -Wall -Wextra test_ble.c ../includes/ble/ble.c ../includes/ble/uart_queue.c -I../includes -o test_ble.o
 
 

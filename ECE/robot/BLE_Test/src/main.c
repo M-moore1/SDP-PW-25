@@ -148,8 +148,9 @@ void app_main()
         imu_check(imu);
         
         
+        
         if (device_connected && notify_enabled) {
-
+            /*
             status_pkt.nav.pl    = 1;
             status_pkt.nav.type  = ROBOT_UPDATE_CMD; 
             status_pkt.nav.part  = 0;                
@@ -186,6 +187,11 @@ void app_main()
             status_pkt.inert.gyro_z  = (int16_t)(g_imu_gyro.z_degs * 10);
             send_instr(status_pkt.bytes);
             vTaskDelay(pdMS_TO_TICKS(10));
+            
+            send_string(msg2);  
+            vTaskDelay(pdMS_TO_TICKS(200));
+            send_string(msg1);
+            */
         }
         
         vTaskDelay(pdMS_TO_TICKS(2000)); // 2 seconds

@@ -156,3 +156,64 @@ int imu_check(i2c_master_dev_handle_t imu){
     return 0;
 
 }
+
+
+
+// commands for tare/zeroing the IMU
+bool bno085_save_settings_cmd(i2c_master_dev_handle_t dev) {
+    uint8_t save_cmd[16] = {
+        0x10, 0x00, 0x02, 0x00,  // Header
+        0xF2, 0x00, 0x03, 0x01,  // Command Payload (Persistent Tare)
+        0x00, 0x00, 0x00, 0x00,  // Padding
+        0x00, 0x00, 0x00, 0x00,  // Padding
+    };
+
+    
+    bool save_ok = false;
+    for (int i = 0; i < 5; i++) {
+        if (i2c_master_transmit(dev, save_cmd, sizeof(save_cmd), 5000) == ESP_OK) {
+            save_ok = true;
+            break;
+        }
+        vTaskDelay(pdMS_TO_TICKS(50));
+    }
+    if (!save_ok) { ESP_LOGE(IMU_TAG, "Saved tare failed"); return false; }
+    vTaskDelay(pdMS_TO_TICKS(500));
+
+    ESP_LOGI(IMU_TAG, "Save tare worked");
+    return true;
+}
+
+/*
+    alternative
+    uint8_t tare_cmd[16] = {
+    0x10, 0x00, 0x02, 0x01,  // SHTP header: length=16, channel=2, seq=1
+    0xF2, 0x00, 0x03, 0x00,  // Command=0xF2, seq=0, subcmd=0x00 (Tare Now)
+    0x07, 0x04, 0x00, 0x00,  // P1=0x07 (all axes), P2=0x04 (rotation vector)
+    0x00, 0x00, 0x00, 0x00
+};
+*/
+
+bool bno085_tare_cmd(i2c_master_dev_handle_t dev) {
+    uint8_t tare_cmd[16] = {
+        0x10, 0x00, 0x02, 0x01,  // Header (SHTP seq 1)
+        0xF2, 0x00, 0x03, 0x01,  // Payload (Cmd Seq 1, Sub 0x00 Tare_Now)
+        0x07, 0x04, 0x00, 0x00,  // P1: 0x07 (All Axes), P2: P2: 0x04 (Rotation Vector)
+        0x00, 0x00, 0x00, 0x00  // Padding
+    };
+
+    
+    bool tare_ok = false;
+    for (int i = 0; i < 5; i++) {
+        if (i2c_master_transmit(dev, tare_cmd, sizeof(tare_cmd), 5000) == ESP_OK) {
+            tare_ok = true;
+            break;
+        }
+        vTaskDelay(pdMS_TO_TICKS(50));
+    }
+    if (!tare_ok) { ESP_LOGE(IMU_TAG, "Tare now failed"); return false; }
+    vTaskDelay(pdMS_TO_TICKS(500));
+
+    ESP_LOGI(IMU_TAG, "Tare now worked");
+    return true;
+}

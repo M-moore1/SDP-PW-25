@@ -13,7 +13,8 @@
 #include "i2c.h"
 #include "imu.h"
 
-#define PRINT_EVERY_MS  500
+#define PRINT_EVERY_MS  50
+#define INT_PIN 18
 
 step_mot_t front_left;
 step_mot_t front_right;
@@ -30,6 +31,62 @@ void app_main(void) {
         ESP_LOGE(IMU_TAG, "Failed to init BNO08x, halting");
         while (1) { vTaskDelay(pdMS_TO_TICKS(1000)); }
     }
+
+    gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT);
+    gpio_set_direction(GPIO_NUM_18, GPIO_MODE_INPUT);
+
+
+
+    // Steps for handshake
+
+    // 1) Pull PIN 19 LOW for 10ms
+    gpio_set_level(GPIO_NUM_19, 1);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+
+    gpio_set_level(GPIO_NUM_19, 0);
+    vTaskDelay(pdMS_TO_TICKS(20));
+    // 2) Pull PIN 19 HIGH for 1000ms
+    gpio_set_level(GPIO_NUM_19, 1);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+
+    printf("Reset Finish\n");
+
+    // 3) Read 5-6 Packets of info using i2c_master_recieve       ###TODO
+    uint8_t rx_buf[256];
+    for (int i = 0; i < 6; i++) {
+        while (gpio_get_level(INT_PIN) == 1) { vTaskDelay(pdMS_TO_TICKS(1)); }
+        i2c_master_receive(imu, rx_buf, sizeof(rx_buf), 5000);
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+
+    // 4) Wait until INT_PIN 18 is low
+    while(gpio_get_level(INT_PIN) == 1){vTaskDelay(pdMS_TO_TICKS(1));}
+
+
+    // 5) Send over tare_cmd packet over I2C
+    if (!bno085_tare_cmd(imu)) {
+        ESP_LOGE(IMU_TAG, "Failed to tare BNO08x, halting");
+        while (1) { vTaskDelay(pdMS_TO_TICKS(1000)); }
+    }
+
+    // 6) Read 1 Packets of info using i2c_master_recieve          ###TODO
+
+    for (int i = 0; i < 6; i++) {
+        while (gpio_get_level(INT_PIN) == 1) { vTaskDelay(pdMS_TO_TICKS(1)); }
+        i2c_master_receive(imu, rx_buf, sizeof(rx_buf), 5000);
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+
+    // 7) Wait until INT_PIN 18 is low
+    while(gpio_get_level(INT_PIN) == 1){vTaskDelay(pdMS_TO_TICKS(1));}
+
+    // 8) Send over save settings cmd_packet over I2C
+    if (!bno085_save_settings_cmd(imu)) {
+        ESP_LOGE(IMU_TAG, "Failed to save tare BNO08x, halting");
+        while (1) { vTaskDelay(pdMS_TO_TICKS(1000)); }
+    }
+
+    // Handshake complete. tare should be complete and saved now.
 
     motor_init(&front_left,  FL_MOTOR_STEP, FL_MOTOR_DIR, FL_MOTOR_EN, FL_MOTOR_PWM);
     motor_init(&front_right, FR_MOTOR_STEP, FR_MOTOR_DIR, FR_MOTOR_EN, FR_MOTOR_PWM);
@@ -62,4 +119,13 @@ void app_main(void) {
 
         vTaskDelay(pdMS_TO_TICKS(5));
     }
+}
+
+
+
+bool check_for_imu_read(int pin){
+    while(gpio_get_level(pin) == 1){
+        vTaskDelay(pdMS_TO_TICKS(1));
+    }
+    return 1;
 }

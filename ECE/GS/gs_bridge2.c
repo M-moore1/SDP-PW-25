@@ -30,7 +30,7 @@
 #include <termios.h>                    // termios UART config
 #include <unistd.h>                     // read(), write(), close(), unlink()
 #include "includes/cmd_structure.h"
-#include "includes/ble/ble.h"
+#include "../includes/ble/pmod_esp32.h"
 #include "includes/ble/uart_queue.h"
 #include "includes/cmd_parser/cmd_parser.h"
 #include "includes/json_uds/json_uds.h"
@@ -41,7 +41,6 @@
 
 #define DEFAULT_UDS_PATH "/tmp/gs_bridge.sock" // Socket file path for Node<->C IPC
 #define DEFAULT_UART_DEV "/dev/ttyPS2"         // Default UART device (Zynq PS UART)
-#define ESP32_MACADDRESS "441d64f11a86"
 
 
 int looks_like_json(const char *s) {
@@ -96,11 +95,11 @@ int main(int argc, char **argv) {
         printf("%d", bt_connect_attempted);
 
 
-        const char *esp32_mac = ESP32_MACADDRESS;  
+        const char *esp32_mac = ESP32_MAC;  
         
         printf("Entering cmd\n");
         printf("BLE: connecting to ESP32 MAC %s...\n", esp32_mac);
-        if (ble_connect_mac(uart_fd, "441D64F11A86") != 0) {
+        if (ble_connect(uart_fd, esp32_mac) != 0) {
           printf("BLE: connect attempt failed (will not retry unless Node reconnects)\n");
         } else {
           printf("BLE: connect command sent.\n");

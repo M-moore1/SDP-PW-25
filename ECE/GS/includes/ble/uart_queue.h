@@ -1,8 +1,8 @@
 #ifndef UART_QUEUE_H
 #define UART_QUEUE_H
 
-#define UART_QUEUE_MAX 64
-#define UART_MSG_MAX   256
+#define UART_QUEUE_MAX 256
+#define UART_MSG_MAX   1024
 #include <stddef.h>
 
 typedef struct

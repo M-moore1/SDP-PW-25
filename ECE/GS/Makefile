@@ -13,7 +13,7 @@ INCLUDES = -I./includes/json_uds \
 SRCS = gs_bridge2.c \
        includes/json_uds/json_uds.c \
        includes/cmd_parser/cmd_parser.c \
-       includes/ble/ble.c \
+       includes/ble/pmod_esp32.c \
        includes/ble/uart_queue.c \
        includes/hardware_crypto/software_cryptography.c \
        $(CJSON_DIR)/cJSON.c

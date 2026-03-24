@@ -17,8 +17,7 @@ int uart_queue_push(uart_queue_t *q, const char *msg)
     if(q->count == UART_QUEUE_MAX)
         return -1;
 
-    strncpy(q->data[q->tail], msg, UART_MSG_MAX-1);
-    q->data[q->tail][UART_MSG_MAX-1] = '\0';
+    snprintf(q->data[q->tail], UART_MSG_MAX, "%s", msg);
 
     q->tail = (q->tail + 1) % UART_QUEUE_MAX;
     q->count++;
@@ -39,40 +38,29 @@ int uart_queue_pop(uart_queue_t *q, char *out)
     return 0;
 }
 
-int uart_read_and_queue(int uart_fd, char *buffer, size_t size)
+static int uart_read_to_queue(int uart_fd, char *buffer, size_t size)
 {
     int n;
 
     memset(buffer, 0, size);
     n = read(uart_fd, buffer, size - 1);
 
-    if (n > 0)
-    {
+    if (n > 0) {
         buffer[n] = '\0';
-
         uart_queue_push(&uart_queue, buffer);
-
-        //printf("[PMOD RESPONSE]: %s\r\n", buffer);
     }
 
     return n;
 }
 
+int uart_read_and_queue(int uart_fd, char *buffer, size_t size)
+{
+    return uart_read_to_queue(uart_fd, buffer, size);
+}
+
+
 int ble_uart_check(int uart_fd)
 {
     char buffer[256];
-    int n;
-
-    n = read(uart_fd, buffer, sizeof(buffer) - 1);
-
-    if (n > 0)
-    {
-        buffer[n] = '\0';
-
-        uart_queue_push(&uart_queue, buffer);
-
-        return n;
-    }
-
-    return 0;
+    return uart_read_to_queue(uart_fd, buffer, sizeof(buffer));
 }

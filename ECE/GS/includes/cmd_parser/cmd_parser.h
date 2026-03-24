@@ -4,7 +4,7 @@
 #include "cJSON.h" // CHANGE
 
 #include "../cmd_structure.h"
-#include "../ble/ble.h"
+#include "../includes/ble/pmod_esp32.h"
 #include "../hardware_crypto/software_cryptography.h"
 //#include "../json_uds/json_uds.h"
 

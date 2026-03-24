@@ -125,7 +125,7 @@ void robot_ble_init(){
         return;
     }
 
-    esp_ble_gatt_set_local_mtu(200); 
+    esp_ble_gatt_set_local_mtu(512); 
 
     esp_ble_gatts_register_callback(gatts_event_handler); // SET UP PROFILE and SERVICES on INITIALIZATION
     esp_ble_gap_register_callback(gap_event_handler); // STARTS ADVERTISING ON Initilization
@@ -139,14 +139,12 @@ void send_string(char *txt){
 }
 
 void send_instr(uint8_t pkt[8]) {
-    esp_ble_gatts_send_indicate(
-        robot_gatts_if, 
-        robot_conn_id, 
-        robot_handle_table[ROBOT_IDX_VAL],
-        8,              
-        pkt,     
-        false      
-    ); 
+    char hex[17] = {0}; // 8 bytes * 2 hex chars + null
+    for (int i = 0; i < 8; i++) {
+        snprintf(&hex[i * 2], 3, "%02X", pkt[i]);
+    }
+    esp_ble_gatts_send_indicate(robot_gatts_if, robot_conn_id, robot_handle_table[ROBOT_IDX_VAL],
+                strlen(hex), (uint8_t *)hex, false);
 }
 
 // GAP Callback - handles advertising start and stop
@@ -253,7 +251,7 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
         case ESP_GATTS_WRITE_EVT:
         {
             if (!param->write.is_prep) {
-                /*
+                
                 ESP_LOGI(GATTS_TABLE_TAG, "Write event, handle=%d len=%d", 
                         param->write.handle,
                         param->write.len);
@@ -261,7 +259,8 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
                 ESP_LOG_BUFFER_HEX(GATTS_TABLE_TAG,
                                 param->write.value,
                                 param->write.len);
-                */
+                
+                //printf("Results %s\n ", (char *)(param->write.value)[1]);
                 if (param->write.handle == robot_handle_table[ROBOT_IDX_CFG]){
                     uint16_t descr_value =
                         param->write.value[1] << 8 |
@@ -277,7 +276,7 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
                     }
                 }else if (param->write.handle == robot_handle_table[ROBOT_IDX_VAL]) {
 
-
+                    printf("GOT TO ROBOT SERVICE WRITE");
                     uint16_t incoming_len = param->write.len;
                     uint8_t *incoming_data = param->write.value;
 
@@ -304,7 +303,7 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
                     // Secure Realignment
                     for (int i = 0; i < incoming_len; i++){
                         uint8_t current_byte = incoming_data[i];
-
+                        
                         switch (data_collection_mode){
                             case WAITING:
                                 if (current_byte == 0x0A) {

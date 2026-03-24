@@ -52,5 +52,7 @@ esp_err_t bno08x_enable_report(i2c_master_dev_handle_t dev,
                                        uint8_t report_id, uint32_t interval_us);
 bool bno08x_init(i2c_master_dev_handle_t dev);
 int imu_check(i2c_master_dev_handle_t imu);
+bool bno085_tare_cmd(i2c_master_dev_handle_t dev);
+bool bno085_save_settings_cmd(i2c_master_dev_handle_t dev);
 
 #endif
