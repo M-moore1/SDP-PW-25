@@ -12,7 +12,7 @@
 //   4-byte big-endian length, then JSON bytes
 //
 // Build example:
-//   gcc -O2 -Wall -Wextra gs_bridge.c cJSON.c -o gs_bridge
+//   gcc -O2 -Wall -Wextra gs_bridge.c cJSON.c -o gs_bridge.o
 // -----------------------------------------------------------------------------
 
 #define _GNU_SOURCE                     // Enables some GNU extensions (safe on Linux)

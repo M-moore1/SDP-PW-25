@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <time.h>
 
+// 
+
 int serial_port_init(char* port, speed_t baud_rate){
 
     int bt2_uart = open(port, O_RDWR | O_NDELAY |O_NOCTTY);

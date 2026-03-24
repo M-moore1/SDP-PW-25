@@ -4,7 +4,8 @@
 #include "cJSON.h" // CHANGE
 
 #include "../cmd_structure.h"
-#include "../bt2/bt2.h"
+#include "../includes/ble/pmod_esp32.h"
+#include "../hardware_crypto/software_cryptography.h"
 //#include "../json_uds/json_uds.h"
 
 extern volatile int security_level;

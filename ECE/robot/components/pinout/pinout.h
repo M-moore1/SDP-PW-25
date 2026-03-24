@@ -36,13 +36,16 @@
 #define BR_MOTOR_EN      GPIO_NUM_23
 #define BR_MOTOR_PWM     LEDC_CHANNEL_3
 
+// Packet Info
+#define packet_size  156
+
 // Command Types
 typedef enum {
     CONTROL_CMD      = 0x01,  
-    POSE_CMD         = 0x02,
+    ARM_CMD         = 0x02,
     System_CMD       = 0x03,  
     Query_CMD        = 0x04,  
-    STATUS_CMD       = 0x05,
+    ROBOT_UPDATE_CMD = 0x05,  
     HEALTH_CMD       = 0x06,
     ACK_CMD          = 0x07,
     HPR_CMD          = 0x08
@@ -107,6 +110,54 @@ typedef struct __attribute__((packed)) {
 
 // TODO Query instructions enum
 
+
+// Part 0: Navigation (Position & Speed)
+typedef struct __attribute__((packed)) {
+    uint64_t pl      : 2;  // Bits 0-1
+    uint64_t type    : 5;  // Bits 2-6 (0x05)
+    uint64_t part    : 2;  // Bits 7-8 (00)
+    uint64_t speed   : 7;  // Bits 9-15
+    int64_t  pos_x   : 16; // Bits 16-31 (Signed mm)
+    int64_t  pos_y   : 16; // Bits 32-47 (Signed mm)
+    int64_t  pos_z   : 16; // Bits 48-63 (Signed mm)
+} nav_format_t;
+
+// Part 1: Pose (Euler Angles / Orientation)
+typedef struct __attribute__((packed)) {
+    uint64_t pl      : 2;  // Bits 0-1
+    uint64_t type    : 5;  // Bits 2-6 (0x05)
+    uint64_t part    : 2;  // Bits 7-8 (01)
+    uint64_t yaw     : 18; // Bits 9-26 (Unsigned 0.001 precision)
+    int64_t  pitch   : 18; // Bits 27-44 (Signed 0.001 precision)
+    int64_t  roll    : 18; // Bits 45-62 (Signed 0.001 precision)
+    uint64_t reserved: 1;  // Bit 63
+} pose_format_t;
+
+// Part 2: Inertia (Accel & Gyro)
+typedef struct __attribute__((packed)) {
+    uint64_t pl      : 2;  // Bits 0-1
+    uint64_t type    : 5;  // Bits 2-6 (0x05)
+    uint64_t part    : 2;  // Bits 7-8 (10)
+    int64_t  accel_x : 9;  // Bits 9-17 (Signed 0.1 precision)
+    int64_t  accel_y : 9;  // Bits 18-26
+    int64_t  accel_z : 9;  // Bits 27-35
+    int64_t  gyro_x  : 9;  // Bits 36-44 (Signed 0.1 precision)
+    int64_t  gyro_y  : 9;  // Bits 45-53
+    int64_t  gyro_z  : 9;  // Bits 54-62
+    uint64_t reserved: 1;  // Bit 63
+} inertia_format_t;
+
+// Health Status (HR)
+typedef struct __attribute__((packed)) {
+    uint64_t pl      : 2;  // Bits 0-1
+    uint64_t type    : 5;  // Bits 2-6 (0x06)
+    uint64_t part    : 2;  // Bits 7-8 (11)
+    uint64_t battery : 7;  // Bits 9-15 (%)
+    uint64_t sec_lvl : 2;  // Bits 16-17
+    uint64_t motor_en: 1;  // Bit 18 (0=Off, 1=On)
+    uint64_t unused  : 45; // Bits 19-63
+} health_format_t;
+
 // Acknowledge Command Structure
 typedef struct __attribute__((packed)) {
     uint64_t pl                  : 2;  // Bits 0-1       
@@ -145,6 +196,10 @@ typedef union {
     arm_format_t arm;      // Map to Arm Commands
     ack_format_t ack;      // Map to Acknowledgment Commands
     hpr_format_t hpr;
+    nav_format_t nav;      // Navigation (Part 0)
+    pose_format_t pose;    // Pose/Orientation (Part 1)
+    inertia_format_t inert;// Inertia (Part 2)
+    health_format_t health;// Health (Part 11)
 } robot_bt_packet_t;
 
 

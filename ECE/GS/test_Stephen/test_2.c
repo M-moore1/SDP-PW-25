@@ -1,14 +1,14 @@
 #include <fcntl.h>
-#include "conio.c" 
+#include "../conio.c" 
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <termios.h>
 #include <stdint.h>
 #include <time.h>
-#include "includes/bt2/bt2.h"
-#include "includes/cmd_structure.h"
-//gcc -O2 -Wall -Wextra test_2.c includes/bt2/bt2.c -I./includes/bt2 -I./includes/cmd_structure -o test_2
+#include "../includes/bt2/bt2.h"
+#include "../includes/cmd_structure.h"
+//gcc -O2 -Wall -Wextra test_2.c ../includes/bt2/bt2.c -I.../includes/bt2 -I.../includes/cmd_structure -o test_2.o
 
 
 

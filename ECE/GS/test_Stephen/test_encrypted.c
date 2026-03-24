@@ -1,15 +1,16 @@
 #include <fcntl.h>
-#include "conio.c" 
+#include "../conio.c" 
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <termios.h>
 #include <stdint.h>
 #include <time.h>
-#include "includes/bt2/bt2.h"
-#include "includes/cmd_structure.h"
-#include "includes/cmd_parser/cmd_parser.h"
-//gcc -O2 -Wall -Wextra test_encrypted.c  includes/json_uds/json_uds.c includes/bt2/bt2.c includes/cmd_parser/cmd_parser.c ./cJSON-master/cJSON.c -I./includes/json_uds -I./includes/bt2 -I./includes/cmd_parser -I./includes/cmd_structure -I./cJSON-master -o test_encrypted
+#include "../includes/bt2/bt2.h"
+#include "../includes/cmd_structure.h"
+#include "../includes/cmd_parser/cmd_parser.h"
+#include "cJSON.h" 
+//gcc -O2 -Wall -Wextra test_encrypted.c  ../includes/json_uds/json_uds.c ../includes/bt2/bt2.c ../includes/cmd_parser/cmd_parser.c ../cJSON-master/cJSON.c -I../includes/json_uds -I../includes/bt2 -I.../includes/cmd_parser -I.../includes/cmd_structure -I../cJSON-master -o test_encrypted.o
 
 
 #define byte_test_size 156   
