@@ -133,6 +133,11 @@ void robot_ble_init(){
 
 }
 
+void send_bytes(uint8_t *packet, size_t len){
+    esp_ble_gatts_send_indicate(robot_gatts_if, robot_conn_id, robot_handle_table[ROBOT_IDX_VAL],
+                len, packet, false); 
+}
+
 void send_string(char *txt){
     esp_ble_gatts_send_indicate(robot_gatts_if, robot_conn_id, robot_handle_table[ROBOT_IDX_VAL],
                 strlen(txt), (uint8_t *)txt, false); 
