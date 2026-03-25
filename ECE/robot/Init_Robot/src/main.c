@@ -30,6 +30,7 @@ void app_main(void) {
     
     
     // Hardware reset (your inverted logic)
+    
     gpio_set_level(GPIO_NUM_19, 0);
     vTaskDelay(pdMS_TO_TICKS(10));
     gpio_set_level(GPIO_NUM_19, 1);
@@ -39,7 +40,7 @@ void app_main(void) {
 
     i2c_master_bus_handle_t i2c_bus = i2c_init();
     i2c_master_dev_handle_t imu     = device_init(i2c_bus, IMU_ADDR);
-    /*
+    
     // READ 5-6
     drain_packets(imu);
 
@@ -47,6 +48,7 @@ void app_main(void) {
     ESP_LOGE(IMU_TAG, "Failed to init BNO08x, halting");
     while (1) { vTaskDelay(pdMS_TO_TICKS(1000)); }
     }
+    /*
     
     
     // Tare Now
@@ -88,8 +90,10 @@ void app_main(void) {
     int64_t last_print_us = esp_timer_get_time();
 
     while (1) {
-
-        imu_check(imu);
+        if (gpio_get_level(INT_PIN) == 0){
+            imu_check(imu);
+        }
+        
         
       
 
