@@ -176,5 +176,22 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
   }
   // TODO add priority Queue   
   
+  uint16_t id_to_track = 0;
+
+  if (strcmp(t, "C") == 0) {
+      id_to_track = 0; // control has no ID
+  }
+  else if (strcmp(t, "S") == 0) {
+      id_to_track = packet.sys.id;
+  }
+  else if (strcmp(t, "Q") == 0) {
+      id_to_track = packet.query.id;
+  }
+
+  // Only store if valid
+  if (id_to_track != 0) {
+      store_command(id_to_track);
+  }
+
   return ble_send_instruction(uart_fd, packet.bytes);
 }

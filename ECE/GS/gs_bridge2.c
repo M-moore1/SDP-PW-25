@@ -36,13 +36,133 @@
 #include "includes/json_uds/json_uds.h"
 
 #include "cJSON.h"                     // cJSON library header (vendored)
+#include <time.h>
 // 004B1224B0A6
 // ------------------------- Defaults / Config -------------------------
 
 #define DEFAULT_UDS_PATH "/tmp/gs_bridge.sock" // Socket file path for Node<->C IPC
 #define DEFAULT_UART_DEV "/dev/ttyPS2"         // Default UART device (Zynq PS UART)
 
+#define MAX_TRACKED_CMDS 64
 
+typedef struct {
+    uint16_t id;
+    uint64_t timestamp_ms;
+    int valid;
+} cmd_tracker_t;
+
+static cmd_tracker_t cmd_buffer[MAX_TRACKED_CMDS];
+
+uint64_t get_now_ms() {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (ts.tv_sec * 1000ULL) + (ts.tv_nsec / 1000000ULL);
+}
+
+void store_command(uint16_t id) {
+
+    uint64_t now = get_now_ms();
+
+    for (int i = 0; i < MAX_TRACKED_CMDS; i++) {
+        if (!cmd_buffer[i].valid) {
+            cmd_buffer[i].id = id;
+            cmd_buffer[i].timestamp_ms = now;
+            cmd_buffer[i].valid = 1;
+            return;
+        }
+    }
+
+    // Optional: overwrite oldest if full
+    cmd_buffer[0].id = id;
+    cmd_buffer[0].timestamp_ms = now;
+    cmd_buffer[0].valid = 1;
+}
+
+void process_received_id(uint16_t id, int uds_fd) {
+
+    uint64_t now = get_now_ms();
+
+    for (int i = 0; i < MAX_TRACKED_CMDS; i++) {
+
+        if (cmd_buffer[i].valid && cmd_buffer[i].id == id) {
+
+            uint64_t latency = now - cmd_buffer[i].timestamp_ms;
+
+            cmd_buffer[i].valid = 0;
+
+            // Send to UI
+            cJSON *root = cJSON_CreateObject();
+            cJSON_AddStringToObject(root, "type", "LATENCY");
+            cJSON_AddNumberToObject(root, "id", id);
+            cJSON_AddNumberToObject(root, "latency_ms", latency);
+
+            char *json = cJSON_PrintUnformatted(root);
+            uds_send_json(uds_fd, json);
+
+            free(json);
+            cJSON_Delete(root);
+
+            return;
+        }
+    }
+
+    printf("ID not found: %d\n", id);
+}
+
+
+void parse_notify_and_process(char *line, int uds_fd) {
+
+    int conn, srv, chr, ascii_len;
+
+    if (sscanf(line, "+NOTIFY:%d,%d,%d,%d,", &conn, &srv, &chr, &ascii_len) != 4)
+        return;
+
+    // Move to hex data
+    char *p = line;
+    for (int i = 0; i < 4; i++) {
+        p = strchr(p, ',');
+        if (!p) return;
+        p++;
+    }
+
+    int byte_len = ascii_len / 2;
+
+    uint8_t data[512];
+
+    for (int i = 0; i < byte_len; i++) {
+        sscanf(&p[i * 2], "%2hhx", &data[i]);
+    }
+
+    // Strip start/stop
+    if (data[0] != 0x0A || data[byte_len-1] != 0x0D)
+        return;
+
+    uint8_t *payload = &data[1];
+
+    robot_bt_packet_t pkt;
+    memcpy(pkt.bytes, payload, 8);
+
+    // Extract ID
+    uint16_t id = 0;
+
+    switch(pkt.ctrl.type) {
+        case System_CMD:
+            id = pkt.sys.id;
+            break;
+
+        case Query_CMD:
+            id = pkt.query.id;
+            break;
+
+        case ACK_CMD:
+            id = pkt.ack.id;
+            break;
+    }
+
+    if (id != 0) {
+        process_received_id(id, uds_fd);
+    }
+}
 int looks_like_json(const char *s) {
   if (!s) return 0;
   while (*s == ' ' || *s == '\n' || *s == '\r' || *s == '\t') s++;
@@ -186,19 +306,43 @@ int main(int argc, char **argv) {
       }
     }
 
-    // ----- If UART readable: read bytes, parse frames, forward to Node -----
-    if (FD_ISSET(uart_fd, &rfds)) {                         // UART has data
-      uint8_t tmp[256];                                     // Temp read buffer
-      ssize_t n = read(uart_fd, tmp, sizeof(tmp));          // Read available bytes
-      if (n > 0) {                                          // If bytes received
-        for (ssize_t i = 0; i < n; i++) {                   // Feed each byte into parser
-          uint64_t word = 0;                                // Output word
-          //int got = uart_parser_feed(&up, tmp[i], &word);   // Parser state update
-          //if (got == 1 && uds_client >= 0) {                // If we got a complete frame
-            //robot_word_to_node_json(uds_client, word);      // Convert to JSON and send to Node
-          //}
+    // ----- If UART readable: read bytes, parse +NOTIFY lines, process -----
+    if (FD_ISSET(uart_fd, &rfds)) {
+
+        uint8_t tmp[256];
+        ssize_t n = read(uart_fd, tmp, sizeof(tmp));
+
+        if (n > 0) {
+
+            static char uart_line[4096];
+            static int uart_idx = 0;
+
+            for (ssize_t i = 0; i < n; i++) {
+
+                char c = tmp[i];
+
+                // End of line → process full message
+                if (c == '\n') {
+
+                    uart_line[uart_idx] = '\0';
+
+                    // DEBUG (optional)
+                    printf("[UART LINE] %s\n", uart_line);
+
+                    // Check for BLE notification
+                    if (strstr(uart_line, "+NOTIFY:") != NULL) {
+                        parse_notify_and_process(uart_line, uds_client);
+                    }
+
+                    uart_idx = 0;
+                }
+                else {
+                    if (uart_idx < sizeof(uart_line) - 1) {
+                        uart_line[uart_idx++] = c;
+                    }
+                }
+            }
         }
-      }
     }
   }
 
