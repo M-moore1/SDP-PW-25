@@ -15,7 +15,7 @@
 #define AVG_SAMPLES    100   
 #define SEND_INTERVAL  1000
 
-//gcc -O2 -Wall -Wextra test_esp32.c ../includes/ble/pmod_esp32.c -I.../includes/cmd_structure ../includes/ble/uart_queue.c -o test_esp.o
+//gcc -O2 -Wall -Wextra test_pmod.c ../includes/ble/pmod_esp32.c -I.../includes/cmd_structure ../includes/ble/uart_queue.c -o test_pmod.o
 
 uint8_t payload[156] = {
     0x8B, 0xDF, 0x57, 0x3D, 0x3D, 0x50, 0xAF, 0x81, 0xFA, 0xD2, 0x9D, 0x95, 0x5B, 0x91, 0xD6, 0xBC,
