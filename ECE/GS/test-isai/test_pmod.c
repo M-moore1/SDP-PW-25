@@ -8,7 +8,7 @@
 #include <time.h>
 #include "../includes/ble/uart_queue.h"
 #include "../includes/ble/pmod_esp32.h"
-
+#include "cJSON.h"                     // cJSON library header (vendored)
 #include "../includes/cmd_structure.h"
 
 #define byte_test_size  156
