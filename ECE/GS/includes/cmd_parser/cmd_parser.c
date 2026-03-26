@@ -1,5 +1,4 @@
 #include "cmd_parser.h"
-
 volatile int security_level = 0;
 volatile int connection_status = 0;
 volatile int authorization_code = 0x3FF;
@@ -174,7 +173,8 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
     return ble_send_pkt(uart_fd, payload, PAYLOAD_BYTES);
     
   }
-  // TODO add priority Queue   
+  // TODO add priority Queue
+  // STEPHEN DO above the security level if else about cause secure packets would not be tracked   
   
   uint16_t id_to_track = 0;
 
