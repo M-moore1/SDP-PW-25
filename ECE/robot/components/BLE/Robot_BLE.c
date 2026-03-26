@@ -1,4 +1,5 @@
 #include "Robot_BLE.h"
+#include "robot_commands.h"
 
 uint16_t robot_conn_id = 0;
 esp_gatt_if_t robot_gatts_if = 0;
@@ -308,62 +309,62 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
                         rx_idx = 0; 
                         return;
                     }
-                    
 
-                    // UnSecure No injection protection
-                    // TODO EDIT tos skip over the start and stop bytes
-                    /*
-                    memcpy(&rx_buf[rx_idx], incoming_data, incoming_len);
-                    rx_idx += incoming_len;
-                    if (rx_idx == 160) {
-                        if (xQueueSend(ble_recieve_queue, (void *)(rx_buf + 2), (TickType_t)0) != pdPASS) {
-                            ESP_LOGE(GATTS_TABLE_TAG, "Queue full, data dropped");
+                    if (!security_flag){
+                        memcpy(&rx_buf[rx_idx], incoming_data, incoming_len);
+                        rx_idx += incoming_len;
+                        if (rx_idx == 8) {
+                            if (xQueueSend(ble_recieve_queue, (void *)rx_buf, (TickType_t)0) != pdPASS) {
+                                ESP_LOGW(GATTS_TABLE_TAG, "BT Queue full, dropping packet");
+                            }
+                            rx_idx = 0;
+                        }else if (rx_idx > 8){
+                            ESP_LOGE(GATTS_TABLE_TAG, "Buffer Longer than 8 Packet dropped");
+                            rx_idx = 0;
                         }
-                        rx_idx = 0;
+                    }else if (security_flag){
+                        for (int i = 0; i < incoming_len; i++){
+                                uint8_t current_byte = incoming_data[i];
+                                
+                                switch (data_collection_mode){
+                                    case WAITING:
+                                        if (current_byte == 0x0A) {
+                                            data_collection_mode = START;
+                                        }
+                                    break;
+                                    case START:
+                                        if (current_byte == 0xD0) {
+                                            data_collection_mode = COLLECTING;
+                                        }else{
+                                            data_collection_mode = WAITING;
+                                        }
+                                        rx_idx = 0;
+                                    break;
+                                    case COLLECTING:
+                                        if (rx_idx < 156){
+                                            rx_buf[rx_idx] = current_byte;
+                                            rx_idx++;
+                                        }else if (current_byte == 0xDA){
+                                            rx_idx++;
+                                            data_collection_mode = FINISH;
+                                        }else{
+                                            data_collection_mode = WAITING;
+                                        }
+                                    break;
+                                    case FINISH:
+                                        if (current_byte == 0x0D) {
+                                            if (xQueueSend(ble_recieve_queue, (void *)rx_buf, (TickType_t)0) != pdPASS) {
+                                                ESP_LOGW(GATTS_TABLE_TAG, "BT Queue full, dropping packet");
+                                            }
+                                            rx_idx =0;
+                                        }
+                                        data_collection_mode = WAITING;
+                                    break;
+                                }
+                            }
+                        }   
                     }
-                    */
-
-                    // Secure Realignment
-                    for (int i = 0; i < incoming_len; i++){
-                        uint8_t current_byte = incoming_data[i];
-                        
-                        switch (data_collection_mode){
-                            case WAITING:
-                                if (current_byte == 0x0A) {
-                                    data_collection_mode = START;
-                                }
-                            break;
-                            case START:
-                                if (current_byte == 0xD0) {
-                                    data_collection_mode = COLLECTING;
-                                }else{
-                                    data_collection_mode = WAITING;
-                                }
-                                rx_idx = 0;
-                            break;
-                            case COLLECTING:
-                                if (rx_idx < 156){
-                                    rx_buf[rx_idx] = current_byte;
-                                    rx_idx++;
-                                }else if (current_byte == 0xDA){
-                                    rx_idx++;
-                                    data_collection_mode = FINISH;
-                                }else{
-                                    data_collection_mode = WAITING;
-                                }
-                            break;
-                            case FINISH:
-                                if (current_byte == 0x0D) {
-                                    if (xQueueSend(ble_recieve_queue, (void *)rx_buf, (TickType_t)0) != pdPASS) {
-                                        ESP_LOGW(GATTS_TABLE_TAG, "BT Queue full, dropping packet");
-                                    }
-                                    rx_idx =0;
-                                }
-                                data_collection_mode = WAITING;
-                            break;
-                        }
-                    }
-                }         
+                          
 
                 if (param->write.need_rsp) {
                     esp_ble_gatts_send_response(
