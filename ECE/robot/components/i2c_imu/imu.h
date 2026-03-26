@@ -46,13 +46,25 @@ extern gyro_t       g_imu_gyro;
 extern euler_t      g_imu_euler;
 
 size_t shtp_read(i2c_master_dev_handle_t dev, uint8_t *buf, size_t buf_len);
-esp_err_t shtp_write(i2c_master_dev_handle_t dev, uint8_t channel, 
-                                uint8_t *payload, size_t payload_len);
+
+esp_err_t shtp_write(i2c_master_dev_handle_t dev, uint8_t channel,
+                                      uint8_t *payload, size_t payload_len);
+
 esp_err_t bno08x_enable_report(i2c_master_dev_handle_t dev,
-                                       uint8_t report_id, uint32_t interval_us);
+                                uint8_t report_id, uint32_t interval_us);
+
+
+
 bool bno08x_init(i2c_master_dev_handle_t dev);
-int imu_check(i2c_master_dev_handle_t imu);
 bool bno085_tare_cmd(i2c_master_dev_handle_t dev);
+void drain_packets(i2c_master_dev_handle_t dev);
 bool bno085_save_settings_cmd(i2c_master_dev_handle_t dev);
+bool bno085_tare_yaw_only_cmd(i2c_master_dev_handle_t dev);
+bool bno085_tare_roll_only_cmd(i2c_master_dev_handle_t dev);
+bool bno085_tare_pitch_only_cmd(i2c_master_dev_handle_t dev);
+int imu_check(i2c_master_dev_handle_t imu);
+
+
+
 
 #endif
