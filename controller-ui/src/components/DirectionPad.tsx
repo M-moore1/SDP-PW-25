@@ -4,15 +4,15 @@ import { Direction } from '../utils/direction';
 
 interface DirectionPadProps {
   onDirectionStart: (direction: Direction) => void;
-  onDirectionStop: () => void;
-  activeDirection: Direction | null;
+  onDirectionStop: (direction: Direction) => void;
+  activeDirections: Set<Direction>;
 }
 
 /**
  * On-screen direction pad with W/A/S/D buttons.
  * Supports mouse and touch events with hold-to-repeat behavior.
  */
-export function DirectionPad({ onDirectionStart, onDirectionStop, activeDirection }: DirectionPadProps) {
+export function DirectionPad({ onDirectionStart, onDirectionStop, activeDirections }: DirectionPadProps) {
   // Handle pointer down (mouse or touch)
   const handlePointerDown = (direction: Direction) => (e: React.PointerEvent) => {
     e.preventDefault();
@@ -20,15 +20,15 @@ export function DirectionPad({ onDirectionStart, onDirectionStop, activeDirectio
   };
 
   // Handle pointer up/leave
-  const handlePointerUpOrLeave = (e: React.PointerEvent) => {
+  const handlePointerUpOrLeave = (direction: Direction) => (e: React.PointerEvent) => {
     e.preventDefault();
-    onDirectionStop();
+    onDirectionStop(direction);
   };
 
   // Button styling with active state
   const getButtonClass = (direction: Direction) => {
     const baseClass = 'w-20 h-20 text-3xl font-bold rounded-lg transition-all duration-150 touch-none select-none focus:outline-none focus:ring-4 focus:ring-blue-300';
-    const isActive = activeDirection === direction;
+    const isActive = activeDirections.has(direction);
     
     if (isActive) {
       return `${baseClass} bg-blue-600 text-white shadow-lg scale-95`;
@@ -45,8 +45,8 @@ export function DirectionPad({ onDirectionStart, onDirectionStop, activeDirectio
         {/* Top row - W */}
         <button
           onPointerDown={handlePointerDown('forward')}
-          onPointerUp={handlePointerUpOrLeave}
-          onPointerLeave={handlePointerUpOrLeave}
+          onPointerUp={handlePointerUpOrLeave('forward')}
+          onPointerLeave={handlePointerUpOrLeave('forward')}
           className={getButtonClass('forward')}
           aria-label="Forward"
           type="button"
@@ -58,19 +58,19 @@ export function DirectionPad({ onDirectionStart, onDirectionStop, activeDirectio
         <div className="flex gap-2">
           <button
             onPointerDown={handlePointerDown('left')}
-            onPointerUp={handlePointerUpOrLeave}
-            onPointerLeave={handlePointerUpOrLeave}
+            onPointerUp={handlePointerUpOrLeave('left')}
+            onPointerLeave={handlePointerUpOrLeave('left')}
             className={getButtonClass('left')}
             aria-label="Left"
             type="button"
           >
             A
           </button>
-          
+
           <button
             onPointerDown={handlePointerDown('right')}
-            onPointerUp={handlePointerUpOrLeave}
-            onPointerLeave={handlePointerUpOrLeave}
+            onPointerUp={handlePointerUpOrLeave('right')}
+            onPointerLeave={handlePointerUpOrLeave('right')}
             className={getButtonClass('right')}
             aria-label="Right"
             type="button"
@@ -82,8 +82,8 @@ export function DirectionPad({ onDirectionStart, onDirectionStop, activeDirectio
         {/* Bottom row - S */}
         <button
           onPointerDown={handlePointerDown('back')}
-          onPointerUp={handlePointerUpOrLeave}
-          onPointerLeave={handlePointerUpOrLeave}
+          onPointerUp={handlePointerUpOrLeave('back')}
+          onPointerLeave={handlePointerUpOrLeave('back')}
           className={getButtonClass('back')}
           aria-label="Back"
           type="button"
