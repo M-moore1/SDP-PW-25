@@ -24,28 +24,24 @@ export function buildDirectionMsg(direction: Direction): DirectionMsg {
   return { direction };
 }
 
-// Map direction to Control (C) format for buildControlMsg
-export function directionToControlAxes(direction: Direction): {
+// Map a set of directions to Control (C) axes (supports simultaneous directions)
+export function directionsToControlAxes(directions: Set<Direction>): {
   forward: 0 | 1;
   backward: 0 | 1;
   left: 0 | 1;
   right: 0 | 1;
 } {
-  switch (direction) {
-    case 'forward':
-      return { forward: 1, backward: 0, left: 0, right: 0 };
-    case 'back':
-      return { forward: 0, backward: 1, left: 0, right: 0 };
-    case 'left':
-      return { forward: 0, backward: 0, left: 1, right: 0 };
-    case 'right':
-      return { forward: 0, backward: 0, left: 0, right: 1 };
-  }
+  return {
+    forward:  directions.has('forward') ? 1 : 0,
+    backward: directions.has('back')    ? 1 : 0,
+    left:     directions.has('left')    ? 1 : 0,
+    right:    directions.has('right')   ? 1 : 0,
+  } as { forward: 0 | 1; backward: 0 | 1; left: 0 | 1; right: 0 | 1 };
 }
 
 // Format direction for display
-export function formatDirection(direction: Direction | null): string {
-  if (!direction) return 'Idle';
-  return `Direction: ${direction}`;
+export function formatDirection(directions: Set<Direction>): string {
+  if (directions.size === 0) return 'Idle';
+  return `Direction: ${[...directions].join(' + ')}`;
 }
 
