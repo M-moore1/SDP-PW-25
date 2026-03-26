@@ -1,6 +1,7 @@
 // aes_gcm_test_main.c
 //
 // Minimal round-trip test for aes_gcm_encrypt_packet() / aes_gcm_decrypt_packet().
+// Prints the encrypted packet (and its components) as hex after encryption.
 //
 // Build (Linux, wolfssl installed):
 //   gcc aes_gcm_test_main.c aes_gcm_encrypt.c aes_gcm_decrypt.c -o aes_gcm_test -lwolfssl
@@ -16,16 +17,27 @@
 
 #define CT_LEN      128
 #define PACKET_LEN  156
+#define NONCE_LEN    12
+#define TAG_LEN      16
 
 // ---- hardcoded test value -----------------------------------------------
 static const char TEST_PLAINTEXT[] = "Hello ESP32! AES-256-GCM round-trip test.";
+
+// ---- helper: print a byte buffer as lowercase hex -----------------------
+static void print_hex(const char *label, const uint8_t *buf, size_t len)
+{
+    printf("%s", label);
+    for (size_t i = 0; i < len; i++)
+        printf("%02x", buf[i]);
+    printf("\n");
+}
 
 // =========================================================================
 
 int aes_gcm_test(void)
 {
     printf("=== AES-256-GCM round-trip test ===\n");
-    printf("Input  : \"%s\"\n", TEST_PLAINTEXT);
+    printf("Input  : \"%s\"\n\n", TEST_PLAINTEXT);
 
     // --- build zero-padded 128-byte plaintext ----------------------------
     char plaintext_in[CT_LEN];
@@ -39,7 +51,13 @@ int aes_gcm_test(void)
         printf("FAIL: encrypt returned %d\n", ret);
         return ret;
     }
-    printf("Encrypt: OK (nonce+ct+tag written, %d bytes)\n", PACKET_LEN);
+
+    // --- print encrypted components --------------------------------------
+    print_hex("Nonce      : ", packet,                      NONCE_LEN);
+    print_hex("Ciphertext : ", packet + NONCE_LEN,          CT_LEN);
+    print_hex("Tag        : ", packet + NONCE_LEN + CT_LEN, TAG_LEN);
+    print_hex("Full packet: ", packet,                      PACKET_LEN);
+    printf("\n");
 
     // --- decrypt ---------------------------------------------------------
     char plaintext_out[CT_LEN + 1];
@@ -52,7 +70,6 @@ int aes_gcm_test(void)
         printf("FAIL: decrypt returned %d\n", ret);
         return ret;
     }
-    printf("Decrypt: OK (%zu bytes)\n", out_len);
 
     // --- verify ----------------------------------------------------------
     if (memcmp(plaintext_in, plaintext_out, CT_LEN) != 0) {
@@ -60,8 +77,8 @@ int aes_gcm_test(void)
         return -99;
     }
 
-    printf("Output : \"%s\"\n", plaintext_out);
-    printf("Result : PASS\n");
+    printf("Decrypted  : \"%s\"\n", plaintext_out);
+    printf("Result     : PASS\n");
     return 0;
 }
 
