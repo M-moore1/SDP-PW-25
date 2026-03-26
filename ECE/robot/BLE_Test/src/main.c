@@ -53,8 +53,8 @@ void ble_recieve_parser(void *pvParameters)
     uint8_t received_packet[packet_size]; 
     char *msg1 = "Bytes Recieved";
     robot_bt_packet_t return_msg;
-
-    uint8_t data[8] = { 0x12, 0x34, 0x56, 0x78, 0x54, 0x23, 0x08, 0x04 };
+    //{ 0x12, 0x34, 0x56, 0x78, 0x54, 0x23, 0x08, 0x04 };
+    uint8_t data[8] = { 0x04, 0x08, 0x23, 0x54, 0x78, 0x56, 0x34, 0x12 };
     memcpy(return_msg.bytes, data, 8);
 
     while (1) {
@@ -62,12 +62,8 @@ void ble_recieve_parser(void *pvParameters)
         {   
             //send_string(msg1);
             //send_instr(return_msg.bytes);
-<<<<<<< HEAD
-            send_payload(payload);
-=======
             //send_payload(payload);
-            send_bytes(payload, 156);
->>>>>>> a1f2de20c24325d88e775d4435ed93e50dcc95ba
+            send_bytes(data, 8);
             printf("Received %d bytes: \n", packet_size);
 
             for (int i = 0; i < packet_size; i++) {
