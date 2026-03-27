@@ -62,12 +62,12 @@ void ble_recieve_parser(void *pvParameters)
         {   
             //send_string(msg1);
             //send_instr(return_msg.bytes);
-<<<<<<< HEAD
-            send_payload(payload);
-=======
             //send_payload(payload);
+
+            // SEND 8 bytes
+            // send_bytes(data, 8);
+            // SEND 156 Bytes
             send_bytes(payload, 156);
->>>>>>> a1f2de20c24325d88e775d4435ed93e50dcc95ba
             printf("Received %d bytes: \n", packet_size);
 
             for (int i = 0; i < packet_size; i++) {
