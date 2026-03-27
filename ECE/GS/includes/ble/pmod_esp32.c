@@ -360,8 +360,11 @@ int ble_send_pkt(int uart_fd, uint8_t *data, int data_len) {
 }
 
 int ble_send_instruction(int uart_fd, uint8_t instruction[8]) {
+    return ble_write(uart_fd, 3, 1, -1, instruction, 8);
+    /*
     uint8_t payload[PAYLOAD_BYTES];
     memset(payload, 0x00, PAYLOAD_BYTES);
     memcpy(payload, instruction, 8);
     return ble_send_pkt(uart_fd, payload, PAYLOAD_BYTES);
+    */
 }

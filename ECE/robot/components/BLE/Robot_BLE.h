@@ -57,6 +57,7 @@ extern QueueHandle_t ble_recieve_queue;
 
 // Function declarations
 void robot_ble_init();
+void send_bytes(uint8_t *packet, size_t len);
 void send_string(char *txt);
 void send_payload(uint8_t pkt[156]);
 void send_instr(uint8_t pkt[8]);

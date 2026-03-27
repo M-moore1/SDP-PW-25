@@ -126,8 +126,8 @@ int main() {
         long now = clock() / (CLOCKS_PER_SEC / 1000000);
         if (now - last >= SEND_INTERVAL * 1000) {
             message_start = now;
-            //ble_send_instruction(bt_uart, instruction);
-            ble_send_pkt(bt_uart, payload, 156);
+            ble_send_instruction(bt_uart, instruction);
+            //ble_send_pkt(bt_uart, payload, 156);
             last = now;
         }
         
