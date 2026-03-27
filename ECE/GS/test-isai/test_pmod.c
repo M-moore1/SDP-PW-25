@@ -8,14 +8,14 @@
 #include <time.h>
 #include "../includes/ble/uart_queue.h"
 #include "../includes/ble/pmod_esp32.h"
-#include "cJSON.h"                     // cJSON library header (vendored)
+#include "../cJSON-master/cJSON.h"
 #include "../includes/cmd_structure.h"
 
 #define byte_test_size  156
 #define AVG_SAMPLES    100   
 #define SEND_INTERVAL  1000
 
-//gcc -O2 -Wall -Wextra test_esp32.c ../includes/ble/pmod_esp32.c -I.../includes/cmd_structure ../includes/ble/uart_queue.c -o test_esp.o
+//gcc -O2 -Wall -Wextra test_pmod.c ../includes/ble/pmod_esp32.c -I.../includes/cmd_structure ../includes/ble/uart_queue.c -o test_pmod.o
 
 uint8_t payload[156] = {
     0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, // Starts at 1, counts up 8 bytes
