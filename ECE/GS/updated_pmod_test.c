@@ -117,7 +117,7 @@ uint8_t payload[156] = {
     0x8B, 0xDF, 0x57, 0x3D, 0x3D, 0x50, 0xAF, 0x81
 };
 
-
+uint8_t instruction[8] = { 0x12, 0x34, 0x56, 0x78, 0x54, 0x23, 0x08, 0x04 };
 int main() {
 
     int bt_uart = uart_open_config(DEFAULT_UART_DEV, DEFAULT_UART_BAUD);
@@ -178,7 +178,8 @@ int main() {
 
         if (now - last >= SEND_INTERVAL * 1000) {
             message_start = now;
-            ble_send_pkt(bt_uart, payload, 156);
+            ble_send_instruction(bt_uart, instruction);
+            //ble_send_pkt(bt_uart, payload, 156);
             last = now;
         }
     }
