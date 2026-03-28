@@ -30,7 +30,7 @@ cJSON-master/cJSON.c \
 // ===================== FIXED PARSER =====================
 void parse_notify_and_print(char *line) {
 
-```
+
 int conn, srv, chr, reported_len;
 
 if (sscanf(line, "+NOTIFY:%d,%d,%d,%d,", &conn, &srv, &chr, &reported_len) != 4) {
@@ -144,7 +144,7 @@ printf("%s\n", json);
 
 free(json);
 cJSON_Delete(root);
-```
+
 
 }
 // =====================================================
@@ -153,7 +153,7 @@ uint8_t instruction[8] = { 0x12, 0x34, 0x56, 0x78, 0x54, 0x23, 0x08, 0x04 };
 
 int main() {
 
-```
+
 int bt_uart = uart_open_config(DEFAULT_UART_DEV, DEFAULT_UART_BAUD);
 set_conio_terminal_mode();
 
