@@ -218,6 +218,5 @@ while(1){
 
 close(bt_uart);
 return 0;
-```
 
 }
