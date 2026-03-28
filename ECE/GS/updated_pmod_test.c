@@ -43,45 +43,20 @@ printf("\n========== RAW BYTES ==========\n");
 printf("Len: %d\n", byte_len);
 
 for (int i = 0; i < byte_len; i++) {
-    printf("%02X ", (uint8_t)data[i]);
+    printf("%02X ", data[i]);
     if ((i+1)%16==0) printf("\n");
 }
 printf("\n");
 
 // ===============================
-// 🔥 FIND FRAME INSIDE STREAM
+//  DIRECT PARSE (NO FRAMING)
 // ===============================
-int start = -1;
-int end = -1;
-
-for (int i = 0; i < byte_len; i++) {
-
-    if (data[i] == 0x0A && start == -1) {
-        start = i;
-    }
-    else if (data[i] == 0x0D && start != -1) {
-        end = i;
-        break;
-    }
-}
-
-if (start == -1 || end == -1) {
-    printf("Frame not found\n");
+if (byte_len < 8) {
+    printf("Packet too small\n");
     return;
 }
 
-int frame_len = end - start + 1;
-
-printf("\n========== FRAME ==========\n");
-printf("Start: %d End: %d Len: %d\n", start, end, frame_len);
-
-uint8_t frame[256];
-memcpy(frame, &data[start], frame_len);
-
-// ===============================
-// EXTRACT PAYLOAD
-// ===============================
-uint8_t *payload = &frame[1];
+uint8_t *payload = data;
 
 robot_bt_packet_t pkt;
 memcpy(pkt.bytes, payload, 8);
@@ -139,6 +114,7 @@ cJSON_Delete(root);
 
 
 }
+
 // =====================================================
 
 uint8_t instruction[8] = { 0x12, 0x34, 0x56, 0x78, 0x54, 0x23, 0x08, 0x04 };
