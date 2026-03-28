@@ -36,8 +36,31 @@
 #define BR_MOTOR_EN      GPIO_NUM_23
 #define BR_MOTOR_PWM     LEDC_CHANNEL_3
 
+//TAGS ESP LOG TAGS
+#define MAIN_TAG "ROBOT_MAIN"
+#define BLE_TAG  "ROBOT_BLE"
+#define CMD_TAG  "ROBOT_CMD"
+#define IMU_TAG  "IMU"
+
 // Packet Info
-#define packet_size  156
+#define PACKET_SIZE  156
+
+typedef struct { 
+    float i, j, k, real, accuracy_rad; 
+} quaternion_t;
+
+typedef struct {
+    float x, y, z;
+} vec3_t;
+
+typedef struct {
+    float x_rads, y_rads, z_rads;  // rad/s
+    float x_degs, y_degs, z_degs;  // deg/s
+} gyro_t;
+
+typedef struct { 
+    float yaw, pitch, roll; 
+} euler_t;
 
 // Command Types
 typedef enum {
@@ -61,7 +84,7 @@ typedef struct __attribute__((packed)) {
     uint64_t s       : 1;  // Bit 9
     uint64_t d       : 1;  // Bit 10
     uint64_t speed   : 7;  // Bits 11-17
-    uint64_t unused  : 46; // Bits 18-63
+    uint64_t id      : 11; // Bits 18-28 
 } control_format_t;
 
 // Arm Command Structure
@@ -95,8 +118,33 @@ typedef struct __attribute__((packed)) {
 enum system_instructions {
     DISCONNECT        = 0x01,
     Connect_Reconnect = 0x02,
-    SECURITY_LEVEL    = 0x03
+    SECURITY_LEVEL    = 0x03,
+    ROBOT_POWER       = 0x04,
+    ROBOT_NAME_CHANGE = 0x05,
+    UPDATE_AUTH_CODE  = 0x06,
+    GS_BLE_RESET      = 0x07,
+    ARM_POWER_CMD     = 0x08,
+    EMERGENCY_SHTDWN  = 0x09,
+
 };
+
+enum instruction_specfic_rsp {
+    NO_INFO                 = 0x00,
+    MOTORS_DISABLED         = 0x01,
+    MOTORS_ENABLED          = 0x02,
+    ARM_CORDINATES_ISSUE    = 0x03,  // Arm Cordinates Out of Bounds
+    SECURITY_OFF            = 0x04,
+    SECURITY_ON             = 0x05,
+    NAME_UPDATED            = 0x06,
+    NAME_CHANGE_FAILED      = 0x07,
+    AUTH_CODE_UPDATED       = 0x08,
+    AUTH_CODE_UPDATE_FAIL   = 0x09,
+    ARM_ENABLED             = 0x0A,
+    ARM_DISABLED            = 0x0B,
+    SHTDWN_ENABLED          = 0x0C,
+    SHTDWN_DISABLED         = 0x0D,
+};
+
 
 // Query Command Structure
 typedef struct __attribute__((packed)) {
@@ -108,8 +156,18 @@ typedef struct __attribute__((packed)) {
     uint64_t extra       : 41; // Bits 23-63 (Padding/Extra)
 } query_format_t;
 
-// TODO Query instructions enum
 
+enum query_instructions {
+    CONNNECTION_STAT = 0x01,
+    SECURITY_STATUS  = 0x02,
+    MOTOR_STATUS     = 0x03,
+    CURRENT_POSITION = 0x04,
+    ROBOT_BATT       = 0x05,
+    ROBOT_NAME       = 0x06,
+    ARM_POWER        = 0x07,
+    SHTDWN_STATUS    = 0x08,
+
+};
 
 // Part 0: Navigation (Position & Speed)
 typedef struct __attribute__((packed)) {
@@ -149,13 +207,13 @@ typedef struct __attribute__((packed)) {
 
 // Health Status (HR)
 typedef struct __attribute__((packed)) {
-    uint64_t pl      : 2;  // Bits 0-1
-    uint64_t type    : 5;  // Bits 2-6 (0x06)
-    uint64_t part    : 2;  // Bits 7-8 (11)
-    uint64_t battery : 7;  // Bits 9-15 (%)
-    uint64_t sec_lvl : 2;  // Bits 16-17
-    uint64_t motor_en: 1;  // Bit 18 (0=Off, 1=On)
-    uint64_t unused  : 45; // Bits 19-63
+    uint64_t pl        : 2;  // Bits 0-1
+    uint64_t type      : 5;  // Bits 2-6 (0x06)
+    uint64_t battery   : 7;  // Bits 7-13 (0–100%)
+    uint64_t sec_en    : 1;  // Bit 14 (0=Off, 1=On)
+    uint64_t motor_en  : 1;  // Bit 15 (0=Off, 1=On)
+    uint64_t arm_en    : 1;  // Bit 16 (0=Off, 1=On)
+    uint64_t reserved  : 47; // Bits 17-63
 } health_format_t;
 
 // Acknowledge Command Structure
@@ -169,15 +227,14 @@ typedef struct __attribute__((packed)) {
 
 // Acknowledgment Result Types
 enum result_code {
-    RESULT_SUCCESS             = 0x00, // Command executed successfully
-    RESULT_UNKNOWN_CMD         = 0x01, // Unknown command type
-    RESULT_INVALID_PARAMS      = 0x02, // Invalid or conflicting parameters
-    RESULT_UNSUPPORTED_CMD     = 0x03, // Command valid but not supported
-    RESULT_AUTH_FAIL           = 0x04, // Authentication failed
-    RESULT_DUPLICATE_PACKET    = 0x05, // Duplicate or old packet detected
-    RESULT_BT_NOT_INITIALIZED  = 0x06, // Bluetooth connection not initialized
-    RESULT_MOTORS_DISABLED     = 0x07  // Motors currently disabled
-    
+    RESULT_SUCCESS              = 0x00, // Command executed successfully
+    RESULT_UNKNOWN_CMD          = 0x01, // Unknown command type
+    RESULT_INVALID_PARAMS       = 0x02, // Invalid or conflicting parameters
+    RESULT_UNSUPPORTED_CMD      = 0x03, // Command valid but not supported
+    RESULT_AUTH_FAIL            = 0x04, // Authentication failed
+    RESULT_DUPLICATE_PACKET     = 0x05, // Duplicate or old packet detected
+    RESULT_BT_NOT_INITIALIZED   = 0x06, // Bluetooth connection not initialized
+    RESULT_CMD_FAILURE          = 0x07,
 };
 
 typedef struct __attribute__((packed)) {
@@ -195,7 +252,7 @@ typedef union {
     query_format_t query;  // Map to Query Commands
     arm_format_t arm;      // Map to Arm Commands
     ack_format_t ack;      // Map to Acknowledgment Commands
-    hpr_format_t hpr;
+    hpr_format_t hpr;      // High Priority Alert
     nav_format_t nav;      // Navigation (Part 0)
     pose_format_t pose;    // Pose/Orientation (Part 1)
     inertia_format_t inert;// Inertia (Part 2)

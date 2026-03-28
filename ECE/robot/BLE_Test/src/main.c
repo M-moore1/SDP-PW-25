@@ -60,10 +60,6 @@ void ble_recieve_parser(void *pvParameters)
     while (1) {
         if (xQueueReceive(ble_recieve_queue, &received_packet, portMAX_DELAY))
         {   
-            //send_string(msg1);
-            //send_instr(return_msg.bytes);
-            //send_payload(payload);
-
             // SEND 8 bytes
             // send_bytes(data, 8);
             // SEND 156 Bytes

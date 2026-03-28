@@ -5,23 +5,23 @@ vec3_t       g_imu_accel = {0};
 gyro_t       g_imu_gyro  = {0};
 euler_t      g_imu_euler = {0};
 
+
 size_t shtp_read(i2c_master_dev_handle_t dev, uint8_t *buf, size_t buf_len) {
     uint8_t header[4] = {0};
     vTaskDelay(pdMS_TO_TICKS(2));
-    if (i2c_master_receive(dev, header, 4, 5000) != ESP_OK) return 0;
+    if (i2c_master_receive(dev, header, 4, 9000) != ESP_OK) return 0;
 
     uint16_t packet_len = ((uint16_t)header[1] << 8 | header[0]) & ~0x8000;
     if (packet_len == 0 || packet_len > buf_len - 4) return 0;
 
     memcpy(buf, header, 4);
     vTaskDelay(pdMS_TO_TICKS(2));
-    if (i2c_master_receive(dev, buf + 4, packet_len, 5000) != ESP_OK) return 0;
+    if (i2c_master_receive(dev, buf + 4, packet_len, 9000) != ESP_OK) return 0;
 
     return packet_len;
 }
 
-esp_err_t shtp_write(i2c_master_dev_handle_t dev, uint8_t channel,
-                     uint8_t *payload, size_t payload_len) {
+esp_err_t shtp_write(i2c_master_dev_handle_t dev, uint8_t channel, uint8_t *payload, size_t payload_len) {
     size_t total = payload_len + 4;
     uint8_t buf[total];
     buf[0] = total & 0xFF;
@@ -32,8 +32,7 @@ esp_err_t shtp_write(i2c_master_dev_handle_t dev, uint8_t channel,
     return i2c_master_transmit(dev, buf, total, 5000);
 }
 
-esp_err_t bno08x_enable_report(i2c_master_dev_handle_t dev,
-                                uint8_t report_id, uint32_t interval_us) {
+esp_err_t bno08x_enable_report(i2c_master_dev_handle_t dev, uint8_t report_id, uint32_t interval_us) {
     uint8_t payload[] = {
         REPORT_SET_FEATURE, report_id, 0x00, 0x00, 0x00,
         (interval_us >>  0) & 0xFF,
@@ -46,17 +45,30 @@ esp_err_t bno08x_enable_report(i2c_master_dev_handle_t dev,
     return shtp_write(dev, 2, payload, sizeof(payload));
 }
 
+void imu_hard_reset(){
+    gpio_set_level(IMU_RESET_PIN, 0);
+    vTaskDelay(pdMS_TO_TICKS(10));
+
+    gpio_set_level(IMU_RESET_PIN, 1);
+    vTaskDelay(pdMS_TO_TICKS(500));
+}
+
 // Drain packets until INT goes high (no more data)
 void drain_packets(i2c_master_dev_handle_t dev) {
     uint8_t buf[SHTP_BUF_SIZE];
     for (int i = 0; i < 10; i++) {
-        if (gpio_get_level(GPIO_NUM_18) == 1) break;  // INT high = no data
+        if (gpio_get_level(IMU_INT_PIN) == 1) break;  // INT high = no data
         shtp_read(dev, buf, sizeof(buf));
         vTaskDelay(pdMS_TO_TICKS(5));
     }
 }
 
 bool bno08x_init(i2c_master_dev_handle_t dev) {
+    gpio_set_direction(IMU_INT_PIN, GPIO_MODE_INPUT);
+    gpio_set_direction(IMU_RESET_PIN, GPIO_MODE_OUTPUT);
+
+    imu_hard_reset();
+
     // Soft reset via SHTP channel 1
     uint8_t reset_payload[] = {0x01};
     bool reset_ok = false;
@@ -82,7 +94,7 @@ bool bno08x_init(i2c_master_dev_handle_t dev) {
     bno08x_enable_report(dev, REPORT_GYROSCOPE,       20000);
     bno08x_enable_report(dev, REPORT_ROTATION_VECTOR, 20000);
 
-    ESP_LOGI(IMU_TAG, "Reports enabled");
+    ESP_LOGI(IMU_TAG, "IMU init and reports enabled");
     return true;
 }
 
@@ -184,8 +196,6 @@ bool bno085_tare_pitch_only_cmd(i2c_master_dev_handle_t dev) {
 }
 
 
-
-
 static bool parse_accelerometer(uint8_t *buf, size_t len, vec3_t *out) {
     if ((int)len + 4 < DATA_OFFSET + 6) return false;
     if (buf[REPORT_ID_OFFSET] != REPORT_ACCELEROMETER) return false;
@@ -239,11 +249,11 @@ int imu_check(i2c_master_dev_handle_t imu) {
     static uint8_t last_seq = 0xFF;
     uint8_t buf[SHTP_BUF_SIZE];
 
-    if (gpio_get_level(GPIO_NUM_18) == 1) return -1;  // No data ready
+    if (gpio_get_level(IMU_INT_PIN) == 1) return -1;  // No data ready
 
     size_t len = shtp_read(imu, buf, sizeof(buf));
     if (len == 0) return -1;
-    if (buf[3] == last_seq) return -1;
+    //if (buf[3] == last_seq) return -1;
     last_seq = buf[3];
 
     if      (parse_accelerometer(buf, len, &g_imu_accel))  {}
@@ -252,4 +262,44 @@ int imu_check(i2c_master_dev_handle_t imu) {
         g_imu_euler = quaternion_to_euler(&g_imu_quat);
     }
     return 0;
+}
+
+static int imu_error_count = 0;
+
+void imu_check_safe(i2c_master_dev_handle_t imu) {
+    int ret = imu_check(imu);   
+    if (ret != ESP_OK) {
+        imu_error_count++;
+        if (imu_error_count >= IMU_MAX_ERROR) {
+            ESP_LOGE(IMU_TAG, "IMU ERROR — resetting BNO08x");
+            bno08x_init(imu);
+            imu_error_count = 0;
+        }
+    } else {
+        imu_error_count = 0; 
+    }
+}
+
+void imu_tare_process(i2c_master_dev_handle_t imu){
+    while (gpio_get_level(IMU_INT_PIN) == 1) { vTaskDelay(pdMS_TO_TICKS(1)); }
+    if (!bno085_tare_cmd(imu)) {
+    ESP_LOGE(IMU_TAG, "Failed to tare, halting");
+    while (1) { vTaskDelay(pdMS_TO_TICKS(1000)); }
+    }
+
+    // READ a 1-2 packets
+    drain_packets(imu);
+
+
+    // Persist Tare
+    while (gpio_get_level(IMU_INT_PIN) == 1) { vTaskDelay(pdMS_TO_TICKS(1)); }
+    if (!bno085_save_settings_cmd(imu)) {
+    ESP_LOGE(IMU_TAG, "Failed to persist tare, halting");
+    while (1) { vTaskDelay(pdMS_TO_TICKS(1000)); }
+    }
+
+    bno085_tare_cmd(imu);
+    drain_packets(imu);
+    bno085_save_settings_cmd(imu);
+    ESP_LOGI(IMU_TAG, "IMU Tared");
 }
