@@ -17,28 +17,19 @@
 #define AVG_SAMPLES    100
 #define SEND_INTERVAL  1000
 
-// gcc -O2 -Wall -Wextra updated_pmod_test.c \
-includes/ble/pmod_esp32.c \
-includes/ble/uart_queue.c \
-cJSON-master/cJSON.c \
--I./includes \
--I./includes/ble \
--I./includes/cmd_structure \
--I./cJSON-master \
--o updated_pmod_test
-
+// gcc -O2 -Wall -Wextra updated_pmod_test.c includes/ble/pmod_esp32.c includes/ble/uart_queue.c cJSON-master/cJSON.c -I./includes -I./includes/ble -I./includes/cmd_structure -I./cJSON-master -o updated_pmod_test
 // ===================== FIXED PARSER =====================
 void parse_notify_and_print(char *line) {
 
 
-int conn, srv, chr, reported_len;
+int conn, srv, chr, byte_len;
 
-if (sscanf(line, "+NOTIFY:%d,%d,%d,%d,", &conn, &srv, &chr, &reported_len) != 4) {
+if (sscanf(line, "+NOTIFY:%d,%d,%d,%d,", &conn, &srv, &chr, &byte_len) != 4) {
     printf("Parse header failed\n");
     return;
 }
 
-// Move pointer to start of HEX data
+// Move pointer to raw data (IMPORTANT: this is NOT ASCII)
 char *p = line;
 for (int i = 0; i < 4; i++) {
     p = strchr(p, ',');
@@ -46,43 +37,16 @@ for (int i = 0; i < 4; i++) {
     p++;
 }
 
-// Trim newline / carriage return
-char *end = p;
-while (*end && *end != '\r' && *end != '\n') end++;
-*end = '\0';
-
-int ascii_len = strlen(p);
-
-if (ascii_len % 2 != 0) {
-    printf("Invalid ASCII HEX length: %d\n", ascii_len);
-    return;
-}
-
-int byte_len = ascii_len / 2;
-
-uint8_t data[512];
-
-// Convert ASCII HEX → bytes
-for (int i = 0; i < byte_len; i++) {
-    if (sscanf(&p[i * 2], "%2hhx", &data[i]) != 1) {
-        printf("HEX parse error at index %d\n", i);
-        return;
-    }
-}
+uint8_t *data = (uint8_t *)p;
 
 printf("\n========== RAW BYTES ==========\n");
-printf("Reported Len: %d\n", reported_len);
-printf("Parsed Len: %d\n", byte_len);
+printf("Len: %d\n", byte_len);
 
 for (int i = 0; i < byte_len; i++) {
-    printf("%02X ", data[i]);
+    printf("%02X ", (uint8_t)data[i]);
     if ((i+1)%16==0) printf("\n");
 }
 printf("\n");
-
-// Debug frame bytes
-printf("First byte: %02X\n", data[0]);
-printf("Last byte: %02X\n", data[byte_len-1]);
 
 // Frame check
 if (data[0] != 0x0A || data[byte_len-1] != 0x0D) {
@@ -90,7 +54,7 @@ if (data[0] != 0x0A || data[byte_len-1] != 0x0D) {
     return;
 }
 
-// Extract payload (skip start byte)
+// Extract payload
 uint8_t *payload = &data[1];
 
 robot_bt_packet_t pkt;
@@ -129,7 +93,6 @@ switch(pkt.ctrl.type) {
         break;
 }
 
-// JSON BUILD
 cJSON *root = cJSON_CreateObject();
 
 cJSON_AddStringToObject(root, "type", "PARSED");
@@ -147,6 +110,7 @@ cJSON_Delete(root);
 
 
 }
+
 // =====================================================
 
 uint8_t instruction[8] = { 0x12, 0x34, 0x56, 0x78, 0x54, 0x23, 0x08, 0x04 };
@@ -218,5 +182,6 @@ while(1){
 
 close(bt_uart);
 return 0;
+
 
 }
