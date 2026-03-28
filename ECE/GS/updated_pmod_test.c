@@ -1,3 +1,5 @@
+
+// gcc -O2 -Wall -Wextra updated_pmod_test.c includes/ble/pmod_esp32.c includes/ble/uart_queue.c cJSON-master/cJSON.c -I./includes -I./includes/ble -I./includes/cmd_structure -I./cJSON-master -o updated_pmod_test
 #include <fcntl.h>
 #include "../conio.c"
 #include <stdio.h>
@@ -13,12 +15,10 @@
 #include "../includes/cmd_structure.h"
 #include "../cJSON-master/cJSON.h"
 
-#define byte_test_size  156
-#define AVG_SAMPLES    100
-#define SEND_INTERVAL  1000
+#define AVG_SAMPLES 100
+#define SEND_INTERVAL 1000
 
-// gcc -O2 -Wall -Wextra updated_pmod_test.c includes/ble/pmod_esp32.c includes/ble/uart_queue.c cJSON-master/cJSON.c -I./includes -I./includes/ble -I./includes/cmd_structure -I./cJSON-master -o updated_pmod_test
-// ===================== FIXED PARSER =====================
+// ===================== FIXED STREAM PARSER =====================
 void parse_notify_and_print(char *line) {
 
 
@@ -29,7 +29,7 @@ if (sscanf(line, "+NOTIFY:%d,%d,%d,%d,", &conn, &srv, &chr, &byte_len) != 4) {
     return;
 }
 
-// Move pointer to raw data (IMPORTANT: this is NOT ASCII)
+// Move pointer to raw binary data
 char *p = line;
 for (int i = 0; i < 4; i++) {
     p = strchr(p, ',');
@@ -48,14 +48,40 @@ for (int i = 0; i < byte_len; i++) {
 }
 printf("\n");
 
-// Frame check
-if (data[0] != 0x0A || data[byte_len-1] != 0x0D) {
-    printf("Invalid frame\n");
+// ===============================
+// 🔥 FIND FRAME INSIDE STREAM
+// ===============================
+int start = -1;
+int end = -1;
+
+for (int i = 0; i < byte_len; i++) {
+
+    if (data[i] == 0x0A && start == -1) {
+        start = i;
+    }
+    else if (data[i] == 0x0D && start != -1) {
+        end = i;
+        break;
+    }
+}
+
+if (start == -1 || end == -1) {
+    printf("Frame not found\n");
     return;
 }
 
-// Extract payload
-uint8_t *payload = &data[1];
+int frame_len = end - start + 1;
+
+printf("\n========== FRAME ==========\n");
+printf("Start: %d End: %d Len: %d\n", start, end, frame_len);
+
+uint8_t frame[256];
+memcpy(frame, &data[start], frame_len);
+
+// ===============================
+// EXTRACT PAYLOAD
+// ===============================
+uint8_t *payload = &frame[1];
 
 robot_bt_packet_t pkt;
 memcpy(pkt.bytes, payload, 8);
@@ -93,6 +119,9 @@ switch(pkt.ctrl.type) {
         break;
 }
 
+// ===============================
+// JSON OUTPUT
+// ===============================
 cJSON *root = cJSON_CreateObject();
 
 cJSON_AddStringToObject(root, "type", "PARSED");
@@ -110,7 +139,6 @@ cJSON_Delete(root);
 
 
 }
-
 // =====================================================
 
 uint8_t instruction[8] = { 0x12, 0x34, 0x56, 0x78, 0x54, 0x23, 0x08, 0x04 };
@@ -132,11 +160,13 @@ int trial_count = 0;
 int trail_amount = 0;
 
 while(1){
+
     ble_uart_check(bt_uart);
 
     char rx_buffer[512]; 
 
     if (uart_queue_pop(&uart_queue, rx_buffer) == 0){
+
         printf("[UART OUTPUT] %s\r\n", rx_buffer);
 
         if (strstr(rx_buffer, "NOTIFY") != NULL) 
@@ -151,6 +181,7 @@ while(1){
 
             if (trial_count >= AVG_SAMPLES) {
                 long avg = average_time / trial_count;
+
                 printf("\r\n=== STATS #%d ===\r\n", trail_amount);
                 printf("Average Latency: %.3f ms\r\n", avg / 1000.0);
                 printf("==========================\r\n\n");
@@ -182,6 +213,5 @@ while(1){
 
 close(bt_uart);
 return 0;
-
 
 }
