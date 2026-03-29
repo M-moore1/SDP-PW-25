@@ -56,6 +56,10 @@ int ble_init(int uart_fd);
 int ble_discon(int uart_fd);
 int ble_notification(int uart_fd, int enable);
 int ble_connect(int uart_fd, const char *MAC);
+
+int get_name(int uart_fd, char *name);
+int get_mac(int uart_fd, char *connected_mac);
+int get_rssi(int uart_fd, char *rssi_out);
 int get_ble_conn_params(int uart_fd, char *params_out);
 
 int ble_send_pkt(int uart_fd, uint8_t *data, int data_len);

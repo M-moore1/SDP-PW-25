@@ -2,6 +2,7 @@
 #define CMD_STRUCTURE_H
 
 #include <stdint.h>
+
 // Command Types
 typedef enum {
     CONTROL_CMD      = 0x01,  
