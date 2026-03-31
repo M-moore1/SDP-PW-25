@@ -81,27 +81,42 @@ int query_cmd(int uart_fd, query_format_t query_inst){
   return robot_send_need;
 }
 
-int handle_encrypted_data(int uart_fd, int uds_fd, const char *encrypt_str){
-  //uart_send_str(uart_fd, encrypt_str, str_len(encrypt_str));
-  
-  if (!encrypt_str) return -1;
+int handle_encrypted_data(int uart_fd, int uds_fd, const char *encrypt_str) {
+    if (!encrypt_str) {
+        fprintf(stderr, "[encrypt] ERROR: null input\n");
+        return -1;
+    }
 
-  if (strlen(encrypt_str) != PAYLOAD_HEX_STR_LEN) return -2;
+    size_t actual_len = strlen(encrypt_str);
+    if (actual_len != PAYLOAD_HEX_STR_LEN) {
+        fprintf(stderr, "[encrypt] ERROR: bad length — got %zu, expected %d\n",
+                actual_len, PAYLOAD_HEX_STR_LEN);
+        return -2;
+    }
 
-  uint8_t encrypted_bytes[TOTAL_SZ] = {0};
-  for (int i = 0; i < TOTAL_SZ; i++)
-    if (sscanf(encrypt_str + i * 2, "%02hhx", &encrypted_bytes[i]) != 1) return -3;
+    uint8_t encrypted_bytes[TOTAL_SZ] = {0};
+    for (int i = 0; i < TOTAL_SZ; i++) {
+        if (sscanf(encrypt_str + i * 2, "%02hhx", &encrypted_bytes[i]) != 1) {
+            fprintf(stderr, "[encrypt] ERROR: hex parse failed at byte %d\n", i);
+            return -3;
+        }
+    }
 
-  char json_out[CT_SZ + 1] = {0};
+    char json_out[CT_SZ + 1] = {0};
+    int len = decrypt_json(encrypted_bytes, json_out, sizeof(json_out));
+    if (len < 0) {
+        fprintf(stderr, "[encrypt] ERROR: decrypt_json failed (returned %d)\n", len);
+        return -4;
+    }
 
-  int len = decrypt_json(encrypted_bytes, json_out, sizeof(json_out));
-  if (len < 0) return -4;
+    /* Guarantee null termination even if decrypt_json doesn't */
+    json_out[CT_SZ] = '\0';
 
-  printf("Decrypted JSON (%d bytes): %s\n", len, json_out);
-  handle_node_json(uart_fd, uds_fd, json_out);
+    printf("[encrypt] Decrypted JSON (%d bytes): %s\n", len, json_out);
+    fflush(stdout);
 
-  return 0;
-
+    handle_node_json(uart_fd, uds_fd, json_out);
+    return 0;
 }
 
 // ------------------------- Handle Node JSON -------------------------
@@ -124,11 +139,11 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
   robot_bt_packet_t packet = {0}; // Initialize to clear all 64 bits (including "unused")
   int send_to_robot = 1;
 
-
+  printf("IM PARSING\r\n");
   // CONTROL (C)
   if (strcmp(t, "C") == 0) {
     uint8_t f, b, l, r_move, speed, pl;
-    uint16_t id_tag;
+    uint16_t id_tag = 0;
 
     if (json_get_u8(root, "F",  &f,     0, 1)   ||
         json_get_u8(root, "B",  &b,     0, 1)   ||
@@ -269,5 +284,5 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
     // TODO add priority Queue   
     return ble_send_instruction(uart_fd, packet.bytes);
   }
-  
+  return 0;
 }

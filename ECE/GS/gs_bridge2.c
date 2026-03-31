@@ -53,21 +53,26 @@ int looks_like_json(const char *s) {
 // ------------------------- Main -------------------------
 
 int main(int argc, char **argv) {
-  // Allow UART device override:
-  // 1) environment variable UART_DEV
-  // 2) command line argument (argv[1])
-  // 3) default constant
-  const char *uart_dev = DEFAULT_UART_DEV;                 // Default
-  const char *env_uart = getenv("UART_DEV");               // Check env var
-  if (env_uart && env_uart[0]) uart_dev = env_uart;        // Use env var if set
-  if (argc >= 2) uart_dev = argv[1];                       // Use CLI arg if provided
+  setvbuf(stdout, NULL, _IOLBF, 0);  // Line-buffer stdout immediately
 
-  const char *uds_path = DEFAULT_UDS_PATH;                 // UDS path (could also make configurable)
+  const char *uart_dev = DEFAULT_UART_DEV;
+  const char *env_uart = getenv("UART_DEV");
+  if (env_uart && env_uart[0]) uart_dev = env_uart;
+  if (argc >= 2) uart_dev = argv[1];
 
-  int uart_fd = uart_open_config(uart_dev, DEFAULT_UART_BAUD); // Open/config UART
-  if (uart_fd < 0) return 1;                               // If failed, exit
-  if (ble_init(uart_fd) < 0) return 1; // Init BLE
+  printf("Hello — uart_dev=%s\n", uart_dev);  // Will now appear
+
+  int uart_fd = uart_open_config(uart_dev, DEFAULT_UART_BAUD);
+  if (uart_fd < 0) {
+    fprintf(stderr, "ERROR: uart_open_config(%s) failed: %s\n",
+            uart_dev, strerror(errno));
+    return 1;
+  }
+  printf("UART opened: fd=%d\n", uart_fd);
+  // ...
+  ble_init(uart_fd);
   
+  const char *uds_path = DEFAULT_UDS_PATH;                 // UDS path (could also make configurable)
 
   int uds_listen = uds_server_listen(uds_path);            // Create UDS listening socket
   if (uds_listen < 0) return 1;                            // If failed, exit
@@ -126,7 +131,10 @@ int main(int argc, char **argv) {
     }
 
     // ----- If Node socket readable: read 1 framed JSON message -----
-    if (FD_ISSET(uds_client, &rfds)) {                     // Node has data
+    printf("BEFORE NODE SOCKET READABLE\n\r");
+    if (FD_ISSET(uds_client, &rfds)) {         
+                  // Node has data
+      printf("AFTER NODE SOCKET READABLE\n\r");
       uint32_t len_be = 0;                                 // 4-byte big-endian length
       int r = read_full(uds_client, &len_be, 4);           // Read length
       if (r == 0) {                                        // Node disconnected
@@ -163,8 +171,10 @@ int main(int argc, char **argv) {
         int handled = 0;
 
         // Fast path: if it looks like JSON and parses, treat as plaintext JSON
+        
+
         if (looks_like_json(buf)) {
-          //printf("I GOT a JSON\r\n");
+          printf("I GOT a JSON\r\n");
           cJSON *probe = cJSON_Parse(buf);
           if (probe) {
             cJSON_Delete(probe);
