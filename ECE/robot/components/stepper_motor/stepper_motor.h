@@ -1,5 +1,5 @@
 #ifndef STEPPER_MOTOR_H
-#define STEPPPER_MOTOR_H
+#define STEPPER_MOTOR_H
 
 #include "driver/ledc.h"
 #include "driver/gpio.h"
@@ -8,7 +8,7 @@
 // Configuration constants
 #define STEPPER_LEDC_RESOLUTION  LEDC_TIMER_8_BIT
 #define STEPPER_LEDC_DUTY        128   // 50% of 255
-#define PULSE_DURATION_US        150000 // 60 ms
+#define PULSE_DURATION_US        60000 // 60 ms
 
 typedef enum {
     MOTOR_DISABLE = 0,

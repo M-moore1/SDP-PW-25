@@ -13,7 +13,7 @@ import {
   formatDirection,
   isDirectionKey,
   keyToDirection,
-  directionToControlAxes,
+  directionsToControlAxes,
 } from './utils/direction';
 import { buildControlMsg } from './utils/commands';
 
@@ -22,13 +22,12 @@ interface MessageLogEntry {
   timestamp: string;
 }
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://127.0.0.1:8080';
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080';
 const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY; // 64 hex chars (32 bytes)
 
 function App() {
-  const [activeDirection, setActiveDirection] = useState<Direction | null>(null);
+  const [activeDirections, setActiveDirections] = useState<Set<Direction>>(new Set());
   const [messageLog, setMessageLog] = useState<MessageLogEntry[]>([]);
-  const [isKeyHeld, setIsKeyHeld] = useState(false);
   const [repeatRate, setRepeatRate] = useState(50);
   const [controlSpeed, setControlSpeed] = useState(50);
   const [encryptionEnabled, setEncryptionEnabled] = useState(false);
@@ -47,8 +46,8 @@ function App() {
     onMessageSent: logMessage,
   });
 
-  const sendDirection = useCallback((direction: Direction) => {
-    const axes = directionToControlAxes(direction);
+  const sendActiveDirections = useCallback((directions: Set<Direction>) => {
+    const axes = directionsToControlAxes(directions);
     const msg = buildControlMsg(
       axes.forward,
       axes.backward,
@@ -60,10 +59,8 @@ function App() {
   }, [sendMessage, controlSpeed]);
 
   useHoldRepeater(
-    isKeyHeld && activeDirection !== null,
-    () => {
-      if (activeDirection) sendDirection(activeDirection);
-    },
+    activeDirections.size > 0,
+    () => sendActiveDirections(activeDirections),
     repeatRate
   );
 
@@ -72,8 +69,7 @@ function App() {
     if (isDirectionKey(e.key)) {
       e.preventDefault();
       pressedKeysRef.current.add(e.key);
-      setActiveDirection(keyToDirection[e.key]);
-      setIsKeyHeld(true);
+      setActiveDirections(prev => new Set([...prev, keyToDirection[e.key]]));
     }
   }, []);
 
@@ -81,17 +77,16 @@ function App() {
     if (isDirectionKey(e.key)) {
       e.preventDefault();
       pressedKeysRef.current.delete(e.key);
-      const direction = keyToDirection[e.key];
-      if (direction === activeDirection) {
-        setActiveDirection(null);
-        setIsKeyHeld(false);
-      }
+      setActiveDirections(prev => {
+        const next = new Set(prev);
+        next.delete(keyToDirection[e.key]);
+        return next;
+      });
     }
-  }, [activeDirection]);
+  }, []);
 
   const handleBlur = useCallback(() => {
-    setActiveDirection(null);
-    setIsKeyHeld(false);
+    setActiveDirections(new Set());
     pressedKeysRef.current.clear();
   }, []);
 
@@ -117,13 +112,15 @@ function App() {
   }, [handleKeyDown, handleKeyUp, handleBlur]);
 
   const handleDirectionStart = useCallback((direction: Direction) => {
-    setActiveDirection(direction);
-    setIsKeyHeld(true);
+    setActiveDirections(prev => new Set([...prev, direction]));
   }, []);
 
-  const handleDirectionStop = useCallback(() => {
-    setActiveDirection(null);
-    setIsKeyHeld(false);
+  const handleDirectionStop = useCallback((direction: Direction) => {
+    setActiveDirections(prev => {
+      const next = new Set(prev);
+      next.delete(direction);
+      return next;
+    });
   }, []);
 
   const handleConnect = useCallback(() => {
@@ -170,11 +167,11 @@ function App() {
             <DirectionPad
               onDirectionStart={handleDirectionStart}
               onDirectionStop={handleDirectionStop}
-              activeDirection={activeDirection}
+              activeDirections={activeDirections}
             />
             <StatusIndicator
               status={status}
-              activeDirection={formatDirection(activeDirection)}
+              activeDirection={formatDirection(activeDirections)}
               lastError={lastError}
               wsUrl={WS_URL}
             />

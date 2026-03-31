@@ -18,7 +18,7 @@ void motor_init(step_mot_t* m, const int step_pin, const int dir_pin, const int 
 
     gpio_set_direction(m->dir_gpio, GPIO_MODE_OUTPUT);
     gpio_set_direction(m->en_gpio, GPIO_MODE_OUTPUT);
-    gpio_set_level(m->en_gpio, 1);
+    gpio_set_level(m->en_gpio, 0);
 
     m->timer_sel = (ledc_timer_t)(channel / 2); 
 
