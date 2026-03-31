@@ -110,8 +110,8 @@ int main() {
                 char conn_results[128]; 
                 memset(conn_results, 0, sizeof(conn_results));
 
-                if (send_at_cmd(bt_uart, "AT+BLECONNPARAM?\r\n", "+BLECONNPARAM:", conn_results, 1000) == 0) {
-                    //printf("Current Params: %s\r\n", conn_results);
+                if (pmod_name(bt_uart, "ROBOT_ESP32", conn_results) == 0) {
+                    printf("Current Params: %s\r\n", conn_results);
                 } else {
                     printf("Failed to retrieve parameters. (Are you connected?)\r\n");
                 }
@@ -135,7 +135,7 @@ int main() {
         if (now - last >= SEND_INTERVAL * 1000) {
             message_start = now;
             //ble_send_instruction(bt_uart, instruction);
-            ble_send_pkt(bt_uart, payload, 156);
+            //ble_send_pkt(bt_uart, payload, 156);
             last = now;
         }
         
