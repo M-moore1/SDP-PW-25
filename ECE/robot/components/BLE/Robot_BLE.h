@@ -16,12 +16,13 @@
 #include "esp_bt_device.h"
 #include "esp_gatt_common_api.h"
 #include "pinout.h"
+#include "robot_commands.h"
+//#include "aes_gcm_encrypt.h"
 
-#define GATTS_TABLE_TAG "ROBOT_SDP2635"
 #define ROBOT_PROFILE_NUM                       1
 #define ROBOT_PROFILE_APP_IDX                   0
 #define ESP_ROBOT_APP_ID                        0x55
-#define SAMPLE_DEVICE_NAME                      "ROBOT_ESP32"
+#define DEVICE_NAME                             "ROBOT_ESP32"
 #define SVC_INST_ID                             0
 #define CHAR_DECLARATION_SIZE                   (sizeof(uint8_t))
 #define GATTS_DEMO_CHAR_VAL_LEN_MAX             500
@@ -57,9 +58,9 @@ extern QueueHandle_t ble_recieve_queue;
 
 // Function declarations
 void robot_ble_init();
+void send_bytes(uint8_t *packet, size_t len);
 void send_string(char *txt);
-void send_payload(uint8_t pkt[156]);
-void send_instr(uint8_t pkt[8]);
+void send_cmd(uint8_t* pkt, int sec_lvl);
 void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
 void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
 

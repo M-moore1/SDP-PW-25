@@ -200,6 +200,7 @@ int pmod_esp32_reset(int uart_fd) {
 
         if (uart_read_and_queue(uart_fd, response, sizeof(response)) > 0) {
             if (strstr(response, "ready") != NULL) {
+                BLE_CONNECTED = 0;
                 return 0;
             }
         }
@@ -233,7 +234,7 @@ int pmod_esp32_init(int uart_fd) {
 
     if (pmod_esp32_reset(uart_fd) < 0) return -1;
 
-    return send_at_cmd(uart_fd, "ATE0\r\n", NULL, NULL, 50);;
+    return send_at_cmd(uart_fd, "ATE0\r\n", NULL, NULL, 50);
 
 }
 
@@ -315,6 +316,21 @@ int ble_connect(int uart_fd, const char *MAC) {
     return 0;
 }
 
+int get_name(int uart_fd, char *name){
+    if (!BLE_CONNECTED) return -1;
+    return send_at_cmd(uart_fd, "AT+BLENAME?\r\n", "+BLENAME:", name, 1000);
+}
+
+int get_mac(int uart_fd, char *connected_mac) {
+    if (!BLE_CONNECTED) return -1;
+    return send_at_cmd(uart_fd, "AT+BLECONN?\r\n", "+BLECONN:0,", connected_mac, 1000);
+}
+
+int get_rssi(int uart_fd, char *rssi_out) {
+    if (!BLE_CONNECTED) return -1;
+    return send_at_cmd(uart_fd, "AT+BLERDRSSI=0\r\n", "+BLERDRSSI:0,", rssi_out, 1000);
+}
+
 int get_ble_conn_params(int uart_fd, char *params_out) {
     if (!BLE_CONNECTED) return -1;
     return send_at_cmd(uart_fd, "AT+BLECONNPARAM?\r\n", "+BLECONNPARAM:", params_out, 1000);
@@ -360,8 +376,11 @@ int ble_send_pkt(int uart_fd, uint8_t *data, int data_len) {
 }
 
 int ble_send_instruction(int uart_fd, uint8_t instruction[8]) {
+    return ble_write(uart_fd, 3, 1, -1, instruction, 8);
+    /*
     uint8_t payload[PAYLOAD_BYTES];
     memset(payload, 0x00, PAYLOAD_BYTES);
     memcpy(payload, instruction, 8);
     return ble_send_pkt(uart_fd, payload, PAYLOAD_BYTES);
+    */
 }

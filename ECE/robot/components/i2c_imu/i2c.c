@@ -9,8 +9,15 @@ i2c_master_bus_handle_t i2c_init() {
         .glitch_ignore_cnt = 7,
         .flags.enable_internal_pullup = true,
     };
+
+    i2c_mst_config.trans_queue_depth = 0;          // synchronous mode
+    i2c_mst_config.flags.allow_pd    = false;
+
     i2c_master_bus_handle_t bus_handle;
     ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_mst_config, &bus_handle));
+
+    i2c_master_bus_reset(bus_handle);
+
     return bus_handle;
 }
 

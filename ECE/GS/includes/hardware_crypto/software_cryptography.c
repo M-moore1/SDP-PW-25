@@ -64,30 +64,28 @@ void gs_sw_crypto_deinit()
     if (g_tfmfd >= 0) { close(g_tfmfd); g_tfmfd = -1; }
 }
 
-int sw_encryption(const char *Plaintext, char Ciphertext[PAYLOAD_HEX_STR_LEN + 1])
+int encrypt_json(const char *Plaintext, uint8_t Ciphertext[TOTAL_SZ])
 {
-    /* 1. Decode hex → raw bytes, then 0xFF-pad to CT_SZ */
-    int hex_len  = strlen(Plaintext);
-    if (hex_len % 2 != 0) return -1;
-    int data_len = hex_len / 2;
-    if (data_len > CT_SZ) return -2;
+    if (!Plaintext || !Ciphertext) return -1;
 
+    int str_len = strlen(Plaintext);
+    if (str_len == 0)    return -2;
+    if (str_len > CT_SZ) return -3;     /* max string length is CT_SZ(128) bytes */
+
+    /* Copy string into padded input buffer */
     uint8_t input[CT_SZ];
-    memset(input, PAD_BYTE, CT_SZ);               
-    for (int i = 0; i < data_len; i++)
-        if (sscanf(Plaintext + i * 2, "%02hhx", &input[i]) != 1) return -3;
+    memset(input, PAD_BYTE, CT_SZ);
+    memcpy(input, Plaintext, str_len);
 
-    /* 2. Random IV */
+    /* Generate random IV */
     uint8_t iv[IV_SZ];
     FILE *f = fopen("/dev/urandom", "rb");
     if (!f) return -4;
     if ((int)fread(iv, 1, IV_SZ, f) != IV_SZ) { fclose(f); return -5; }
     fclose(f);
 
-    /* 3. Init */
     if (gs_sw_crypto_init() != 0) return -6;
 
-    /* 4. Control message: op=ENCRYPT + IV */
     char cbuf[CMSG_SPACE(4) + CMSG_SPACE(sizeof(struct af_alg_iv) + IV_SZ)];
     memset(cbuf, 0, sizeof(cbuf));
 
@@ -107,14 +105,12 @@ int sw_encryption(const char *Plaintext, char Ciphertext[PAYLOAD_HEX_STR_LEN + 1
     alg_iv->ivlen = IV_SZ;
     memcpy(alg_iv->iv, iv, IV_SZ);
 
-    /* 5. Send full CT_SZ padded plaintext */
     struct iovec iov = { .iov_base = input, .iov_len = CT_SZ };
     msg.msg_iov    = &iov;
     msg.msg_iovlen = 1;
 
     if (sendmsg(g_opfd, &msg, 0) < 0) { gs_sw_crypto_deinit(); return -7; }
 
-    /* 6. Read CT_SZ ciphertext bytes + TAG_SZ tag bytes */
     uint8_t raw_out[CT_SZ + TAG_SZ];
     if (read(g_opfd, raw_out, CT_SZ + TAG_SZ) != CT_SZ + TAG_SZ) {
         gs_sw_crypto_deinit(); return -8;
@@ -122,25 +118,82 @@ int sw_encryption(const char *Plaintext, char Ciphertext[PAYLOAD_HEX_STR_LEN + 1
 
     gs_sw_crypto_deinit();
 
-    // 7. Hex-encode: IV || ciphertext || tag → 312 hex chars 
-    int pos = 0;
-    for (int i = 0; i < IV_SZ;          i++) pos += sprintf(Ciphertext + pos, "%02x", iv[i]);
-    for (int i = 0; i < CT_SZ + TAG_SZ; i++) pos += sprintf(Ciphertext + pos, "%02x", raw_out[i]);
-    Ciphertext[pos] = '\0';
+    /* Pack raw bytes: IV || ciphertext || tag → TOTAL_SZ(156) bytes */
+    memcpy(Ciphertext,          iv,      IV_SZ);
+    memcpy(Ciphertext + IV_SZ,  raw_out, CT_SZ + TAG_SZ);
 
     return 0;
 }
 
-int sw_decryption(const char *Ciphertext, uint8_t output[CT_SZ + 1])
+int encrypt_cmd(const robot_bt_packet_t *packet, uint8_t *cipher_out, size_t *cipher_out_len)
 {
-    uint8_t msg_raw[TOTAL_SZ];
-    struct msghdr msg = {0};
+    if (!packet || !cipher_out || !cipher_out_len) return -1;
+
+    uint8_t input[CT_SZ];
+    memset(input, PAD_BYTE, CT_SZ);
+    memcpy(input, packet->bytes, sizeof(robot_bt_packet_t));
+
+    uint8_t iv[IV_SZ];
+    FILE *f = fopen("/dev/urandom", "rb");
+    if (!f) return -4;
+    if ((int)fread(iv, 1, IV_SZ, f) != IV_SZ) { fclose(f); return -5; }
+    fclose(f);
+
+    if (gs_sw_crypto_init() != 0) return -6;
+
+    char cbuf[CMSG_SPACE(4) + CMSG_SPACE(sizeof(struct af_alg_iv) + IV_SZ)];
+    memset(cbuf, 0, sizeof(cbuf));
+
+    struct msghdr msg = { .msg_control = cbuf, .msg_controllen = sizeof(cbuf) };
+
+    struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_level = SOL_ALG;
+    cmsg->cmsg_type  = ALG_SET_OP;
+    cmsg->cmsg_len   = CMSG_LEN(4);
+    *((__u32 *)CMSG_DATA(cmsg)) = ALG_OP_ENCRYPT;
+
+    cmsg = CMSG_NXTHDR(&msg, cmsg);
+    cmsg->cmsg_level = SOL_ALG;
+    cmsg->cmsg_type  = ALG_SET_IV;
+    cmsg->cmsg_len   = CMSG_LEN(sizeof(struct af_alg_iv) + IV_SZ);
+    struct af_alg_iv *alg_iv = (struct af_alg_iv *)CMSG_DATA(cmsg);
+    alg_iv->ivlen = IV_SZ;
+    memcpy(alg_iv->iv, iv, IV_SZ);
+
+    struct iovec iov = { .iov_base = input, .iov_len = CT_SZ };
+    msg.msg_iov    = &iov;
+    msg.msg_iovlen = 1;
+
+    if (sendmsg(g_opfd, &msg, 0) < 0) { gs_sw_crypto_deinit(); return -7; }
+
+    // Output buffer: IV || ciphertext || tag  (all raw bytes)
+    uint8_t raw_out[CT_SZ + TAG_SZ];
+    if (read(g_opfd, raw_out, CT_SZ + TAG_SZ) != CT_SZ + TAG_SZ) {
+        gs_sw_crypto_deinit(); return -8;
+    }
+
+    gs_sw_crypto_deinit();
+
+    // Pack IV || ciphertext || tag into output buffer
+    memcpy(cipher_out,          iv,      IV_SZ);
+    memcpy(cipher_out + IV_SZ,  raw_out, CT_SZ + TAG_SZ);
+    *cipher_out_len = IV_SZ + CT_SZ + TAG_SZ;
+
+    return 0;
+}
+
+int decrypt_json(const uint8_t *encrypted, char *json_out, size_t json_out_len)
+{
+    if (!encrypted || !json_out || json_out_len == 0) return -1;
+
+    _Static_assert(TOTAL_SZ == 156, "TOTAL_SZ must be 156 bytes (IV_SZ + CT_SZ + TAG_SZ)");
+
+    uint8_t output[CT_SZ + 1] = {0};
+    struct msghdr  msg  = {0};
     struct cmsghdr *cmsg;
     char cbuf[CMSG_SPACE(4) + CMSG_SPACE(sizeof(struct af_alg_iv) + IV_SZ)] = {0};
 
-    if (gs_sw_crypto_init() != 0) return -1;
-
-    convert_msg_str(Ciphertext, msg_raw);
+    if (gs_sw_crypto_init() != 0) return -2;
 
     msg.msg_control    = cbuf;
     msg.msg_controllen = sizeof(cbuf);
@@ -157,36 +210,82 @@ int sw_decryption(const char *Ciphertext, uint8_t output[CT_SZ + 1])
     cmsg->cmsg_len   = CMSG_LEN(sizeof(struct af_alg_iv) + IV_SZ);
     struct af_alg_iv *iv_ptr = (void *)CMSG_DATA(cmsg);
     iv_ptr->ivlen = IV_SZ;
-    memcpy(iv_ptr->iv, msg_raw, IV_SZ);           /* IV is first 12 bytes */
+    memcpy(iv_ptr->iv, encrypted, IV_SZ);
 
     struct iovec iov = {
-        .iov_base = msg_raw + IV_SZ,              /* skip IV prefix        */
-        .iov_len  = CT_SZ + TAG_SZ                /* 128 + 16 = 144 bytes  */
+        .iov_base = (void *)(encrypted + IV_SZ),
+        .iov_len  = CT_SZ + TAG_SZ
     };
     msg.msg_iov    = &iov;
     msg.msg_iovlen = 1;
 
-    if (sendmsg(g_opfd, &msg, 0) < 0) { gs_sw_crypto_deinit(); return -2; }
+    if (sendmsg(g_opfd, &msg, 0) < 0) { gs_sw_crypto_deinit(); return -3; }
 
     int res = read(g_opfd, output, CT_SZ);
     gs_sw_crypto_deinit();
 
-    if (res < 0) return -3;
+    if (res < 0) return -4;
 
-    output[res] = '\0';
-    return res;
+    /* Strip PAD_BYTE (0xFF) from end of decrypted buffer */
+    int str_len = res;
+    while (str_len > 0 && output[str_len - 1] == PAD_BYTE)
+        str_len--;
+
+    output[str_len] = '\0';
+
+    if ((size_t)str_len >= json_out_len) return -5;
+    memcpy(json_out, output, str_len);
+    json_out[str_len] = '\0';
+
+    return str_len;
 }
 
-int encrypt_instr(const uint8_t instruction[8], char encrypted_string[PAYLOAD_HEX_STR_LEN+1])
+int decrypt_cmd(const uint8_t *encrypted, robot_bt_packet_t *pkt_out)
 {
-    if (!instruction || !encrypted_string) return -1;
+    if (!encrypted || !pkt_out) return -1;
 
-    char input_hex[17];
-    for (int i = 0; i < 8; i++)
-        sprintf(input_hex + i * 2, "%02x", instruction[i]);
-    input_hex[16] = '\0';
+    _Static_assert(TOTAL_SZ == 156, "TOTAL_SZ must be 156 bytes (IV_SZ + CT_SZ + TAG_SZ)");
 
-    if (sw_encryption(input_hex, encrypted_string) != 0) return -2;
+    uint8_t output[CT_SZ] = {0};
+    struct msghdr msg = {0};
+    struct cmsghdr *cmsg;
+    char cbuf[CMSG_SPACE(4) + CMSG_SPACE(sizeof(struct af_alg_iv) + IV_SZ)] = {0};
+
+    if (gs_sw_crypto_init() != 0) return -2;
+
+    msg.msg_control    = cbuf;
+    msg.msg_controllen = sizeof(cbuf);
+
+    cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_level = SOL_ALG;
+    cmsg->cmsg_type  = ALG_SET_OP;
+    cmsg->cmsg_len   = CMSG_LEN(4);
+    *(uint32_t *)CMSG_DATA(cmsg) = ALG_OP_DECRYPT;
+
+    cmsg = CMSG_NXTHDR(&msg, cmsg);
+    cmsg->cmsg_level = SOL_ALG;
+    cmsg->cmsg_type  = ALG_SET_IV;
+    cmsg->cmsg_len   = CMSG_LEN(sizeof(struct af_alg_iv) + IV_SZ);
+    struct af_alg_iv *iv_ptr = (void *)CMSG_DATA(cmsg);
+    iv_ptr->ivlen = IV_SZ;
+    memcpy(iv_ptr->iv, encrypted, IV_SZ);             /* first IV_SZ(12) bytes */
+
+    struct iovec iov = {
+        .iov_base = (void *)(encrypted + IV_SZ),      /* skip IV_SZ(12) prefix */
+        .iov_len  = CT_SZ + TAG_SZ                    /* 128 + 16 = 144 bytes  */
+    };
+    msg.msg_iov    = &iov;
+    msg.msg_iovlen = 1;
+
+    if (sendmsg(g_opfd, &msg, 0) < 0) { gs_sw_crypto_deinit(); return -3; }
+
+    int res = read(g_opfd, output, CT_SZ);
+    gs_sw_crypto_deinit();
+
+    if (res < 0) return -4;
+
+    memset(pkt_out, 0, sizeof(robot_bt_packet_t));
+    memcpy(pkt_out->bytes, output, sizeof(robot_bt_packet_t));
 
     return 0;
 }
