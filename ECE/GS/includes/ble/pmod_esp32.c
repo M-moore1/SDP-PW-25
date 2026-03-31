@@ -91,11 +91,17 @@ int gpio_write(int gpio_num, uint32_t value) {
     char dir[8] = {0};
 
     // Check direction only write to outputs
-    snprintf(path, sizeof(path),"/sys/class/gpio/gpio%d/direction", gpio_num);
+    snprintf(path, sizeof(path), "/sys/class/gpio/gpio%d/direction", gpio_num);
     FILE *f = fopen(path, "r");
     if (!f) return -1;
-    fscanf(f, "%7s", dir);
+
+    // Fix: Check if fscanf successfully read 1 item
+    if (fscanf(f, "%7s", dir) != 1) {
+        fclose(f);
+        return -1;
+    }
     fclose(f);
+
     if (strncmp(dir, "out", 3) != 0) return -1;
 
     // Write value
@@ -116,7 +122,12 @@ uint32_t gpio_read(int gpio_num) {
     FILE *f = fopen(path, "r");
     if (!f) return 0xFFFFFFFF;
 
-    fscanf(f, "%u", &val);
+    // Fix: Check if fscanf successfully read 1 item
+    if (fscanf(f, "%u", &val) != 1) {
+        fclose(f);
+        return 0xFFFFFFFF; // Return error sentinel if read fails
+    }
+    
     fclose(f);
     return val;
 }
@@ -127,7 +138,13 @@ int send_at_cmd(int uart_fd, const char *cmd, const char *prefix, char *out_valu
     long start_time = get_now_ms();
     
     memset(buffer, 0, sizeof(buffer));
-    write(uart_fd, cmd, strlen(cmd));
+
+    // Fix: Capture and check return value of write
+    if (strlen(cmd) > 0) {
+        if (write(uart_fd, cmd, strlen(cmd)) < 0) {
+            return -1; // UART write failed
+        }
+    }
 
     while (get_now_ms() - start_time < timeout_ms) {
         int n = uart_read_and_queue(uart_fd, buffer + bytes_received, sizeof(buffer) - bytes_received - 1);
@@ -144,7 +161,6 @@ int send_at_cmd(int uart_fd, const char *cmd, const char *prefix, char *out_valu
 
             if (strstr(buffer, "OK")) return 0;
             if (strstr(buffer, "ERROR")) {
-                //printf("[AT ERROR] cmd: %s response: %s\n", cmd, buffer);
                 return -1;
             }
         }
@@ -168,7 +184,11 @@ int ble_write(int uart_fd, int srv, int chr, int desc, uint8_t *data, int len) {
     long start_time = get_now_ms();
     memset(buffer, 0, sizeof(buffer));
 
-    write(uart_fd, cmd, strlen(cmd));
+    // Fix: Capture and check return value of write (Command)
+    if (write(uart_fd, cmd, strlen(cmd)) < 0) {
+        return -1;
+    }
+
     while (get_now_ms() - start_time < 3000) {
         int n = uart_read_and_queue(uart_fd, buffer + bytes_received, sizeof(buffer) - bytes_received - 1);
         if (n > 0) {
@@ -179,9 +199,14 @@ int ble_write(int uart_fd, int srv, int chr, int desc, uint8_t *data, int len) {
         }
         usleep(5);
     }
+    
     if (!strstr(buffer, ">")) return -2;
 
-    write(uart_fd, data, len);
+    // Fix: Capture and check return value of write (Data)
+    if (write(uart_fd, data, len) < 0) {
+        return -1;
+    }
+
     return send_at_cmd(uart_fd, "", NULL, NULL, 3000);
 }
 

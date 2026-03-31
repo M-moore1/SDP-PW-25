@@ -124,11 +124,12 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
   robot_bt_packet_t packet = {0}; // Initialize to clear all 64 bits (including "unused")
   int send_to_robot = 1;
 
+  uint16_t id_tag = 0;
 
   // CONTROL (C)
   if (strcmp(t, "C") == 0) {
     uint8_t f, b, l, r_move, speed, pl;
-    uint16_t id_tag;
+    
 
     if (json_get_u8(root, "F",  &f,     0, 1)   ||
         json_get_u8(root, "B",  &b,     0, 1)   ||
@@ -269,5 +270,7 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
     // TODO add priority Queue   
     return ble_send_instruction(uart_fd, packet.bytes);
   }
+
+  return 0;
   
 }
