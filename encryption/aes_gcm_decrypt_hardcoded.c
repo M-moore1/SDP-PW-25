@@ -39,8 +39,6 @@ static void print_hex(const char *label, const unsigned char *buf, size_t len){
 
 
 
-
-
 int main(void){
     // =========================================================
     // HARD-CODE TEST VECTORS HERE (hex strings, no 0x prefix)
