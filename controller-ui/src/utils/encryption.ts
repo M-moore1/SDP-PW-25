@@ -104,14 +104,32 @@ export function encrypt(
 }
 
 /**
+ * Maximum plaintext length in bytes. All commands are padded to this size before
+ * encryption so the encrypted output is always the same length.
+ */
+export const MAX_PLAINTEXT_LENGTH = 128;
+
+/** Fixed encrypted string length: 24 (nonce) + 2*MAX_PLAINTEXT_LENGTH (ct) + 32 (tag) + 1 (\\r) */
+export const ENCRYPTED_STRING_LENGTH =
+  24 + 2 * MAX_PLAINTEXT_LENGTH + 32 + 1; // 313
+
+/**
  * Encrypt a JSON object and return a string suitable for WebSocket send.
+ * Plaintext is padded to MAX_PLAINTEXT_LENGTH with spaces so encrypted output
+ * is always fixed length. (Null bytes would be truncated by C strlen in WASM.)
+ * Receiver must trim trailing spaces before JSON.parse.
  * Output format: concatenated nonce + ct + tag (hex strings), ending with \r.
  */
 export function encryptJson(
   obj: object,
   keyHex: string
 ): string | null {
-  const plaintext = JSON.stringify(obj);
+  let plaintext = JSON.stringify(obj);
+  if (plaintext.length > MAX_PLAINTEXT_LENGTH) {
+    console.error(`Plaintext too long (${plaintext.length} > ${MAX_PLAINTEXT_LENGTH})`);
+    return null;
+  }
+  plaintext = plaintext.padEnd(MAX_PLAINTEXT_LENGTH, ' ');
   const encrypted = encrypt(plaintext, keyHex);
   if (!encrypted) return null;
   return encrypted.nonce + encrypted.ct + encrypted.tag + '\r';
