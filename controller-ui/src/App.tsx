@@ -125,24 +125,24 @@ function App() {
 
   const handleConnect = useCallback(() => {
     sendMessage({
-      type: 'S',
+      T: 'S',
       instruction: 0b0010,
       Authorization_Code: 0x03ff,
       instruction_specific: 0x00,
-      priority_level: 1,
-      id: 28,
+      PL: 1,
+      ID: 28,
     });
   }, [sendMessage]);
 
   const handleEncryptionChange = useCallback(
     (enabled: boolean) => {
       const msg = {
-        type: 'S',
+        T: 'S',
         instruction: 0b0011,
         Authorization_Code: 0x03ff,
         instruction_specific: enabled ? 1 : 0,
-        priority_level: 1,
-        id: 28,
+        PL: 1,
+        ID: 28,
       };
       logMessage(`Encryption ${enabled ? 'enabled' : 'disabled'} (${JSON.stringify(msg)})`);
       sendMessage(msg);
