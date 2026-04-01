@@ -131,10 +131,9 @@ int main(int argc, char **argv) {
     }
 
     // ----- If Node socket readable: read 1 framed JSON message -----
-    printf("BEFORE NODE SOCKET READABLE\n\r");
+
     if (FD_ISSET(uds_client, &rfds)) {         
                   // Node has data
-      printf("AFTER NODE SOCKET READABLE\n\r");
       uint32_t len_be = 0;                                 // 4-byte big-endian length
       int r = read_full(uds_client, &len_be, 4);           // Read length
       if (r == 0) {                                        // Node disconnected
