@@ -125,14 +125,31 @@ function App() {
 
   const handleConnect = useCallback(() => {
     sendMessage({
-      type: 'S',
+      T: 'S',
       instruction: 0b0010,
       Authorization_Code: 0x03ff,
       instruction_specific: 0x00,
-      priority_level: 1,
-      id: 28,
+      PL: 1,
+      ID: 28,
     });
   }, [sendMessage]);
+
+  const handleEncryptionChange = useCallback(
+    (enabled: boolean) => {
+      const msg = {
+        T: 'S',
+        instruction: 0b0011,
+        Authorization_Code: 0x03ff,
+        instruction_specific: enabled ? 1 : 0,
+        PL: 1,
+        ID: 28,
+      };
+      logMessage(`Encryption ${enabled ? 'enabled' : 'disabled'} (${JSON.stringify(msg)})`);
+      sendMessage(msg);
+      setEncryptionEnabled(enabled);
+    },
+    [sendMessage, logMessage]
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
@@ -166,7 +183,7 @@ function App() {
               controlSpeed={controlSpeed}
               onControlSpeedChange={setControlSpeed}
               encryptionEnabled={encryptionEnabled}
-              onEncryptionChange={setEncryptionEnabled}
+              onEncryptionChange={handleEncryptionChange}
               hasEncryptionKey={Boolean(ENCRYPTION_KEY)}
               onConnect={handleConnect}
             />
