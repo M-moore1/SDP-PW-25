@@ -1,7 +1,29 @@
 #include "pmod_esp32.h"
 #include "uart_queue.h"
+#include "ble_tls_transport.h"
 
 volatile int BLE_CONNECTED = 0;
+
+/* Global or externally managed transport instance */
+static BleTlsTransport *g_ble_tls_transport = NULL;
+
+void pmod_attach_tls_transport(BleTlsTransport *t) {
+    g_ble_tls_transport = t;
+}
+
+
+/*You must call pmod_on_ble_notification() from wherever you currently 
+parse incoming BLE notifications from the ESP32 AT response stream.*/
+
+void pmod_on_ble_notification(const uint8_t *data, int len) {
+    if (!g_ble_tls_transport || !data || len <= 0) {
+        return;
+    }
+
+    /* Feed raw encrypted TLS bytes into the wolfSSL transport RX ring */
+    ble_tls_transport_feed_rx(g_ble_tls_transport, data, (size_t)len);
+}
+
 
 long get_now_ms() {
     struct timespec ts;

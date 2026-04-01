@@ -273,7 +273,7 @@ void send_cmd(uint8_t* pkt, int sec_lvl) {
 
 
 
-"""
+/*
 // GAP Callback - handles advertising start and stop
 void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {
@@ -316,7 +316,7 @@ void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
             break;
     }
 }
-"""
+*/
 
 
 void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
