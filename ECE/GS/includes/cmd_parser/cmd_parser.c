@@ -87,16 +87,29 @@ int handle_encrypted_data(int uart_fd, int uds_fd, const char *encrypt_str) {
         return -1;
     }
 
-    size_t actual_len = strlen(encrypt_str);
-    if (actual_len != PAYLOAD_HEX_STR_LEN) {
+    /* Strip all whitespace into a clean buffer */
+    char clean[PAYLOAD_HEX_STR_LEN + 1] = {0};
+    size_t clean_len = 0;
+    for (size_t i = 0; encrypt_str[i] != '\0'; i++) {
+        unsigned char c = (unsigned char)encrypt_str[i];
+        if (c == ' ' || c == '\t' || c == '\n' || c == '\r') continue;
+        if (clean_len >= PAYLOAD_HEX_STR_LEN) {
+            fprintf(stderr, "[encrypt] ERROR: input too long after stripping whitespace\n");
+            return -2;
+        }
+        clean[clean_len++] = encrypt_str[i];
+    }
+    clean[clean_len] = '\0';
+
+    if (clean_len != PAYLOAD_HEX_STR_LEN) {
         fprintf(stderr, "[encrypt] ERROR: bad length — got %zu, expected %d\n",
-                actual_len, PAYLOAD_HEX_STR_LEN);
+                clean_len, PAYLOAD_HEX_STR_LEN);
         return -2;
     }
 
     uint8_t encrypted_bytes[TOTAL_SZ] = {0};
     for (int i = 0; i < TOTAL_SZ; i++) {
-        if (sscanf(encrypt_str + i * 2, "%02hhx", &encrypted_bytes[i]) != 1) {
+        if (sscanf(clean + i * 2, "%02hhx", &encrypted_bytes[i]) != 1) {
             fprintf(stderr, "[encrypt] ERROR: hex parse failed at byte %d\n", i);
             return -3;
         }
@@ -109,7 +122,6 @@ int handle_encrypted_data(int uart_fd, int uds_fd, const char *encrypt_str) {
         return -4;
     }
 
-    /* Guarantee null termination even if decrypt_json doesn't */
     json_out[CT_SZ] = '\0';
 
     printf("[encrypt] Decrypted JSON (%d bytes): %s\n", len, json_out);
@@ -150,8 +162,8 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
         json_get_u8(root, "L",  &l,     0, 1)   ||
         json_get_u8(root, "R",  &r_move,0, 1)   ||
         json_get_u8(root, "S",  &speed, 0, 100) ||
-        json_get_u8(root, "PL", &pl,    0, 3)   ||
-        json_get_u8(root, "ID", &pl,    1, 2047)) 
+        json_get_u8(root, "PL", &pl,    0, 3) )  //||
+        //json_get_u8(root, "ID", &pl,    1, 2047)) 
     {
       uds_send_json(uds_fd, "{\"type\":\"ERR\",\"msg\":\"bad C fields\"}");
       cJSON_Delete(root);
@@ -210,11 +222,11 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
     uint32_t spec;
     
 
-    if (json_get_u8(root, "I",   &instr, 0, 15)   ||
-        json_get_u16(root,"AC",  &ac,    0, 1024) ||
+    if (json_get_u8(root, "instruction",   &instr, 0, 15)   ||
+        json_get_u16(root,"Authorization_Code",  &ac,    0, 1024) ||
         json_get_u8(root, "PL",  &pl,    0, 3)    ||
         json_get_u16(root,"ID",  &id,    0, 2047) ||
-        json_get_u32(root,"IS", &spec)) 
+        json_get_u32(root,"instruction_specific", &spec)) 
     {
       printf("I GOT AN ERROR WITH THE S INSTRUCTION\n");
       uds_send_json(uds_fd, "{\"type\":\"ERR\",\"msg\":\"bad S fields\"}");
