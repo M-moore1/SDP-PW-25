@@ -18,7 +18,7 @@ SRCS = gs_bridge2.c \
        includes/hardware_crypto/software_cryptography.c \
        $(CJSON_DIR)/cJSON.c
 
-TARGET = gs_bridge2
+TARGET = gs_bridge2.o
 
 all: $(TARGET)
 
