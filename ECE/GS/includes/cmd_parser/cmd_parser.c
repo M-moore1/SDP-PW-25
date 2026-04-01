@@ -12,9 +12,20 @@ int sys_cmd(int uart_fd, system_format_t sys_inst){
   switch(sys_inst.instruction){
     case SECURITY_LEVEL:
       printf("Changing Security Level\r\n");
-      sys_inst.specific = security_level;
+      if(sys_inst.specific == 1){
+        robot_bt_packet_t packet = {0};
+        packet.sys.pl          = sys_inst.pl;
+        packet.sys.type        = System_CMD;
+        packet.sys.instruction = sys_inst.instruction;
+        packet.sys.ac          = sys_inst.ac;
+        packet.sys.id          = sys_inst.id;
+        packet.sys.specific    = sys_inst.specific;
+        ble_send_instruction(uart_fd, packet.bytes);
+        robot_send_need = 0;
+      }
+      security_level = sys_inst.specific;
+    break;
 
-      break;
     case Connect_Reconnect:
       printf("Attempting Connection\r\n");
       if (ble_connect(uart_fd, NULL) < 0){ connection_status = 0;}
@@ -151,7 +162,7 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
   robot_bt_packet_t packet = {0}; // Initialize to clear all 64 bits (including "unused")
   int send_to_robot = 1;
 
-  printf("IM PARSING\r\n");
+  //printf("IM PARSING\r\n");
   // CONTROL (C)
   if (strcmp(t, "C") == 0) {
     uint8_t f, b, l, r_move, speed, pl;
@@ -169,7 +180,7 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
       cJSON_Delete(root);
       return -1;
     }
-
+    printf("Doing this\r\n");
     packet.ctrl.type  = CONTROL_CMD;
     packet.ctrl.pl    = pl;
     packet.ctrl.w     = f;
@@ -177,7 +188,7 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
     packet.ctrl.a     = l;
     packet.ctrl.d     = r_move;
     packet.ctrl.speed = speed;
-    packet.ctrl.id    = id_tag;
+    //packet.ctrl.id    = id_tag;
   }
 
   // ARM (A)
@@ -281,8 +292,8 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
   cJSON_Delete(root);
 
   //Put a connection check and send back ACK
-  if (send_to_robot){
-    if (security_level) {
+  if (send_to_robot == 1){
+    if (security_level == 1) {
       uint8_t ciphertext[TOTAL_SZ] = {0};
       size_t out_len = 0;
 
@@ -291,6 +302,10 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
       printf("\n");
 
       if (encrypt_cmd(&packet, ciphertext, &out_len) != 0) return -1;
+      //printf("Ciphertext (%zu bytes): ", out_len);
+      //for (size_t i = 0; i < out_len; i++) printf("%02X ", ciphertext[i]);
+      //printf("\n");
+
       return ble_send_pkt(uart_fd, ciphertext, out_len);
     }
     // TODO add priority Queue   

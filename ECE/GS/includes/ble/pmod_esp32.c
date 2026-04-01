@@ -365,6 +365,7 @@ int ble_send_pkt(int uart_fd, uint8_t *data, int data_len) {
     if (data_len != PAYLOAD_BYTES) return -1;
     if (!BLE_CONNECTED) return -1;
 
+    printf("HELLO\r\n");
     uint8_t packet[PACKET_BYTES];
     packet[0] = 0x0A;
     packet[1] = 0xD0;

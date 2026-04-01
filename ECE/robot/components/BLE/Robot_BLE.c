@@ -330,6 +330,7 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
                                         }
                                     break;
                                     case FINISH:
+                                         ESP_LOGE(BLE_TAG, "Secure Mode - Checking Last");
                                         if (current_byte == 0x0D) {
                                             if (xQueueSend(ble_recieve_queue, (void *)rx_buf, (TickType_t)0) != pdPASS) {
                                                 ESP_LOGW(BLE_TAG, "BT Queue full, dropping packet");

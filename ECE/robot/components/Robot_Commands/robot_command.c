@@ -19,11 +19,11 @@ void send_ack(uint16_t id, uint8_t result, int secure, uint64_t instr_specfic) {
     response.ack.instruction_specific = instr_specfic;
     send_cmd(response.bytes, secure);
 
-    ESP_LOGI(CMD_TAG, "Sent ACK for ID %d with Result %d", id, result);
+    //ESP_LOGI(CMD_TAG, "Sent ACK for ID %d with Result %d", id, result);
 }
 
 void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* B_L, step_mot_t* B_R){
-    ESP_LOGI(CMD_TAG, "Executing Control CMD");
+   // ESP_LOGI(CMD_TAG, "Executing Control CMD");
     if (motor_power == 0){
         ESP_LOGI(CMD_TAG, "Control CMD - Motor OFF");
         send_ack(ctrl.id, RESULT_CMD_FAILURE, security_flag, MOTORS_DISABLED);
@@ -33,16 +33,18 @@ void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_m
     bool w = ctrl.w; bool a = ctrl.a; 
     bool s = ctrl.s; bool d = ctrl.d;
     uint8_t speed = ctrl.speed;
-
+    ESP_LOGI(CMD_TAG, "Motor Moving");
+    
     if(w) { 
-        printf("\nMotor moving forward at speed %d\n", speed);
+        //printf("\nMotor moving forward at speed %d\n", speed);
+
         motor_pulse(F_L, speed, 0); 
         motor_pulse(F_R, speed, 0); 
         motor_pulse(B_L, speed, 0); 
         motor_pulse(B_R, speed, 0); 
     }
     if(s) { 
-        printf("\nMotor moving backwards at speed %d\n", speed);
+        //printf("\nMotor moving backwards at speed %d\n", speed);
         motor_pulse(F_L, speed, 1); 
         motor_pulse(F_R, speed, 1);  
         motor_pulse(B_L, speed, 1); 
@@ -58,8 +60,8 @@ void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_m
         motor_pulse(B_L, speed, 1); 
         motor_pulse(B_R, speed, 1);
     }
-
-    send_ack(ctrl.id, RESULT_SUCCESS, security_flag, NO_INFO );
+    
+   // send_ack(ctrl.id, RESULT_SUCCESS, security_flag, NO_INFO );
 }
 
 void arm_cmd   (arm_format_t arm, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* B_L, step_mot_t* B_R){
@@ -103,7 +105,7 @@ void system_cmd(system_format_t sys, step_mot_t* F_L, step_mot_t* F_R, step_mot_
                 result = RESULT_INVALID_PARAMS;
                 break;
             }
-            ESP_LOGI(CMD_TAG, "System CMD - Security Flag Updated %d", security_flag );
+            ESP_LOGI(CMD_TAG, "System CMD - Security Flag Updated %d", payload );
             security_flag = payload;
             result = RESULT_SUCCESS;
             if(security_flag){instr_spc_rsp = SECURITY_ON; }

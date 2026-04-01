@@ -13,7 +13,7 @@
 #include "robot_commands.h"
 #include "i2c.h"
 #include "imu.h"
-//#include "aes_gcm_decrypt.h"
+#include "aes_gcm_decrypt.h"
 
 
 step_mot_t front_left;
@@ -33,11 +33,11 @@ void ble_recieve_parser(void *pvParameters)
 
         if (xQueueReceive(ble_recieve_queue, &received_packet, portMAX_DELAY))
         {   
-            ESP_LOGI(MAIN_TAG, "RECIEVED BLE DATA");
+            //ESP_LOGI(MAIN_TAG, "RECIEVED BLE DATA");
             
             if (security_flag) {
                 ESP_LOGI(MAIN_TAG, "Secure Mode - Decrypting Data");
-                /*
+                
                 char plaintext[256];
                 size_t pt_len = 0;
                 tag_check = aes_gcm_decrypt_packet(received_packet, plaintext, &pt_len);
@@ -53,7 +53,7 @@ void ble_recieve_parser(void *pvParameters)
                     ESP_LOGW(MAIN_TAG, "Secure Mode - Decryption Failed");
                     send_ack(0, RESULT_AUTH_FAIL, security_flag, NO_INFO);
                 }
-                */
+                
             }else{
                 memcpy(cmd_packet.bytes, received_packet, 8);
                 tag_check = 0;
@@ -63,6 +63,7 @@ void ble_recieve_parser(void *pvParameters)
                 if (xQueueSend(cmd_queue, &cmd_packet, 0) != pdPASS) {
                     ESP_LOGW(MAIN_TAG, "cmd_queue full");
                 }
+                
             }
         }
     }
@@ -73,15 +74,16 @@ void command_parser(void *pvParameters)
     robot_bt_packet_t cmd;
     while (1)
     {
+
         if (xQueueReceive(cmd_queue, &cmd, portMAX_DELAY))
         {
             ESP_LOGI(MAIN_TAG, "Packet Parsing Initiated");
-
+            
             command_type_t cmd_type = (command_type_t)cmd.ctrl.type;
 
             switch (cmd_type){
                 case CONTROL_CMD:
-                    ESP_LOGI(MAIN_TAG, "Control CMD Recieved");
+                    //ESP_LOGI(MAIN_TAG, "Control CMD Recieved");
                     control_cmd(cmd.ctrl, &front_left, &front_right, &back_left, &back_right);
                 break;
 
@@ -101,10 +103,12 @@ void command_parser(void *pvParameters)
                 break;
                 
                 default:
-                    ESP_LOGW(MAIN_TAG, "Unknown CMD Recieved");
+                    //ESP_LOGW(MAIN_TAG, "Unknown CMD Recieved");
                     send_ack(0, RESULT_UNKNOWN_CMD, security_flag, NO_INFO);
                 break;
+                
             }
+                
         }
     }
 }
@@ -112,7 +116,7 @@ void command_parser(void *pvParameters)
 
 void app_main()
 {
-    /*
+    
     i2c_master_bus_handle_t i2c_bus = i2c_init();
     i2c_master_dev_handle_t imu     = device_init(i2c_bus, IMU_ADDR);
 
@@ -120,7 +124,7 @@ void app_main()
         ESP_LOGE(IMU_TAG, "Failed to init BNO08x, halting");
         while (1) { vTaskDelay(pdMS_TO_TICKS(1000)); }
     }
-    */
+    
     ESP_ERROR_CHECK(nvs_flash_init()); // Initialize NVS
     robot_ble_init();                  // Initialize BLE
 
@@ -135,36 +139,37 @@ void app_main()
     int rotation_step = 0;
     int64_t now = esp_timer_get_time();
 
+
     xTaskCreatePinnedToCore( ble_recieve_parser, "ble_recieve_parser", 4096, NULL, 5, NULL, 1);
     xTaskCreatePinnedToCore( command_parser, "robot_command_parser", 4096, NULL, 5, NULL, 1);
 
     while (1) {
-        /*
+        
         if (gpio_get_level(IMU_INT_PIN) == 0) {
             while (gpio_get_level(IMU_INT_PIN) == 0) {
-                imu_check_safe(imu);
+               // imu_check_safe(imu);
             }
         }
-        */
         
         
+        now = esp_timer_get_time();
         if (device_connected && notify_enabled) {
             if (now - last_send_time >= 500000) {
-        
+                /*
                 switch (rotation_step) {
                     case 0: send_imu(1); break;
                     case 1: send_imu(2); break;
                     case 2: send_imu(3); break;
                     case 3: send_health_report(); break;
                 }
-
+                */
                 rotation_step = (rotation_step + 1) % 4; 
 
                 last_send_time = now;
             }
         }
         
-        vTaskDelay(pdMS_TO_TICKS(500));
+        //vTaskDelay(pdMS_TO_TICKS(1));
         
     }
     return;
