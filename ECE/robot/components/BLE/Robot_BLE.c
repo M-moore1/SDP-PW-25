@@ -7,6 +7,15 @@ bool device_connected = false;
 bool notify_enabled = false;
 
 
+/* NEW: track whether BLE pairing/authentication completed successfully */
+bool link_authenticated = false;
+
+/* NEW: save peer address so security procedures can reference it if needed */
+esp_bd_addr_t peer_bda = {0};
+
+
+
+
 uint16_t robot_handle_table[ROBOT_IDX_NB];
 static const uint16_t GATTS_SERVICE_UUID           = 0x00FF;
 static const uint16_t GATTS_ROBOT_UUID             = 0xFF01;
@@ -15,6 +24,10 @@ static const uint16_t character_declaration_uuid   = ESP_GATT_UUID_CHAR_DECLARE;
 static const uint8_t char_prop_read_write_notify   = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
 static const uint16_t character_client_config_uuid = ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
 static const uint8_t robot_measurement_ccc[2]      = {0x00, 0x00};
+
+
+static const uint32_t ROBOT_FIXED_PASSKEY = 123456;
+
 
 typedef enum {
     WAITING          = 0x00, 
@@ -105,6 +118,7 @@ static const esp_gatts_attr_db_t gatt_db[ROBOT_IDX_NB] =
     
 };
 
+"""
 void robot_ble_init(){
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_bt_controller_init(&bt_cfg));
@@ -129,6 +143,106 @@ void robot_ble_init(){
     esp_ble_gatts_app_register(ESP_ROBOT_APP_ID);
 
 }
+"""
+
+void robot_ble_init() {
+    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_bt_controller_init(&bt_cfg));
+    ESP_ERROR_CHECK(esp_bt_controller_enable(ESP_BT_MODE_BLE));
+
+    ESP_LOGI(BLE_TAG, "%s init bluetooth", __func__);
+
+    ESP_ERROR_CHECK(esp_bluedroid_init());
+    ESP_ERROR_CHECK(esp_bluedroid_enable());
+
+    ble_recieve_queue = xQueueCreate(10, PACKET_SIZE);
+    if (ble_recieve_queue == NULL) {
+        ESP_LOGE(BLE_TAG, "Queue creation failed!");
+        return;
+    }
+
+    esp_ble_gatt_set_local_mtu(512);
+
+    /* ------------------------------------------------------------------
+     * NEW: BLE security configuration
+     *
+     * Matches the PMOD side intent:
+     * - authenticated pairing
+     * - MITM protection
+     * - fixed passkey = 123456
+     * - 16-byte key size
+     * ------------------------------------------------------------------ */
+
+    /* Require bonding + MITM protection */
+    esp_ble_auth_req_t auth_req = ESP_LE_AUTH_REQ_SC_MITM_BOND;
+
+    /* IO capability:
+     * OUT = device displays passkey / peer enters it
+     * IN = device enters passkey shown by peer
+     * NONE = Just Works / no keyboard/display
+     *
+     * Choose the one that matches your setup best.
+     * For a fixed-passkey example, many projects use OUT or IN.
+     */
+    esp_ble_io_cap_t iocap = ESP_IO_CAP_OUT;
+
+    uint8_t key_size = 16;
+
+    uint8_t init_key = ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK;
+    uint8_t rsp_key  = ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK;
+
+    uint8_t auth_option = ESP_BLE_ONLY_ACCEPT_SPECIFIED_AUTH_ENABLE;
+
+    ESP_ERROR_CHECK(esp_ble_gap_set_security_param(
+        ESP_BLE_SM_AUTHEN_REQ_MODE,
+        &auth_req,
+        sizeof(auth_req)));
+
+    ESP_ERROR_CHECK(esp_ble_gap_set_security_param(
+        ESP_BLE_SM_IOCAP_MODE,
+        &iocap,
+        sizeof(iocap)));
+
+    ESP_ERROR_CHECK(esp_ble_gap_set_security_param(
+        ESP_BLE_SM_MAX_KEY_SIZE,
+        &key_size,
+        sizeof(key_size)));
+
+    ESP_ERROR_CHECK(esp_ble_gap_set_security_param(
+        ESP_BLE_SM_SET_INIT_KEY,
+        &init_key,
+        sizeof(init_key)));
+
+    ESP_ERROR_CHECK(esp_ble_gap_set_security_param(
+        ESP_BLE_SM_SET_RSP_KEY,
+        &rsp_key,
+        sizeof(rsp_key)));
+
+    ESP_ERROR_CHECK(esp_ble_gap_set_security_param(
+        ESP_BLE_SM_ONLY_ACCEPT_SPECIFIED_SEC_AUTH,
+        &auth_option,
+        sizeof(auth_option)));
+
+    /* Set the fixed passkey to match the PMOD side */
+    ESP_ERROR_CHECK(esp_ble_gap_set_pin(ESP_BT_PIN_TYPE_FIXED,
+                                        6,
+                                        (esp_bt_pin_code_t *)&(uint8_t[6]){'1','2','3','4','5','6'}));
+
+    ESP_ERROR_CHECK(esp_ble_gap_set_security_param(
+        ESP_BLE_SM_SET_STATIC_PASSKEY,
+        (void *)&ROBOT_FIXED_PASSKEY,
+        sizeof(uint32_t)));
+
+    link_authenticated = false;
+    memset(peer_bda, 0, sizeof(peer_bda));
+
+    /* Register callbacks / app */
+    esp_ble_gatts_register_callback(gatts_event_handler);
+    esp_ble_gap_register_callback(gap_event_handler);
+    esp_ble_gatts_app_register(ESP_ROBOT_APP_ID);
+}
+
+
 
 void send_bytes(uint8_t *packet, size_t len){
     esp_ble_gatts_send_indicate(robot_gatts_if, robot_conn_id, robot_handle_table[ROBOT_IDX_VAL],
@@ -158,6 +272,8 @@ void send_cmd(uint8_t* pkt, int sec_lvl) {
 }
 
 
+
+"""
 // GAP Callback - handles advertising start and stop
 void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {
@@ -200,6 +316,86 @@ void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
             break;
     }
 }
+"""
+
+
+void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
+{
+    switch (event) {
+
+        case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
+            esp_ble_gap_start_advertising(&adv_params);
+            break;
+
+        case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
+            if (param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS) {
+                ESP_LOGE(BLE_TAG, "Advertising start failed");
+            } else {
+                ESP_LOGI(BLE_TAG, "Advertising start successfully");
+            }
+            break;
+
+        case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
+            if (param->adv_stop_cmpl.status != ESP_BT_STATUS_SUCCESS) {
+                ESP_LOGE(BLE_TAG, "Advertising stop failed");
+            } else {
+                ESP_LOGI(BLE_TAG, "Advertising stopped successfully");
+            }
+            break;
+
+        case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
+            ESP_LOGI(BLE_TAG,
+                     "Conn params updated: status=%d, int=%d, latency=%d, timeout=%d",
+                     param->update_conn_params.status,
+                     param->update_conn_params.conn_int,
+                     param->update_conn_params.latency,
+                     param->update_conn_params.timeout);
+            break;
+
+        /* -----------------------------------------------------------
+         * NEW: security events
+         * ----------------------------------------------------------- */
+
+        case ESP_GAP_BLE_SEC_REQ_EVT:
+            ESP_LOGI(BLE_TAG, "Security request received; accepting");
+            esp_ble_gap_security_rsp(param->ble_security.ble_req.bd_addr, true);
+            break;
+
+        case ESP_GAP_BLE_PASSKEY_REQ_EVT:
+            ESP_LOGI(BLE_TAG, "Passkey requested; replying with fixed key");
+            esp_ble_passkey_reply(param->ble_security.ble_req.bd_addr, true, ROBOT_FIXED_PASSKEY);
+            break;
+
+        case ESP_GAP_BLE_PASSKEY_NOTIF_EVT:
+            ESP_LOGI(BLE_TAG, "Passkey notify: %06lu",
+                     (unsigned long)param->ble_security.key_notif.passkey);
+            break;
+
+        case ESP_GAP_BLE_NC_REQ_EVT:
+            ESP_LOGI(BLE_TAG, "Numeric comparison request: %lu",
+                     (unsigned long)param->ble_security.key_notif.passkey);
+            /* Accept numeric comparison */
+            esp_ble_confirm_reply(param->ble_security.key_notif.bd_addr, true);
+            break;
+
+        case ESP_GAP_BLE_AUTH_CMPL_EVT:
+            if (param->ble_security.auth_cmpl.success) {
+                ESP_LOGI(BLE_TAG, "BLE authentication complete: SUCCESS");
+                ESP_LOG_BUFFER_HEX(BLE_TAG, param->ble_security.auth_cmpl.bd_addr, sizeof(esp_bd_addr_t));
+                link_authenticated = true;
+            } else {
+                ESP_LOGE(BLE_TAG, "BLE authentication failed, reason=0x%x",
+                         param->ble_security.auth_cmpl.fail_reason);
+                link_authenticated = false;
+            }
+            break;
+
+        default:
+            break;
+    }
+}
+
+
 
 void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param)
 {
@@ -219,37 +415,54 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
             }
             break;
         }
-        // Connection Event
+
+        //NEW CONNECTION EVENT
         case ESP_GATTS_CONNECT_EVT:
-            ESP_LOGI(BLE_TAG,"Device connected, conn_id=%d", param->connect.conn_id);
+            ESP_LOGI(BLE_TAG, "Device connected, conn_id=%d", param->connect.conn_id);
+
             memset(rx_buf, 0, sizeof(rx_buf));
             rx_idx = 0;
+            data_collection_mode = WAITING;
+
             esp_ble_gap_stop_advertising();
+
             robot_conn_id = param->connect.conn_id;
-            esp_ble_gap_set_pkt_data_len(param->connect.remote_bda, 251);
             robot_gatts_if = gatts_if;
             device_connected = true;
+            notify_enabled = false;
+            link_authenticated = false;
 
-            // Connection Parameters
+            memcpy(peer_bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
+
+            esp_ble_gap_set_pkt_data_len(param->connect.remote_bda, 251);
+
+            /* Request/update connection parameters */
             esp_ble_conn_update_params_t conn_params = {0};
             memcpy(conn_params.bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
-            conn_params.min_int = 0x06;  // 7.5 ms
-            conn_params.max_int = 0x08;  // 10 ms
+            conn_params.min_int = 0x06;   // 7.5 ms
+            conn_params.max_int = 0x08;   // 10 ms
             conn_params.latency = 0;
-            conn_params.timeout = 1000; 
+            conn_params.timeout = 1000;
 
             esp_ble_gap_update_conn_params(&conn_params);
 
+            /* NEW: proactively request security/encryption on the robot side too */
+            esp_ble_set_encryption(param->connect.remote_bda, ESP_BLE_SEC_ENCRYPT_MITM);
+
             break;
 
-        // Disconnect Event
         case ESP_GATTS_DISCONNECT_EVT:
             ESP_LOGI(BLE_TAG, "Device disconnected");
 
             device_connected = false;
             notify_enabled = false;
+            link_authenticated = false;
+
+            memset(peer_bda, 0, sizeof(peer_bda));
             memset(rx_buf, 0, sizeof(rx_buf));
             rx_idx = 0;
+            data_collection_mode = WAITING;
+
             esp_ble_gap_start_advertising(&adv_params);
             break;
 
@@ -279,6 +492,27 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
                         notify_enabled = false;
                     }
                 }else if (param->write.handle == robot_handle_table[ROBOT_IDX_VAL]) {
+                    
+                    
+                        /* NEW: if security mode is enabled, require BLE auth before accepting application data. */
+                        if (security_flag && !link_authenticated) {
+                            ESP_LOGW(BLE_TAG, "Dropping write: link not authenticated yet");
+
+                            if (param->write.need_rsp) {
+                                esp_ble_gatts_send_response(
+                                    gatts_if,
+                                    param->write.conn_id,
+                                    param->write.trans_id,
+                                    ESP_GATT_INSUF_AUTHENTICATION,
+                                    NULL);
+                            }
+                            break;
+                        }
+                    
+                    
+                    
+                    
+                    
                     uint16_t incoming_len = param->write.len;
                     uint8_t *incoming_data = param->write.value;
 

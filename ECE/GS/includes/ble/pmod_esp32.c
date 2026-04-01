@@ -305,6 +305,19 @@ int ble_connect(int uart_fd, const char *MAC) {
     
     usleep(500000); 
     BLE_CONNECTED = 1;
+//------------------------------------------------------------------
+
+    // Request authenticated encrypted link with MITM protection
+    if (send_at_cmd(uart_fd, "AT+BLEENC=0,3\r\n", NULL, NULL, 3000) < 0) return -1;
+
+    // Wait here for +BLEAUTHCMPL:0,0 before continuing
+    if (wait_for_ble_auth_complete(uart_fd, 10000) < 0) {
+        BLE_CONNECTED = 0;
+        return -1;
+    }
+
+//------------------------------------------------------------------
+
 
     if (send_at_cmd(uart_fd, "AT+BLEDATALEN=0,251\r\n", NULL, NULL, 2000) < 0) return -1;  // Set Data Length
     if (send_at_cmd(uart_fd, "AT+BLECFGMTU=0,512\r\n", NULL, NULL, 2000) < 0) return -1;   // Set MTU
@@ -350,6 +363,13 @@ int ble_init(int uart_fd) {
     // BLE init
     if (send_at_cmd(uart_fd, "AT+BLEINIT=1\r\n", NULL, NULL, 1000) < 0) return -1;
     usleep(100000);
+//---------------------------------------------------------
+
+    //Enforce a stronger BLE strategy
+    if (send_at_cmd(uart_fd, "AT+BLESECPARAM=13,4,16,3,3,1\r\n", NULL, NULL, 1000) < 0) return -1;
+    if (send_at_cmd(uart_fd, "AT+BLESETKEY=123456\r\n", NULL, NULL, 1000) < 0) return -1;
+
+//---------------------------------------------------------
 
     // Set Device Name
     if (pmod_name(uart_fd, PMOD_DEV_NAME, NULL) < 0) return -1;
@@ -384,3 +404,53 @@ int ble_send_instruction(int uart_fd, uint8_t instruction[8]) {
     return ble_send_pkt(uart_fd, payload, PAYLOAD_BYTES);
     */
 }
+
+//----------------------------------------------
+//Helper Function to wait for auth
+int wait_for_ble_auth_complete(int uart_fd, int timeout_ms) {
+    char buffer[1024];
+    int bytes_received = 0;
+    long start_time = get_now_ms();
+
+    memset(buffer, 0, sizeof(buffer));
+
+    while (get_now_ms() - start_time < timeout_ms) {
+        int n = uart_read_and_queue(uart_fd,
+                                    buffer + bytes_received,
+                                    sizeof(buffer) - bytes_received - 1);
+        if (n > 0) {
+            bytes_received += n;
+            buffer[bytes_received] = '\0';
+
+            // If peer requests pairing, accept it
+            if (strstr(buffer, "+BLESECREQ:0")) {
+                if (send_at_cmd(uart_fd, "AT+BLEENCRSP=0,1\r\n", NULL, NULL, 1000) < 0) {
+                    return -1;
+                }
+                memset(buffer, 0, sizeof(buffer));
+                bytes_received = 0;
+                continue;
+            }
+
+            // If a passkey is requested/notified, reply with the same key
+            if (strstr(buffer, "+BLESECNTFYKEY:0,")) {
+                // For a static passkey example:
+                if (send_at_cmd(uart_fd, "AT+BLEKEYREPLY=0,123456\r\n", NULL, NULL, 1000) < 0) {
+                    return -1;
+                }
+                memset(buffer, 0, sizeof(buffer));
+                bytes_received = 0;
+                continue;
+            }
+
+            if (strstr(buffer, "+BLEAUTHCMPL:0,0")) return 0; // success
+            if (strstr(buffer, "+BLEAUTHCMPL:0,1")) return -1; // failure
+            if (strstr(buffer, "ERROR")) return -1;
+        }
+
+        usleep(5000);
+    }
+
+    return -2; // timeout
+}
+//-----------------------------------------------------------------------------

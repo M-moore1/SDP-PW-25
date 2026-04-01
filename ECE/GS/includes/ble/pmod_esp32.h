@@ -65,6 +65,9 @@ int get_ble_conn_params(int uart_fd, char *params_out);
 int ble_send_pkt(int uart_fd, uint8_t *data, int data_len);
 int ble_send_instruction(int uart_fd, uint8_t instruction[8]);
 
+//BLE Security Helper Function
+int wait_for_ble_auth_complete(int uart_fd, int timeout_ms);
+
 
 
 #endif
