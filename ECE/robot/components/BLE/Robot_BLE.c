@@ -1,5 +1,9 @@
 #include "Robot_BLE.h"
+#include "robot_wolfssl_server.h"
 
+static RobotWolfSslServer g_tls_server;
+static bool tls_ready = false;
+static bool tls_handshake_done = false;
 
 uint16_t robot_conn_id = 0;
 esp_gatt_if_t robot_gatts_if = 0;
@@ -118,7 +122,7 @@ static const esp_gatts_attr_db_t gatt_db[ROBOT_IDX_NB] =
     
 };
 
-"""
+/*
 void robot_ble_init(){
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_bt_controller_init(&bt_cfg));
@@ -143,7 +147,7 @@ void robot_ble_init(){
     esp_ble_gatts_app_register(ESP_ROBOT_APP_ID);
 
 }
-"""
+*/
 
 void robot_ble_init() {
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
@@ -240,6 +244,13 @@ void robot_ble_init() {
     esp_ble_gatts_register_callback(gatts_event_handler);
     esp_ble_gap_register_callback(gap_event_handler);
     esp_ble_gatts_app_register(ESP_ROBOT_APP_ID);
+
+    if (robot_wolfssl_server_init(&g_tls_server) != 0) {
+        ESP_LOGE(BLE_TAG, "wolfSSL server init failed");
+    } else {
+        tls_ready = true;
+        tls_handshake_done = false;
+    }
 }
 
 
@@ -449,6 +460,8 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
             /* NEW: proactively request security/encryption on the robot side too */
             esp_ble_set_encryption(param->connect.remote_bda, ESP_BLE_SEC_ENCRYPT_MITM);
 
+            tls_handshake_done = false;
+
             break;
 
         case ESP_GATTS_DISCONNECT_EVT:
@@ -464,6 +477,9 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
             data_collection_mode = WAITING;
 
             esp_ble_gap_start_advertising(&adv_params);
+
+            tls_handshake_done = false;
+            
             break;
 
         case ESP_GATTS_WRITE_EVT:
