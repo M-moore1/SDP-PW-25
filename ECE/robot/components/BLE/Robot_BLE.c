@@ -227,11 +227,6 @@ void robot_ble_init() {
         &auth_option,
         sizeof(auth_option)));
 
-    /* Set the fixed passkey to match the PMOD side */
-    ESP_ERROR_CHECK(esp_ble_gap_set_pin(ESP_BT_PIN_TYPE_FIXED,
-                                        6,
-                                        (esp_bt_pin_code_t *)&(uint8_t[6]){'1','2','3','4','5','6'}));
-
     ESP_ERROR_CHECK(esp_ble_gap_set_security_param(
         ESP_BLE_SM_SET_STATIC_PASSKEY,
         (void *)&ROBOT_FIXED_PASSKEY,

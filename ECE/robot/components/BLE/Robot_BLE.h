@@ -26,20 +26,18 @@
 #define SVC_INST_ID                             0
 #define CHAR_DECLARATION_SIZE                   (sizeof(uint8_t))
 #define GATTS_DEMO_CHAR_VAL_LEN_MAX             500
+#define PACKET_SIZE                             156
+#define BLE_TAG                                 "ROBOT_BLE"
 
 extern QueueHandle_t ble_recieve_queue;
 
 enum
 {
-    ROBOT_IDX_SVC,     // Service container for entire robot communication
-
-    ROBOT_IDX_CHAR,    // Characteristic metadata (UUID + properties: READ/WRITE/NOTIFY)
-
-    ROBOT_IDX_VAL,     // Actual data pipe 
-
-    ROBOT_IDX_CFG,     // Client config descriptor (enables/disables NOTIFY)
-
-    ROBOT_IDX_NB,      // Total number of attributes in this service
+    ROBOT_IDX_SVC,
+    ROBOT_IDX_CHAR,
+    ROBOT_IDX_VAL,
+    ROBOT_IDX_CFG,
+    ROBOT_IDX_NB,
 };
 
 // BLE globals
@@ -47,13 +45,15 @@ extern uint16_t robot_conn_id;
 extern esp_gatt_if_t robot_gatts_if;
 extern bool device_connected;
 extern bool notify_enabled;
+extern bool link_authenticated;
+extern esp_bd_addr_t peer_bda;
 extern uint16_t robot_handle_table[ROBOT_IDX_NB];
 extern esp_ble_adv_data_t adv_data;
 extern esp_ble_adv_params_t adv_params;
 
 extern uint32_t spp_handle;
 extern uint8_t rx_buf[200];
-extern int rx_index;
+extern int rx_idx;                  // fixed: was rx_index
 extern QueueHandle_t ble_recieve_queue;
 
 // Function declarations
@@ -65,25 +65,3 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
 void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
