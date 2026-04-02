@@ -26,7 +26,18 @@ function App() {
   }, []);
 
   const { status, sendRaw, lastError } = useWebSocket(WS_URL, {
-    onMessage: (data) => addPacket(data, 'sniffed'),
+    onMessage: (data) => {
+      try {
+        const pkt = JSON.parse(data);
+        if (pkt.opcode && pkt.value) {
+          addPacket(`[Frame ${pkt.frame}] ${pkt.opcode} | ${pkt.value}`, 'sniffed');
+          return;
+        }
+      } catch {
+        // not a BLE packet JSON, fall through
+      }
+      addPacket(data, 'sniffed');
+    },
   });
 
   const handleInject = useCallback((payload: string) => {
