@@ -20,7 +20,7 @@ bool link_authenticated = false;
 esp_bd_addr_t peer_bda = {0};
 
 
-
+//TEST
 
 uint16_t robot_handle_table[ROBOT_IDX_NB];
 static const uint16_t GATTS_SERVICE_UUID           = 0x00FF;
