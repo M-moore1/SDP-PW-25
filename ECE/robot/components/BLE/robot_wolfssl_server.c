@@ -1,5 +1,28 @@
 #include "robot_wolfssl_server.h"
+#include "esp_spiffs.h"
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+// Helper to read a file from SPIFFS into a heap buffer
+static uint8_t *read_spiffs_file(const char *path, int *out_len) {
+    FILE *f = fopen(path, "rb");
+    if (!f) return NULL;
+
+    fseek(f, 0, SEEK_END);
+    int len = ftell(f);
+    rewind(f);
+
+    uint8_t *buf = malloc(len);
+    if (!buf) { fclose(f); return NULL; }
+
+    fread(buf, 1, len, f);
+    fclose(f);
+    *out_len = len;
+    return buf;
+}
+
+
 
 static int robot_io_send(WOLFSSL *ssl, char *buf, int sz, void *ctx) {
     (void)ssl;
@@ -34,12 +57,17 @@ int robot_wolfssl_server_init(RobotWolfSslServer *s) {
     wolfSSL_SetIOSend(s->ctx, robot_io_send);
     wolfSSL_SetIORecv(s->ctx, robot_io_recv);
 
-    /* Replace with your real cert/key files or buffers */
-    if (wolfSSL_CTX_use_certificate_file(s->ctx, "/spiffs/server-cert.pem", SSL_FILETYPE_PEM) != SSL_SUCCESS)
-        return -4;
 
-    if (wolfSSL_CTX_use_PrivateKey_file(s->ctx, "/spiffs/server-key.pem", SSL_FILETYPE_PEM) != SSL_SUCCESS)
+    int key_len = 0;
+    uint8_t *key_buf = read_spiffs_file("/spiffs/server-key.pem", &key_len);
+    if (!key_buf) return -5;
+
+    if (wolfSSL_CTX_use_PrivateKey_buffer(s->ctx, key_buf, key_len, SSL_FILETYPE_PEM) != SSL_SUCCESS) {
+        free(key_buf);
         return -5;
+    }
+    free(key_buf);
+
 
     s->ssl = wolfSSL_new(s->ctx);
     if (!s->ssl) return -6;
