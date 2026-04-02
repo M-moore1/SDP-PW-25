@@ -56,6 +56,8 @@ extern uint8_t rx_buf[200];
 extern int rx_index;
 extern QueueHandle_t ble_recieve_queue;
 
+extern bool security_flag;
+
 // Function declarations
 void robot_ble_init();
 void send_bytes(uint8_t *packet, size_t len);

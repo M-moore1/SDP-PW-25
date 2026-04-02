@@ -11,6 +11,8 @@ bool device_connected = false;
 bool notify_enabled = false;
 
 
+bool security_flag = false;
+
 /* NEW: track whether BLE pairing/authentication completed successfully */
 bool link_authenticated = false;
 
@@ -479,7 +481,7 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
             esp_ble_gap_start_advertising(&adv_params);
 
             tls_handshake_done = false;
-            
+
             break;
 
         case ESP_GATTS_WRITE_EVT:
