@@ -1,5 +1,6 @@
 CC = gcc
 CFLAGS = -O2 -Wall -Wextra
+LDFLAGS = -lwolfssl
 
 CJSON_DIR = ./cJSON-master
 
@@ -16,6 +17,8 @@ SRCS = gs_bridge2.c \
        includes/ble/pmod_esp32.c \
        includes/ble/uart_queue.c \
        includes/hardware_crypto/software_cryptography.c \
+       includes/ble/ble_wolfssl_client.c \
+       includes/ble/ble_tls_transport.c \
        $(CJSON_DIR)/cJSON.c
 
 TARGET = gs_bridge2.o
@@ -23,7 +26,7 @@ TARGET = gs_bridge2.o
 all: $(TARGET)
 
 $(TARGET): $(SRCS)
-	$(CC) $(CFLAGS) $(SRCS) $(INCLUDES) -o $(TARGET)
+	$(CC) $(CFLAGS) $(SRCS) $(INCLUDES) $(LDFLAGS) -o $(TARGET)
 
 ble:
 	$(CC) $(INCLUDES) -fsyntax-only includes/ble/ble.c

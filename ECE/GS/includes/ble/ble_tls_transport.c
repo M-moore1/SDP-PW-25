@@ -3,7 +3,7 @@
 #include <string.h>
 
 extern int ble_write(int uart_fd, int srv, int chr, int desc, uint8_t *data, int len);
-extern int BLE_CONNECTED;
+extern volatile int BLE_CONNECTED;
 
 #define TLS_SRV_INDEX 3
 #define TLS_CHR_INDEX 1
