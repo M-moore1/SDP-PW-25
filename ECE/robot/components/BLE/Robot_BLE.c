@@ -224,7 +224,7 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
             ESP_LOGI(BLE_TAG,"Device connected, conn_id=%d", param->connect.conn_id);
             memset(rx_buf, 0, sizeof(rx_buf));
             rx_idx = 0;
-            esp_ble_gap_stop_advertising();
+            //esp_ble_gap_stop_advertising();
             robot_conn_id = param->connect.conn_id;
             esp_ble_gap_set_pkt_data_len(param->connect.remote_bda, 251);
             robot_gatts_if = gatts_if;
