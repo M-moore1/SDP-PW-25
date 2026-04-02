@@ -4,9 +4,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
+/*
 #ifdef __cplusplus
 extern "C" {
 #endif
+*/
 
 #define BLE_TLS_MAX_CHUNK 128
 #define BLE_TLS_RX_BUF_SZ 8192
