@@ -10,6 +10,7 @@ export interface ControlMsg {
   R: 0 | 1;
   S: number;
   PL: 1;
+  ID: 1;
 }
 
 /** Pose (P) - 0b00010, Event Driven */
@@ -56,5 +57,6 @@ export function buildControlMsg(
     R,
     S: Math.min(100, Math.max(0, S)),
     PL: 1,
+    ID: 1,
   };
 }
