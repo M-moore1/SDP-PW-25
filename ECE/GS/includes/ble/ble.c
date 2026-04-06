@@ -372,3 +372,83 @@ int uart_send_instruction(int uart_fd, uint8_t instruction[8]) {
     return uart_send_str(uart_fd, hex_str, strlen(hex_str));
 
 }
+
+void parse_notify_and_process(char *line, int uds_fd) {
+
+    int conn, srv, chr, ascii_len;
+
+    if (sscanf(line, "+NOTIFY:%d,%d,%d,%d,", &conn, &srv, &chr, &ascii_len) != 4)
+        return;
+
+    // Move to hex data
+    char *p = line;
+    for (int i = 0; i < 4; i++) {
+        p = strchr(p, ',');
+        if (!p) return;
+        p++;
+    }
+
+    int byte_len = ascii_len / 2;
+
+    uint8_t data[512];
+
+    for (int i = 0; i < byte_len; i++) {
+        sscanf(&p[i * 2], "%2hhx", &data[i]);
+    }
+
+    // Strip start/stop
+    if (data[0] != 0x0A || data[byte_len-1] != 0x0D)
+        return;
+
+    uint8_t *payload = &data[1];
+
+    robot_bt_packet_t pkt;
+    memcpy(pkt.bytes, payload, 8);
+
+    // Extract ID
+    uint16_t id = 0;
+
+    switch(pkt.ctrl.type) {
+        case System_CMD:
+            id = pkt.sys.id;
+            break;
+
+        case Query_CMD:
+            id = pkt.query.id;
+            break;
+
+        case ACK_CMD:
+            id = pkt.ack.id;
+            break;
+    }
+
+    // Decode full packet
+    robot_bt_packet_t pkt;
+    memcpy(pkt.bytes, payload, 8);
+
+    // -----------------------------
+    // 1. Send parsed JSON to UI
+    // -----------------------------
+    cJSON *json = robot_packet_to_json(pkt);
+
+    char *json_str = cJSON_PrintUnformatted(json);
+    uds_send_json(uds_fd, json_str);
+
+    free(json_str);
+    cJSON_Delete(json);
+
+    // -----------------------------
+    // 2. ALSO process latency (if needed)
+    // -----------------------------
+    uint16_t id = 0;
+
+    switch(pkt.ctrl.type) {
+        case System_CMD: id = pkt.sys.id; break;
+        case Query_CMD:  id = pkt.query.id; break;
+        case ACK_CMD:    id = pkt.ack.id; break;
+    }
+
+    if (id != 0) {
+        process_received_id(id, uds_fd);
+    }
+}

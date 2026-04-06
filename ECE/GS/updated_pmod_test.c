@@ -17,7 +17,15 @@
 
 #define AVG_SAMPLES 100
 #define SEND_INTERVAL 1000
-
+//gcc -O2 -Wall -Wextra updated_pmod_test.c \
+includes/ble/pmod_esp32.c \
+includes/ble/uart_queue.c \
+cJSON-master/cJSON.c \
+-I./includes \
+-I./includes/ble \
+-I./includes/cmd_structure \
+-I./cJSON-master \
+-o updated_pmod_test
 // ===================== FIXED STREAM PARSER =====================
 void parse_notify_and_print(char *line) {
 

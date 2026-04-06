@@ -1,15 +1,16 @@
-#include "pmod_esp32.h"
-#include "uart_queue.h"
+#include "pmod_esp32.h" 
+#include "uart_queue.h" // Software buffer for UART data
 
-volatile int BLE_CONNECTED = 0;
+volatile int BLE_CONNECTED = 0; // variable may be changed asynchronously (UART responses, timing)
 
-long get_now_ms() {
+
+long get_now_ms() { // gets system updates
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (ts.tv_sec * 1000L) + (ts.tv_nsec / 1000000L);
+    return (ts.tv_sec * 1000L) + (ts.tv_nsec / 1000000L); // converts seconds to ms and nanoseconds to ms (Used for timeouts)
 }
 
-int uart_open_config(const char *dev, speed_t baud) {
+int uart_open_config(const char *dev, speed_t baud) { // UART COnfiguration
   int fd = open(dev, O_RDWR | O_NOCTTY | O_NONBLOCK); // Open UART nonblocking
   if (fd < 0) {                                       // If open failed
     perror("open uart");                              // Print reason (errno)
