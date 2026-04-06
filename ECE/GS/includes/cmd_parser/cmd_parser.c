@@ -199,45 +199,52 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
 cJSON* robot_packet_to_json(robot_bt_packet_t pkt) {
 
     cJSON *root = cJSON_CreateObject();
-
     uint8_t type = pkt.ctrl.type;
 
     switch(type) {
 
         // =========================
-        // STATUS REPORT (SR)
+        // ROBOT UPDATE (SR)
         // =========================
-        case STATUS_REPORT_CMD:
+        case ROBOT_UPDATE_CMD:
 
             cJSON_AddStringToObject(root, "type", "SR");
 
-            cJSON_AddNumberToObject(root, "pl", pkt.sr.pl);
-            cJSON_AddNumberToObject(root, "part", pkt.sr.part);
-
-            if (pkt.sr.part == 0) {
-                cJSON_AddNumberToObject(root, "px", pkt.sr.px);
-                cJSON_AddNumberToObject(root, "py", pkt.sr.py);
-                cJSON_AddNumberToObject(root, "pz", pkt.sr.pz);
+            if (pkt.nav.part == 0) {
+                cJSON_AddNumberToObject(root, "px", pkt.nav.pos_x);
+                cJSON_AddNumberToObject(root, "py", pkt.nav.pos_y);
+                cJSON_AddNumberToObject(root, "pz", pkt.nav.pos_z);
+                cJSON_AddNumberToObject(root, "speed", pkt.nav.speed);
             }
-            else if (pkt.sr.part == 1) {
-                cJSON_AddNumberToObject(root, "yaw", pkt.sr.yaw);
-                cJSON_AddNumberToObject(root, "pitch", pkt.sr.pitch);
-                cJSON_AddNumberToObject(root, "roll", pkt.sr.roll);
+
+            else if (pkt.pose.part == 1) {
+                cJSON_AddNumberToObject(root, "yaw", pkt.pose.yaw);
+                cJSON_AddNumberToObject(root, "pitch", pkt.pose.pitch);
+                cJSON_AddNumberToObject(root, "roll", pkt.pose.roll);
+            }
+
+            else if (pkt.inert.part == 2) {
+                cJSON_AddNumberToObject(root, "ax", pkt.inert.accel_x);
+                cJSON_AddNumberToObject(root, "ay", pkt.inert.accel_y);
+                cJSON_AddNumberToObject(root, "az", pkt.inert.accel_z);
+
+                cJSON_AddNumberToObject(root, "gx", pkt.inert.gyro_x);
+                cJSON_AddNumberToObject(root, "gy", pkt.inert.gyro_y);
+                cJSON_AddNumberToObject(root, "gz", pkt.inert.gyro_z);
             }
 
             break;
 
         // =========================
-        // HEALTH REPORT (HR)
+        // HEALTH
         // =========================
-        case HEALTH_REPORT_CMD:
+        case HEALTH_CMD:
 
             cJSON_AddStringToObject(root, "type", "HR");
 
-            cJSON_AddNumberToObject(root, "battery", pkt.health.bt);
-            cJSON_AddNumberToObject(root, "security", pkt.health.sl);
-            cJSON_AddNumberToObject(root, "motor_enabled", pkt.health.me);
-            cJSON_AddNumberToObject(root, "arm_enabled", pkt.health.ae);
+            cJSON_AddNumberToObject(root, "battery", pkt.health.battery);
+            cJSON_AddNumberToObject(root, "security", pkt.health.sec_lvl);
+            cJSON_AddNumberToObject(root, "motor_enabled", pkt.health.motor_en);
 
             break;
 
@@ -249,12 +256,12 @@ cJSON* robot_packet_to_json(robot_bt_packet_t pkt) {
             cJSON_AddStringToObject(root, "type", "ACK");
 
             cJSON_AddNumberToObject(root, "id", pkt.ack.id);
-            cJSON_AddNumberToObject(root, "result", pkt.ack.r);
+            cJSON_AddNumberToObject(root, "result", pkt.ack.result_code);
 
             break;
 
         // =========================
-        // HIGH PRIORITY REPORT
+        // HPR
         // =========================
         case HPR_CMD:
 
