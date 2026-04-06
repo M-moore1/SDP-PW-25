@@ -60,7 +60,6 @@ int get_ble_conn_params(int uart_fd, char *params_out);
 
 int ble_send_pkt(int uart_fd, uint8_t *data, int data_len);
 int ble_send_instruction(int uart_fd, uint8_t instruction[8]);
-
-
+uint64_t get_now_ms();
 
 #endif

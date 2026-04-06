@@ -4,7 +4,7 @@
 volatile int BLE_CONNECTED = 0; // variable may be changed asynchronously (UART responses, timing)
 
 
-long get_now_ms() { // gets system updates
+uint64_t get_now_ms() { // gets system updates
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (ts.tv_sec * 1000L) + (ts.tv_nsec / 1000000L); // converts seconds to ms and nanoseconds to ms (Used for timeouts)
@@ -369,3 +369,4 @@ int ble_send_instruction(int uart_fd, uint8_t instruction[8]) {
     return ble_send_pkt(uart_fd, payload, PAYLOAD_BYTES);
     */
 }
+

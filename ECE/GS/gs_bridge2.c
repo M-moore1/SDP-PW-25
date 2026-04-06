@@ -72,6 +72,94 @@ void store_command(uint16_t id) {
     cmd_buffer[0].valid = 1;
 }
 
+void parse_notify_and_process(char *line, int uds_fd) {
+
+    int conn, srv, chr, ascii_len;
+
+    // ---------------------------------------
+    // Parse BLE notify header
+    // ---------------------------------------
+    if (sscanf(line, "+NOTIFY:%d,%d,%d,%d,", &conn, &srv, &chr, &ascii_len) != 4)
+        return;
+
+    // ---------------------------------------
+    // Move pointer to hex payload
+    // ---------------------------------------
+    char *p = line;
+    for (int i = 0; i < 4; i++) {
+        p = strchr(p, ',');
+        if (!p) return;
+        p++;
+    }
+
+    int byte_len = ascii_len / 2;
+
+    uint8_t data[512];
+
+    // ---------------------------------------
+    // Convert ASCII hex → binary
+    // ---------------------------------------
+    for (int i = 0; i < byte_len; i++) {
+        sscanf(&p[i * 2], "%2hhx", &data[i]);
+    }
+
+    // ---------------------------------------
+    // Validate packet framing
+    // ---------------------------------------
+    if (data[0] != 0x0A || data[byte_len - 1] != 0x0D)
+        return;
+
+    uint8_t *payload = &data[1];
+
+    // ---------------------------------------
+    // Decode 64-bit robot packet
+    // ---------------------------------------
+    robot_bt_packet_t pkt;
+    memcpy(pkt.bytes, payload, 8);
+
+    // ---------------------------------------
+    // 1. Convert to JSON and send to UI
+    // ---------------------------------------
+    cJSON *json = robot_packet_to_json(pkt);
+
+    if (json && uds_fd >= 0) {
+        char *json_str = cJSON_PrintUnformatted(json);
+        if (json_str) {
+            uds_send_json(uds_fd, json_str);
+            free(json_str);
+        }
+    }
+
+    if (json) cJSON_Delete(json);
+
+    // ---------------------------------------
+    // 2. Extract ID for latency tracking
+    // ---------------------------------------
+    uint16_t id = 0;
+
+    switch (pkt.ctrl.type) {
+        case System_CMD:
+            id = pkt.sys.id;
+            break;
+
+        case Query_CMD:
+            id = pkt.query.id;
+            break;
+
+        case ACK_CMD:
+            id = pkt.ack.id;
+            break;
+    }
+
+    // ---------------------------------------
+    // 3. Process latency (if valid)
+    // ---------------------------------------
+    if (id != 0) {
+        process_received_id(id, uds_fd);
+    }
+}
+
+void process_received_id(uint16_t id, int uds_fd);
 void process_received_id(uint16_t id, int uds_fd) {
 
     uint64_t now = get_now_ms();

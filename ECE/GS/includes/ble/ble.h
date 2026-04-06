@@ -32,8 +32,6 @@ int uart_send_str(int uart_fd, char * str, int str_len);
 int ble_connect_check(int uart_fd);
 
 int ble_init(int uart_fd);
-void parse_notify_and_process(char *line, int uds_fd);
-
 
 
 

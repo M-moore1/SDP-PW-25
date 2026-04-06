@@ -1,4 +1,5 @@
 #include "cmd_parser.h"
+#include "json_uds.h"
 volatile int security_level = 0;
 volatile int connection_status = 0;
 volatile int authorization_code = 0x3FF;
