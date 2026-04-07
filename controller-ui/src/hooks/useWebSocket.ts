@@ -42,6 +42,7 @@ export function useWebSocket(url: string, options?: UseWebSocketOptions): UseWeb
   const reconnectDelayRef = useRef<number>(INITIAL_RECONNECT_DELAY);
   const messageQueueRef = useRef<unknown[]>([]);
   const shouldConnectRef = useRef<boolean>(true);
+  const encryptionCounterRef = useRef<number>(0);
 
   // Send a message (queues if not connected, encrypts if encryptionKey is set)
   const sendMessage = useCallback((data: unknown) => {
@@ -50,7 +51,9 @@ export function useWebSocket(url: string, options?: UseWebSocketOptions): UseWeb
         let message: string;
         if (encryptionKey) {
           await loadEncryptionModule();
-          const encrypted = encryptJson(payload as object, encryptionKey);
+          encryptionCounterRef.current += 1;
+          const withCounter = { ...(payload as object), CTR: encryptionCounterRef.current };
+          const encrypted = encryptJson(withCounter, encryptionKey);
           if (!encrypted) {
             setLastError('Encryption failed');
             return;
