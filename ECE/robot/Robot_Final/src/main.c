@@ -153,7 +153,7 @@ void app_main()
         
         
         now = esp_timer_get_time();
-        if (device_connected && notify_enabled) {
+        if (num_connected > 0) {
             if (now - last_send_time >= 500000) {
                 /*
                 switch (rotation_step) {
