@@ -2,7 +2,7 @@
 #include "Robot_BLE.h"
 #include "imu.h"
 
-volatile int security_flag = 0;
+volatile int security_flag_1 = 0;
 volatile uint16_t AC = 0x3FF;  // PUT IN NVS
 volatile int motor_power = 1;
 char robot_name[32] = DEVICE_NAME; // PUT IN NVS
@@ -26,7 +26,7 @@ void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_m
     ESP_LOGI(CMD_TAG, "Executing Control CMD");
     if (motor_power == 0){
         ESP_LOGI(CMD_TAG, "Control CMD - Motor OFF");
-        send_ack(ctrl.id, RESULT_CMD_FAILURE, security_flag, MOTORS_DISABLED);
+        send_ack(ctrl.id, RESULT_CMD_FAILURE, security_flag_1, MOTORS_DISABLED);
         return;
     }
 
@@ -59,7 +59,7 @@ void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_m
         motor_pulse(B_R, speed, 1);
     }
 
-    send_ack(ctrl.id, RESULT_SUCCESS, security_flag, NO_INFO );
+    send_ack(ctrl.id, RESULT_SUCCESS, security_flag_1, NO_INFO );
 }
 
 void arm_cmd   (arm_format_t arm, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* B_L, step_mot_t* B_R){
@@ -68,11 +68,11 @@ void arm_cmd   (arm_format_t arm, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* 
     // TODO: IMPLEMENT THE ARM 
     if(!coordinates_approved){
         ESP_LOGW(CMD_TAG, "ARM movement not allowed");
-        send_ack(arm.id, RESULT_CMD_FAILURE, security_flag, ARM_CORDINATES_ISSUE);
+        send_ack(arm.id, RESULT_CMD_FAILURE, security_flag_1, ARM_CORDINATES_ISSUE);
         return;
     }
 
-    send_ack(arm.id, RESULT_SUCCESS, security_flag, NO_INFO );
+    send_ack(arm.id, RESULT_SUCCESS, security_flag_1, NO_INFO );
 
 }
 
@@ -87,7 +87,7 @@ void system_cmd(system_format_t sys, step_mot_t* F_L, step_mot_t* F_R, step_mot_
 
     if (AC != authorization_code) { 
         ESP_LOGW(CMD_TAG, "System CMD - Incorrect Authorization Code");
-        send_ack(sys.id, RESULT_AUTH_FAIL, security_flag, NO_INFO );
+        send_ack(sys.id, RESULT_AUTH_FAIL, security_flag_1, NO_INFO );
         return;
     }
 
@@ -103,10 +103,10 @@ void system_cmd(system_format_t sys, step_mot_t* F_L, step_mot_t* F_R, step_mot_
                 result = RESULT_INVALID_PARAMS;
                 break;
             }
-            ESP_LOGI(CMD_TAG, "System CMD - Security Flag Updated %d", security_flag );
-            security_flag = payload;
+            ESP_LOGI(CMD_TAG, "System CMD - Security Flag Updated %d", security_flag_1 );
+            security_flag_1 = payload;
             result = RESULT_SUCCESS;
-            if(security_flag){instr_spc_rsp = SECURITY_ON; }
+            if(security_flag_1){instr_spc_rsp = SECURITY_ON; }
             else             {instr_spc_rsp = SECURITY_OFF;}
             
         break;
@@ -184,7 +184,7 @@ void system_cmd(system_format_t sys, step_mot_t* F_L, step_mot_t* F_R, step_mot_
             break;
     }
 
-    send_ack(sys.id, result, security_flag, instr_spc_rsp);
+    send_ack(sys.id, result, security_flag_1, instr_spc_rsp);
 }
 void query_cmd(query_format_t query, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* B_L, step_mot_t* B_R){
     ESP_LOGI(CMD_TAG, "Executing Query CMD");
@@ -196,7 +196,7 @@ void query_cmd(query_format_t query, step_mot_t* F_L, step_mot_t* F_R, step_mot_
     switch (inst_type)
     {
         case SECURITY_STATUS: 
-            if(security_flag){instr_spc_rsp = SECURITY_ON; }
+            if(security_flag_1){instr_spc_rsp = SECURITY_ON; }
             else             {instr_spc_rsp = SECURITY_OFF;}
 
         break;
@@ -233,7 +233,7 @@ void query_cmd(query_format_t query, step_mot_t* F_L, step_mot_t* F_R, step_mot_
     }
 
 
-    send_ack(query.id, result, security_flag, instr_spc_rsp);
+    send_ack(query.id, result, security_flag_1, instr_spc_rsp);
 }
 
 
@@ -253,7 +253,7 @@ void send_imu(int part) {
         pkt.nav.pos_y = 0;
         pkt.nav.pos_z = 0;
 
-        send_cmd(pkt.bytes, security_flag);
+        send_cmd(pkt.bytes, security_flag_1);
     }
 
     // PART 1: POSE
@@ -266,7 +266,7 @@ void send_imu(int part) {
         pkt.pose.pitch = (int32_t)(g_imu_euler.pitch * 1000.0f);
         pkt.pose.roll  = (int32_t)(g_imu_euler.roll * 1000.0f);
 
-        send_cmd(pkt.bytes, security_flag);
+        send_cmd(pkt.bytes, security_flag_1);
     }
 
     // PART 2: INERTIA
@@ -283,7 +283,7 @@ void send_imu(int part) {
         pkt.inert.gyro_y  = (int16_t)(g_imu_gyro.y_degs * 10.0f);
         pkt.inert.gyro_z  = (int16_t)(g_imu_gyro.z_degs * 10.0f);
 
-        send_cmd(pkt.bytes, security_flag);
+        send_cmd(pkt.bytes, security_flag_1);
     }
     else {
         send_imu(0);
@@ -301,11 +301,11 @@ void send_health_report(){
     health_report.health.pl   = 1;
     health_report.health.type = HEALTH_CMD;
     health_report.health.battery  = 100; // TODO
-    health_report.health.sec_en = security_flag;
+    health_report.health.sec_en = security_flag_1;
     health_report.health.motor_en = motor_power;
     health_report.health.arm_en = arm_power;
 
-    send_cmd(health_report.bytes, security_flag);
+    send_cmd(health_report.bytes, security_flag_1);
 }
 
 void send_HPA(){
