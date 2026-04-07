@@ -14,10 +14,14 @@ interface CommandPanelProps {
 }
 
 const STATUS_STYLE: Record<ConnectionStatus, string> = {
-  connected:    'text-green-600 bg-green-100',
-  connecting:   'text-yellow-600 bg-yellow-100',
-  reconnecting: 'text-orange-600 bg-orange-100',
-  disconnected: 'text-red-600 bg-red-100',
+  connected:
+    'text-green-600 bg-green-100 dark:bg-green-900/40 dark:text-green-300',
+  connecting:
+    'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/40 dark:text-yellow-300',
+  reconnecting:
+    'text-orange-600 bg-orange-100 dark:bg-orange-900/40 dark:text-orange-300',
+  disconnected:
+    'text-red-600 bg-red-100 dark:bg-red-900/40 dark:text-red-300',
 };
 
 const STATUS_TEXT: Record<ConnectionStatus, string> = {
@@ -43,42 +47,42 @@ export function CommandPanel({
   onRepeatRateChange,
 }: CommandPanelProps) {
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <h2 className="text-lg font-semibold text-gray-700">Command Panel</h2>
+    <div className="bg-white rounded-xl shadow-lg p-6 dark:bg-slate-800 dark:shadow-slate-900/50">
+      <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200">Command Panel</h2>
 
       {/* Connection status */}
-      <div className="border border-gray-200 rounded-lg p-4 mt-4 space-y-2">
+      <div className="border border-gray-200 rounded-lg p-4 mt-4 space-y-2 dark:border-slate-600">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-600">Connection Status</h3>
+          <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Connection Status</h3>
           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLE[status]}`}>
             {STATUS_TEXT[status]}
           </span>
         </div>
-        <p className="text-xs text-gray-500">Active: {activeDirection}</p>
-        <p className="text-xs text-gray-500 truncate font-mono" title={wsUrl}>
+        <p className="text-xs text-gray-500 dark:text-gray-400">Active: {activeDirection}</p>
+        <p className="text-xs text-gray-500 truncate font-mono dark:text-gray-400" title={wsUrl}>
           {wsUrl}
         </p>
         {lastError && (
-          <p className="text-xs text-red-600 truncate" title={lastError}>
+          <p className="text-xs text-red-600 truncate dark:text-red-400" title={lastError}>
             {lastError}
           </p>
         )}
       </div>
 
       {/* Connect button */}
-      <div className="border border-gray-200 rounded-lg p-4 mt-4">
+      <div className="border border-gray-200 rounded-lg p-4 mt-4 dark:border-slate-600">
         <button
           type="button"
           onClick={onConnect}
-          className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Connect to ESP32
         </button>
       </div>
 
       {/* Repeat rate */}
-      <div className="border border-gray-200 rounded-lg p-4 mt-4">
-        <h3 className="text-sm font-semibold text-gray-600 mb-2">Repeat Rate</h3>
+      <div className="border border-gray-200 rounded-lg p-4 mt-4 dark:border-slate-600">
+        <h3 className="text-sm font-semibold text-gray-600 mb-2 dark:text-gray-300">Repeat Rate</h3>
         <div className="flex gap-2">
           {REPEAT_RATE_OPTIONS.map((opt) => (
             <button
@@ -87,8 +91,8 @@ export function CommandPanel({
               onClick={() => onRepeatRateChange(opt.value)}
               className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
                 repeatRate === opt.value
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-blue-600 text-white dark:bg-blue-500'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-700 dark:text-gray-200 dark:hover:bg-slate-600'
               }`}
             >
               {opt.label}

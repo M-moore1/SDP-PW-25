@@ -7,16 +7,16 @@ interface MessageLogProps {
 
 export function MessageLog({ logs }: MessageLogProps) {
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 min-w-0 flex flex-col">
-      <h2 className="text-lg font-semibold text-gray-700">Log</h2>
+    <div className="bg-white rounded-xl shadow-lg p-6 min-w-0 flex flex-col dark:bg-slate-800 dark:shadow-slate-900/50">
+      <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200">Log</h2>
       {logs.length === 0 ? (
-        <p className="text-xs text-gray-400">No messages</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500">No messages</p>
       ) : (
         <div className="space-y-1 overflow-y-auto flex-1">
           {logs.map((log, idx) => (
             <div key={idx} className="flex gap-2 text-xs items-start">
-              <span className="text-gray-400 shrink-0">{log.timestamp}</span>
-              <code className="text-gray-700 font-mono break-all flex-1 min-w-0">{log.payload}</code>
+              <span className="text-gray-400 shrink-0 dark:text-gray-500">{log.timestamp}</span>
+              <code className="text-gray-700 font-mono break-all flex-1 min-w-0 dark:text-gray-200">{log.payload}</code>
             </div>
           ))}
         </div>

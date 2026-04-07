@@ -21,6 +21,8 @@ import {
   armActionsToAxes,
 } from './utils/armDirection';
 import { buildControlMsg, buildArmControlMsg } from './utils/commands';
+import { useThemePreference } from './hooks/useThemePreference';
+import { ThemeToggle } from './components/ThemeToggle';
 
 interface MessageLogEntry {
   payload: string;
@@ -31,6 +33,7 @@ const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080';
 const ENCRYPTION_KEY = 'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456'; // 64 hex chars (32 bytes)
 
 function App() {
+  const { isDark, toggleTheme } = useThemePreference();
   const [activeDirections, setActiveDirections] = useState<Set<Direction>>(new Set());
   const [activeArmActions, setActiveArmActions] = useState<Set<ArmAction>>(new Set());
   const [messageLog, setMessageLog] = useState<MessageLogEntry[]>([]);
@@ -207,11 +210,12 @@ function App() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8 dark:from-slate-900 dark:to-slate-800">
+      <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
       <div className="max-w-5xl mx-auto">
         <header className="text-center mb-6">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">Robot Controller</h1>
-          <p className="text-gray-600">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2 dark:text-gray-100">Robot Controller</h1>
+          <p className="text-gray-600 dark:text-gray-300">
             WASD to drive &middot; Arrow keys / Shift / Enter to control arm
           </p>
         </header>

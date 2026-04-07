@@ -28,24 +28,26 @@ export function ArmPad({
   };
 
   const getDirButtonClass = (action: ArmAction) => {
-    const base = 'w-16 h-16 text-xl font-bold rounded-lg transition-all duration-150 touch-none select-none focus:outline-none focus:ring-4 focus:ring-emerald-300';
+    const base =
+      'w-16 h-16 text-xl font-bold rounded-lg transition-all duration-150 touch-none select-none focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:focus:ring-emerald-500 dark:focus:ring-offset-2 dark:focus:ring-offset-slate-800';
     if (activeArmActions.has(action)) {
-      return `${base} bg-emerald-600 text-white shadow-lg scale-95`;
+      return `${base} bg-emerald-600 text-white shadow-lg scale-95 dark:bg-emerald-500`;
     }
-    return `${base} bg-gray-200 text-gray-700 hover:bg-gray-300 active:bg-emerald-500 active:text-white shadow-md`;
+    return `${base} bg-gray-200 text-gray-700 hover:bg-gray-300 active:bg-emerald-500 active:text-white shadow-md dark:bg-slate-600 dark:text-gray-100 dark:hover:bg-slate-500 dark:active:bg-emerald-500`;
   };
 
   const getAuxButtonClass = (action: ArmAction) => {
-    const base = 'flex-1 h-14 text-sm font-bold rounded-lg transition-all duration-150 touch-none select-none focus:outline-none focus:ring-4 focus:ring-emerald-300';
+    const base =
+      'flex-1 h-14 text-sm font-bold rounded-lg transition-all duration-150 touch-none select-none focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:focus:ring-emerald-500 dark:focus:ring-offset-2 dark:focus:ring-offset-slate-800';
     if (activeArmActions.has(action)) {
-      return `${base} bg-emerald-600 text-white shadow-lg scale-95`;
+      return `${base} bg-emerald-600 text-white shadow-lg scale-95 dark:bg-emerald-500`;
     }
-    return `${base} bg-gray-200 text-gray-700 hover:bg-gray-300 active:bg-emerald-500 active:text-white shadow-md`;
+    return `${base} bg-gray-200 text-gray-700 hover:bg-gray-300 active:bg-emerald-500 active:text-white shadow-md dark:bg-slate-600 dark:text-gray-100 dark:hover:bg-slate-500 dark:active:bg-emerald-500`;
   };
 
   return (
-    <div className="flex flex-col items-center gap-3 p-6 px-12 bg-white rounded-xl shadow-lg h-full">
-      <h2 className="text-lg font-semibold text-gray-700 mb-1">Arm Controls</h2>
+    <div className="flex flex-col items-center gap-3 p-6 px-12 bg-white rounded-xl shadow-lg h-full dark:bg-slate-800 dark:shadow-slate-900/50">
+      <h2 className="text-lg font-semibold text-gray-700 mb-1 dark:text-gray-200">Arm Controls</h2>
 
       {/* Arrow-cross layout */}
       <div className="flex flex-col items-center gap-2">
@@ -121,7 +123,7 @@ export function ArmPad({
 
       {/* Speed slider */}
       <div className="w-full max-w-[12rem] mt-2">
-        <label className="flex items-center justify-between text-sm text-gray-600 mb-1">
+        <label className="flex items-center justify-between text-sm text-gray-600 mb-1 dark:text-gray-300">
           <span>Arm Speed</span>
           <span className="font-mono font-semibold">{armSpeed}</span>
         </label>
@@ -139,7 +141,7 @@ export function ArmPad({
       <button
         onClick={onReset}
         type="button"
-        className="mt-1 px-4 py-2 text-sm font-semibold rounded-lg bg-red-100 text-red-700 hover:bg-red-200 active:bg-red-300 transition-colors focus:outline-none focus:ring-4 focus:ring-red-300"
+        className="mt-1 px-4 py-2 text-sm font-semibold rounded-lg bg-red-100 text-red-700 hover:bg-red-200 active:bg-red-300 transition-colors focus:outline-none focus:ring-4 focus:ring-red-300 dark:bg-red-950/50 dark:text-red-300 dark:hover:bg-red-900/50 dark:active:bg-red-900 dark:focus:ring-red-500 dark:focus:ring-offset-2 dark:focus:ring-offset-slate-800"
       >
         Reset Arm
       </button>
