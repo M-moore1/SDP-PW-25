@@ -324,7 +324,7 @@ int get_ble_conn_params(int uart_fd, char *params_out) {
 
 int ble_init(int uart_fd) {
     ble_discon(uart_fd);
-
+    printf("fail");
     if (pmod_esp32_init(uart_fd) < 0) return -1;  
     usleep(500000);
 

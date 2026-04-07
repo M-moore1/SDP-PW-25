@@ -160,6 +160,7 @@ void parse_notify_and_process(char *line, int uds_fd) {
 }
 
 void process_received_id(uint16_t id, int uds_fd);
+
 void process_received_id(uint16_t id, int uds_fd) {
 
     uint64_t now = get_now_ms();
@@ -203,7 +204,7 @@ int looks_like_json(const char *s) {
 
 // ------------------------- Main -------------------------
 int main(int argc, char **argv) {
-
+  setvbuf(stdout, NULL, _IOLBF, 0);
   // -------------------------------
   // UART DEVICE SELECTION
   // Priority:
@@ -216,7 +217,7 @@ int main(int argc, char **argv) {
 
   if (env_uart && env_uart[0]) uart_dev = env_uart;
   if (argc >= 2) uart_dev = argv[1];
-
+  printf("Hello — uart_dev=%s\n", uart_dev);  
   // -------------------------------
   // UDS SOCKET PATH (Node.js <-> C bridge)
   // -------------------------------
@@ -234,14 +235,14 @@ int main(int argc, char **argv) {
   // Sets up ESP32 BLE module via AT commands
   // -------------------------------
   if (ble_init(uart_fd) < 0) return 1;
-
+  printf("hello");
   // -------------------------------
   // UDS SERVER SETUP
   // Creates Unix Domain Socket for Node.js connection
   // -------------------------------
   int uds_listen = uds_server_listen(uds_path);
   if (uds_listen < 0) return 1;
-
+  
   printf("Bridge up. UDS=%s UART=%s\n", uds_path, uart_dev);
 
   int uds_client = -1;             // Active Node.js connection (none initially)
@@ -384,18 +385,18 @@ int main(int argc, char **argv) {
     // =====================================================
     // ROBOT → UI PATH (UART READ)
     // =====================================================
-    if (FD_ISSET(uart_fd, &rfds)) {
+
 
       uint8_t tmp[256];
-      ssize_t n = read(uart_fd, tmp, sizeof(tmp));
+      ble_uart_check(uart_fd);
 
-      if (n > 0) {
+      if (uart_queue_pop(&uart_queue, tmp) == 0){
 
         // Line buffer for assembling UART messages
         static char uart_line[4096];
         static int uart_idx = 0;
 
-        for (ssize_t i = 0; i < n; i++) {
+        for (ssize_t i = 0; i < strlen(tmp); i++) {
 
           char c = tmp[i];
 
@@ -432,7 +433,7 @@ int main(int argc, char **argv) {
           }
         }
       }
-    }
+    
   }
 
   // -------------------------------
