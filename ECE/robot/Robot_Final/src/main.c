@@ -15,6 +15,8 @@
 #include "imu.h"
 //#include "aes_gcm_decrypt.h"
 
+#include "esp_spiffs.h"
+
 
 step_mot_t front_left;
 step_mot_t front_right;
