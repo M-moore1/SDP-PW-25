@@ -16,7 +16,7 @@ import net from "net";
 
 // ------------------------- Config -------------------------
 
-const PORT = Number(process.env.PORT || 8080);
+const PORT = Number(process.env.PORT || 3001);
 const BIND = process.env.BIND || "0.0.0.0";
 const SOCKET_PATH = process.env.SOCKET_PATH || "/tmp/gs_bridge.sock";
 

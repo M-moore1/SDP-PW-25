@@ -15,4 +15,7 @@ make clean
 echo "Running make all..."
 make all
 
+echo "Running GS Bridge"
+./gs_bridge2.o
+
 echo "Build complete."
