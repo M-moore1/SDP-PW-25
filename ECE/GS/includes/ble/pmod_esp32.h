@@ -24,7 +24,10 @@
 #define PMOD_1_GPIO_3 523
 
 #define PMOD_DEV_NAME "SDP_2635_GS"
-#define ESP32_MAC "44:1d:64:f1:1a:86"
+#define ESP32_MAC "44:1d:64:f1:70:66"
+
+//test "44:1d:64:f1:1a:86"
+// real "44:1d:64:f1:70:66"
 #define CONN_IDX 0
 
 #define PAYLOAD_BYTES    156
