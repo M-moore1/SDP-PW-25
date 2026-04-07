@@ -4,9 +4,8 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useWebSocket } from './hooks/useWebSocket';
 import { useHoldRepeater } from './hooks/useHoldRepeater';
 import { DirectionPad } from './components/DirectionPad';
-import { SettingsDrawer } from './components/SettingsDrawer';
+import { ArmPad } from './components/ArmPad';
 import { CommandPanel } from './components/CommandPanel';
-import { StatusIndicator } from './components/StatusIndicator';
 import { MessageLog } from './components/MessageLog';
 import {
   Direction,
@@ -15,7 +14,13 @@ import {
   keyToDirection,
   directionsToControlAxes,
 } from './utils/direction';
-import { buildControlMsg } from './utils/commands';
+import {
+  ArmAction,
+  isArmKey,
+  keyToArmAction,
+  armActionsToAxes,
+} from './utils/armDirection';
+import { buildControlMsg, buildArmControlMsg } from './utils/commands';
 
 interface MessageLogEntry {
   payload: string;
@@ -27,12 +32,15 @@ const ENCRYPTION_KEY = 'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcd
 
 function App() {
   const [activeDirections, setActiveDirections] = useState<Set<Direction>>(new Set());
+  const [activeArmActions, setActiveArmActions] = useState<Set<ArmAction>>(new Set());
   const [messageLog, setMessageLog] = useState<MessageLogEntry[]>([]);
   const [repeatRate, setRepeatRate] = useState(50);
   const [controlSpeed, setControlSpeed] = useState(50);
+  const [armSpeed, setArmSpeed] = useState(50);
   const [encryptionEnabled, setEncryptionEnabled] = useState(false);
 
   const pressedKeysRef = useRef<Set<string>>(new Set());
+  const armPressedKeysRef = useRef<Set<string>>(new Set());
 
   const logMessage = useCallback((payload: string) => {
     setMessageLog((prev) => [
@@ -58,18 +66,37 @@ function App() {
     sendMessage(msg);
   }, [sendMessage, controlSpeed]);
 
+  const sendActiveArmActions = useCallback((actions: Set<ArmAction>) => {
+    const axes = armActionsToAxes(actions);
+    const msg = buildArmControlMsg(
+      axes.U, axes.D, axes.L, axes.R, axes.In, axes.O, armSpeed
+    );
+    sendMessage(msg);
+  }, [sendMessage, armSpeed]);
+
   useHoldRepeater(
     activeDirections.size > 0,
     () => sendActiveDirections(activeDirections),
     repeatRate
   );
 
+  useHoldRepeater(
+    activeArmActions.size > 0,
+    () => sendActiveArmActions(activeArmActions),
+    repeatRate
+  );
+
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (pressedKeysRef.current.has(e.key)) return;
+    if (pressedKeysRef.current.has(e.key) || armPressedKeysRef.current.has(e.key)) return;
+
     if (isDirectionKey(e.key)) {
       e.preventDefault();
       pressedKeysRef.current.add(e.key);
       setActiveDirections(prev => new Set([...prev, keyToDirection[e.key]]));
+    } else if (isArmKey(e.key)) {
+      e.preventDefault();
+      armPressedKeysRef.current.add(e.key);
+      setActiveArmActions(prev => new Set([...prev, keyToArmAction[e.key]]));
     }
   }, []);
 
@@ -82,17 +109,28 @@ function App() {
         next.delete(keyToDirection[e.key]);
         return next;
       });
+    } else if (isArmKey(e.key)) {
+      e.preventDefault();
+      armPressedKeysRef.current.delete(e.key);
+      setActiveArmActions(prev => {
+        const next = new Set(prev);
+        next.delete(keyToArmAction[e.key]);
+        return next;
+      });
     }
   }, []);
 
   const handleBlur = useCallback(() => {
     setActiveDirections(new Set());
     pressedKeysRef.current.clear();
+    setActiveArmActions(new Set());
+    armPressedKeysRef.current.clear();
   }, []);
 
   useEffect(() => {
+    const preventedKeys = new Set(['w', 'a', 's', 'd', ' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright']);
     const preventScroll = (e: KeyboardEvent) => {
-      if (['w', 'a', 's', 'd', ' '].includes(e.key.toLowerCase())) {
+      if (preventedKeys.has(e.key.toLowerCase())) {
         e.preventDefault();
       }
     };
@@ -122,6 +160,23 @@ function App() {
       return next;
     });
   }, []);
+
+  const handleArmActionStart = useCallback((action: ArmAction) => {
+    setActiveArmActions(prev => new Set([...prev, action]));
+  }, []);
+
+  const handleArmActionStop = useCallback((action: ArmAction) => {
+    setActiveArmActions(prev => {
+      const next = new Set(prev);
+      next.delete(action);
+      return next;
+    });
+  }, []);
+
+  const handleArmReset = useCallback(() => {
+    const msg = buildArmControlMsg(0, 0, 0, 0, 0, 0, armSpeed, 1);
+    sendMessage(msg);
+  }, [sendMessage, armSpeed]);
 
   const handleConnect = useCallback(() => {
     sendMessage({
@@ -157,45 +212,47 @@ function App() {
         <header className="text-center mb-6">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">Robot Controller</h1>
           <p className="text-gray-600">
-            Use WASD keys or on-screen buttons to control direction
+            WASD to drive &middot; Arrow keys / Shift / Enter to control arm
           </p>
         </header>
 
-        <div className="grid gap-6 md:grid-cols-2 items-start">
-          {/* Left: Direction Pad + Status + Log underneath */}
-          <div className="flex flex-col gap-4 min-h-0">
-            <DirectionPad
-              onDirectionStart={handleDirectionStart}
-              onDirectionStop={handleDirectionStop}
-              activeDirections={activeDirections}
-            />
-            <StatusIndicator
-              status={status}
-              activeDirection={formatDirection(activeDirections)}
-              lastError={lastError}
-              wsUrl={WS_URL}
-            />
-          </div>
+        {/* Control pads — equal height */}
+        <div className="grid gap-6 md:grid-cols-2 items-stretch">
+          <DirectionPad
+            onDirectionStart={handleDirectionStart}
+            onDirectionStop={handleDirectionStop}
+            activeDirections={activeDirections}
+            controlSpeed={controlSpeed}
+            onControlSpeedChange={setControlSpeed}
+            encryptionEnabled={encryptionEnabled}
+            onEncryptionChange={handleEncryptionChange}
+            hasEncryptionKey={Boolean(ENCRYPTION_KEY)}
+          />
+          <ArmPad
+            onActionStart={handleArmActionStart}
+            onActionStop={handleArmActionStop}
+            activeArmActions={activeArmActions}
+            armSpeed={armSpeed}
+            onArmSpeedChange={setArmSpeed}
+            onReset={handleArmReset}
+          />
+        </div>
 
-          {/* Right: Command Panel + Log underneath */}
-          <div className="flex flex-col gap-4">
-            <CommandPanel
-              controlSpeed={controlSpeed}
-              onControlSpeedChange={setControlSpeed}
-              encryptionEnabled={encryptionEnabled}
-              onEncryptionChange={handleEncryptionChange}
-              hasEncryptionKey={Boolean(ENCRYPTION_KEY)}
-              onConnect={handleConnect}
-            />
-            <MessageLog logs={messageLog} />
-          </div>
+        {/* Command panel + message log */}
+        <div className="grid gap-6 md:grid-cols-2 items-stretch mt-6">
+          <CommandPanel
+            onConnect={handleConnect}
+            status={status}
+            activeDirection={formatDirection(activeDirections)}
+            lastError={lastError}
+            wsUrl={WS_URL}
+            repeatRate={repeatRate}
+            onRepeatRateChange={setRepeatRate}
+          />
+          <MessageLog logs={messageLog} />
         </div>
       </div>
 
-      <SettingsDrawer
-        repeatRate={repeatRate}
-        onRepeatRateChange={setRepeatRate}
-      />
     </div>
   );
 }
