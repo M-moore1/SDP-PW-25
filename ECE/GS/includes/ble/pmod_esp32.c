@@ -1,15 +1,16 @@
-#include "pmod_esp32.h"
-#include "uart_queue.h"
+#include "pmod_esp32.h" 
+#include "uart_queue.h" // Software buffer for UART data
 
-volatile int BLE_CONNECTED = 0;
+volatile int BLE_CONNECTED = 0; // variable may be changed asynchronously (UART responses, timing)
 
-long get_now_ms() {
+
+uint64_t get_now_ms() { // gets system updates
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (ts.tv_sec * 1000L) + (ts.tv_nsec / 1000000L);
+    return (ts.tv_sec * 1000L) + (ts.tv_nsec / 1000000L); // converts seconds to ms and nanoseconds to ms (Used for timeouts)
 }
 
-int uart_open_config(const char *dev, speed_t baud) {
+int uart_open_config(const char *dev, speed_t baud) { // UART COnfiguration
   int fd = open(dev, O_RDWR | O_NOCTTY | O_NONBLOCK); // Open UART nonblocking
   if (fd < 0) {                                       // If open failed
     perror("open uart");                              // Print reason (errno)
@@ -200,7 +201,6 @@ int pmod_esp32_reset(int uart_fd) {
 
         if (uart_read_and_queue(uart_fd, response, sizeof(response)) > 0) {
             if (strstr(response, "ready") != NULL) {
-                BLE_CONNECTED = 0;
                 return 0;
             }
         }
@@ -234,7 +234,7 @@ int pmod_esp32_init(int uart_fd) {
 
     if (pmod_esp32_reset(uart_fd) < 0) return -1;
 
-    return send_at_cmd(uart_fd, "ATE0\r\n", NULL, NULL, 50);
+    return send_at_cmd(uart_fd, "ATE0\r\n", NULL, NULL, 50);;
 
 }
 
@@ -316,21 +316,6 @@ int ble_connect(int uart_fd, const char *MAC) {
     return 0;
 }
 
-int get_name(int uart_fd, char *name){
-    if (!BLE_CONNECTED) return -1;
-    return send_at_cmd(uart_fd, "AT+BLENAME?\r\n", "+BLENAME:", name, 1000);
-}
-
-int get_mac(int uart_fd, char *connected_mac) {
-    if (!BLE_CONNECTED) return -1;
-    return send_at_cmd(uart_fd, "AT+BLECONN?\r\n", "+BLECONN:0,", connected_mac, 1000);
-}
-
-int get_rssi(int uart_fd, char *rssi_out) {
-    if (!BLE_CONNECTED) return -1;
-    return send_at_cmd(uart_fd, "AT+BLERDRSSI=0\r\n", "+BLERDRSSI:0,", rssi_out, 1000);
-}
-
 int get_ble_conn_params(int uart_fd, char *params_out) {
     if (!BLE_CONNECTED) return -1;
     return send_at_cmd(uart_fd, "AT+BLECONNPARAM?\r\n", "+BLECONNPARAM:", params_out, 1000);
@@ -365,7 +350,6 @@ int ble_send_pkt(int uart_fd, uint8_t *data, int data_len) {
     if (data_len != PAYLOAD_BYTES) return -1;
     if (!BLE_CONNECTED) return -1;
 
-    printf("HELLO\r\n");
     uint8_t packet[PACKET_BYTES];
     packet[0] = 0x0A;
     packet[1] = 0xD0;
@@ -385,3 +369,4 @@ int ble_send_instruction(int uart_fd, uint8_t instruction[8]) {
     return ble_send_pkt(uart_fd, payload, PAYLOAD_BYTES);
     */
 }
+

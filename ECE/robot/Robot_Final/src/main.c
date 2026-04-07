@@ -84,7 +84,9 @@ void command_parser(void *pvParameters)
             switch (cmd_type){
                 case CONTROL_CMD:
                     //ESP_LOGI(MAIN_TAG, "Control CMD Recieved");
+                    // trigger enable on
                     control_cmd(cmd.ctrl, &front_left, &front_right, &back_left, &back_right);
+
                 break;
 
                 case ARM_CMD:
@@ -110,13 +112,15 @@ void command_parser(void *pvParameters)
             }
                 
         }
+
+        // if no motors running 
     }
 }
 
 
 void app_main()
 {
-    
+    /*
     i2c_master_bus_handle_t i2c_bus = i2c_init();
     i2c_master_dev_handle_t imu     = device_init(i2c_bus, IMU_ADDR);
 
@@ -124,7 +128,7 @@ void app_main()
         ESP_LOGE(IMU_TAG, "Failed to init BNO08x, halting");
         while (1) { vTaskDelay(pdMS_TO_TICKS(1000)); }
     }
-    
+    */
     ESP_ERROR_CHECK(nvs_flash_init()); // Initialize NVS
     robot_ble_init();                  // Initialize BLE
 
@@ -153,7 +157,7 @@ void app_main()
         
         
         now = esp_timer_get_time();
-        if (device_connected && notify_enabled) {
+        if (num_connected > 0) {
             if (now - last_send_time >= 500000) {
                 /*
                 switch (rotation_step) {

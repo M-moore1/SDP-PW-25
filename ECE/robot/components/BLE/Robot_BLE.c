@@ -1,11 +1,14 @@
 #include "Robot_BLE.h"
 
+typedef enum {
+    WAITING          = 0x00, 
+    START            = 0x01, 
+    COLLECTING       = 0x02,
+    FINISH           = 0x03,
+} data_retrieval_t;
 
-uint16_t robot_conn_id = 0;
-esp_gatt_if_t robot_gatts_if = 0;
-bool device_connected = false;
-bool notify_enabled = false;
-
+device_conn_t connected_devices[MAX_DEVICES];
+int num_connected = 0;
 
 uint16_t robot_handle_table[ROBOT_IDX_NB];
 static const uint16_t GATTS_SERVICE_UUID           = 0x00FF;
@@ -16,17 +19,7 @@ static const uint8_t char_prop_read_write_notify   = ESP_GATT_CHAR_PROP_BIT_WRIT
 static const uint16_t character_client_config_uuid = ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
 static const uint8_t robot_measurement_ccc[2]      = {0x00, 0x00};
 
-typedef enum {
-    WAITING          = 0x00, 
-    START            = 0x01, 
-    COLLECTING       = 0x02,
-    FINISH           = 0x03,
-} data_retrieval_t;
-
 uint32_t spp_handle = 0;
-uint8_t rx_buf[200]; 
-int rx_idx = 0;
-data_retrieval_t data_collection_mode = WAITING;
 QueueHandle_t ble_recieve_queue = NULL;
 
 
@@ -105,6 +98,15 @@ static const esp_gatts_attr_db_t gatt_db[ROBOT_IDX_NB] =
     
 };
 
+static device_conn_t *find_device_by_conn_id(uint16_t conn_id) {
+    for (int i = 0; i < MAX_DEVICES; i++) {
+        if (connected_devices[i].conn_id == conn_id) {
+            return &connected_devices[i];
+        }
+    }
+    return NULL;
+}
+
 void robot_ble_init(){
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_bt_controller_init(&bt_cfg));
@@ -122,34 +124,57 @@ void robot_ble_init(){
         return;
     }
 
+    for (int i = 0; i < MAX_DEVICES; i++) {
+        connected_devices[i].conn_id = CONN_ID_INVALID;
+        connected_devices[i].gatts_if = ESP_GATT_IF_NONE;
+        connected_devices[i].notify_enabled = false;
+        memset(connected_devices[i].rx_buf, 0, sizeof(connected_devices[i].rx_buf));
+        connected_devices[i].rx_idx = 0;
+        connected_devices[i].data_mode = WAITING;
+    }
+    num_connected = 0;
+
     esp_ble_gatt_set_local_mtu(512); 
 
-    esp_ble_gatts_register_callback(gatts_event_handler); // SET UP PROFILE and SERVICES on INITIALIZATION
-    esp_ble_gap_register_callback(gap_event_handler); // STARTS ADVERTISING ON Initilization
+    esp_ble_gatts_register_callback(gatts_event_handler);
+    esp_ble_gap_register_callback(gap_event_handler);
     esp_ble_gatts_app_register(ESP_ROBOT_APP_ID);
 
 }
 
+void send_bytes_to_all(uint8_t *packet, size_t len) {
+    for (int i = 0; i < MAX_DEVICES; i++) {
+        if (connected_devices[i].conn_id != CONN_ID_INVALID && connected_devices[i].notify_enabled) {
+            esp_ble_gatts_send_indicate(
+                connected_devices[i].gatts_if,
+                connected_devices[i].conn_id,
+                robot_handle_table[ROBOT_IDX_VAL],
+                len,
+                packet,
+                false
+            );
+        }
+    }
+}
+
 void send_bytes(uint8_t *packet, size_t len){
-    esp_ble_gatts_send_indicate(robot_gatts_if, robot_conn_id, robot_handle_table[ROBOT_IDX_VAL],
-                len, packet, false); 
+    send_bytes_to_all(packet, len);
 }
 
 void send_string(char *txt){
-    esp_ble_gatts_send_indicate(robot_gatts_if, robot_conn_id, robot_handle_table[ROBOT_IDX_VAL],
-                strlen(txt), (uint8_t *)txt, false); 
+    send_bytes_to_all((uint8_t *)txt, strlen(txt));
 }
 
 void send_cmd(uint8_t* pkt, int sec_lvl) {
     if(!sec_lvl){
-        send_bytes(pkt, 8);
+        send_bytes_to_all(pkt, 8);
     }else{
         /*
         uint8_t cipher_text[PACKET_SIZE] = {0};
         
         if(aes_gcm_encrypt_packet((const char *)pkt, cipher_text) == 0){
             ESP_LOGI("SEND_CMD", "Secure packet sent (156 bytes)");
-            send_bytes(cipher_text, sizeof(cipher_text));
+            send_bytes_to_all(cipher_text, sizeof(cipher_text));
         }else{
             ESP_LOGE("SEND_CMD", "Encryption FAILED");
         }
@@ -221,49 +246,64 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
         }
         // Connection Event
         case ESP_GATTS_CONNECT_EVT:
+        {
             ESP_LOGI(BLE_TAG,"Device connected, conn_id=%d", param->connect.conn_id);
-            memset(rx_buf, 0, sizeof(rx_buf));
-            rx_idx = 0;
-            //esp_ble_gap_stop_advertising();
-            robot_conn_id = param->connect.conn_id;
+
+            int slot = -1;
+            for (int i = 0; i < MAX_DEVICES; i++) {
+                if (connected_devices[i].conn_id == CONN_ID_INVALID) {
+                    slot = i;
+                    break;
+                }
+            }
+
+            if (slot == -1) {
+                ESP_LOGW(BLE_TAG, "No free connection slots, rejecting device");
+                esp_ble_gap_disconnect(param->connect.remote_bda);
+                break;
+            }
+
+            connected_devices[slot].conn_id = param->connect.conn_id;
+            connected_devices[slot].gatts_if = gatts_if;
+            connected_devices[slot].notify_enabled = false;
+            memset(connected_devices[slot].rx_buf, 0, sizeof(connected_devices[slot].rx_buf));
+            connected_devices[slot].rx_idx = 0;
+            connected_devices[slot].data_mode = WAITING;
+            num_connected++;
+
             esp_ble_gap_set_pkt_data_len(param->connect.remote_bda, 251);
-            robot_gatts_if = gatts_if;
-            device_connected = true;
 
-            // Connection Parameters
-            esp_ble_conn_update_params_t conn_params = {0};
-            memcpy(conn_params.bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
-            conn_params.min_int = 0x06;  // 7.5 ms
-            conn_params.max_int = 0x08;  // 10 ms
-            conn_params.latency = 0;
-            conn_params.timeout = 1000; 
-
-            esp_ble_gap_update_conn_params(&conn_params);
+            if (num_connected < MAX_DEVICES) {
+                ESP_LOGI(BLE_TAG, "Slot %d/%d used, restarting advertising for more connections", num_connected, MAX_DEVICES);
+                esp_ble_gap_start_advertising(&adv_params);
+            } else {
+                ESP_LOGI(BLE_TAG, "All %d slots full, stopping advertising", MAX_DEVICES);
+            }
 
             break;
+        }
 
         // Disconnect Event
         case ESP_GATTS_DISCONNECT_EVT:
-            ESP_LOGI(BLE_TAG, "Device disconnected");
-
-            device_connected = false;
-            notify_enabled = false;
-            memset(rx_buf, 0, sizeof(rx_buf));
-            rx_idx = 0;
+        {
+            ESP_LOGI(BLE_TAG, "Device disconnected, conn_id=%d", param->disconnect.conn_id);
+            device_conn_t *dev = find_device_by_conn_id(param->disconnect.conn_id);
+            if (dev) {
+                dev->conn_id = CONN_ID_INVALID;
+                dev->gatts_if = ESP_GATT_IF_NONE;
+                dev->notify_enabled = false;
+                dev->rx_idx = 0;
+                dev->data_mode = WAITING;
+                if (num_connected > 0) num_connected--;
+            }
             esp_ble_gap_start_advertising(&adv_params);
             break;
+        }
 
         case ESP_GATTS_WRITE_EVT:
         {
             if (!param->write.is_prep) {
-                
-
-                /*
-                ESP_LOGI(BLE_TAG, "Write event, handle=%d len=%d", 
-                                param->write.handle, param->write.len);
-
-                ESP_LOG_BUFFER_HEX(BLE_TAG, param->write.value, param->write.len);
-                */
+                device_conn_t *dev = find_device_by_conn_id(param->write.conn_id);
 
                 if (param->write.handle == robot_handle_table[ROBOT_IDX_CFG]){
                     uint16_t descr_value =
@@ -271,79 +311,82 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
                         param->write.value[0];
 
                     if (descr_value == 0x0001) {
-                        ESP_LOGI(BLE_TAG, "Notifications ENABLED");
-                        notify_enabled = true;
+                        ESP_LOGI(BLE_TAG, "Notifications ENABLED (conn_id=%d)", param->write.conn_id);
+                        if (dev) dev->notify_enabled = true;
                     }
                     else if (descr_value == 0x0000) {
-                        ESP_LOGI(BLE_TAG, "Notifications DISABLED");
-                        notify_enabled = false;
+                        ESP_LOGI(BLE_TAG, "Notifications DISABLED (conn_id=%d)", param->write.conn_id);
+                        if (dev) dev->notify_enabled = false;
                     }
                 }else if (param->write.handle == robot_handle_table[ROBOT_IDX_VAL]) {
+                    if (!dev) {
+                        ESP_LOGE(BLE_TAG, "Write from unknown conn_id=%d", param->write.conn_id);
+                        break;
+                    }
+
                     uint16_t incoming_len = param->write.len;
                     uint8_t *incoming_data = param->write.value;
 
-                    if (rx_idx + incoming_len > sizeof(rx_buf)) {
+                    if (dev->rx_idx + incoming_len > sizeof(dev->rx_buf)) {
                         ESP_LOGE(BLE_TAG, "Incoming data exceeds buffer, resetting index");
-                        rx_idx = 0; 
+                        dev->rx_idx = 0; 
                         return;
                     }
 
                     if (!security_flag){
-                        memcpy(&rx_buf[rx_idx], incoming_data, incoming_len);
-                        rx_idx += incoming_len;
-                        if (rx_idx == 8) {
-                            if (xQueueSend(ble_recieve_queue, (void *)rx_buf, (TickType_t)0) != pdPASS) {
+                        memcpy(&dev->rx_buf[dev->rx_idx], incoming_data, incoming_len);
+                        dev->rx_idx += incoming_len;
+                        if (dev->rx_idx == 8) {
+                            if (xQueueSend(ble_recieve_queue, (void *)dev->rx_buf, (TickType_t)0) != pdPASS) {
                                 ESP_LOGW(BLE_TAG, "BT Queue full, dropping packet");
                             }
-                            rx_idx = 0;
-                        }else if (rx_idx > 8){
+                            dev->rx_idx = 0;
+                        }else if (dev->rx_idx > 8){
                             ESP_LOGE(BLE_TAG, "Unsecure Mode - Packet Longer than 8 Bytes");
-                            rx_idx = 0;
+                            dev->rx_idx = 0;
                         }
                     }else if (security_flag){
                         for (int i = 0; i < incoming_len; i++){
                                 uint8_t current_byte = incoming_data[i];
                                 
-                                switch (data_collection_mode){
+                                switch (dev->data_mode){
                                     case WAITING:
                                         if (current_byte == 0x0A) {
-                                            data_collection_mode = START;
+                                            dev->data_mode = START;
                                         }
                                     break;
                                     case START:
                                         if (current_byte == 0xD0) {
-                                            data_collection_mode = COLLECTING;
+                                            dev->data_mode = COLLECTING;
                                         }else{
-                                            data_collection_mode = WAITING;
+                                            dev->data_mode = WAITING;
                                         }
-                                        rx_idx = 0;
+                                        dev->rx_idx = 0;
                                     break;
                                     case COLLECTING:
-                                        if (rx_idx < 156){
-                                            rx_buf[rx_idx] = current_byte;
-                                            rx_idx++;
+                                        if (dev->rx_idx < 156){
+                                            dev->rx_buf[dev->rx_idx] = current_byte;
+                                            dev->rx_idx++;
                                         }else if (current_byte == 0xDA){
-                                            rx_idx++;
-                                            data_collection_mode = FINISH;
+                                            dev->rx_idx++;
+                                            dev->data_mode = FINISH;
                                         }else{
-                                            data_collection_mode = WAITING;
+                                            dev->data_mode = WAITING;
                                         }
                                     break;
                                     case FINISH:
-                                         ESP_LOGE(BLE_TAG, "Secure Mode - Checking Last");
                                         if (current_byte == 0x0D) {
-                                            if (xQueueSend(ble_recieve_queue, (void *)rx_buf, (TickType_t)0) != pdPASS) {
+                                            if (xQueueSend(ble_recieve_queue, (void *)dev->rx_buf, (TickType_t)0) != pdPASS) {
                                                 ESP_LOGW(BLE_TAG, "BT Queue full, dropping packet");
                                             }
-                                            rx_idx =0;
+                                            dev->rx_idx = 0;
                                         }
-                                        data_collection_mode = WAITING;
+                                        dev->data_mode = WAITING;
                                     break;
                                 }
                             }
                         }   
                     }
-                          
 
                 if (param->write.need_rsp) {
                     esp_ble_gatts_send_response(

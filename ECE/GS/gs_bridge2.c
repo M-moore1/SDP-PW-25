@@ -188,14 +188,18 @@ int main(int argc, char **argv) {
           handle_encrypted_data(uart_fd, uds_client, buf);
         }
 
+<<<<<<< Updated upstream
         //printf("\r\n Recieved Data:\r\n");
         //printf("%s \r\n", buf);
 
+=======
+>>>>>>> Stashed changes
         free(buf);                                         // Free buffer
       }
     }
 
     // ----- If UART readable: read bytes, parse frames, forward to Node -----
+    /*
     if (FD_ISSET(uart_fd, &rfds)) {                         // UART has data
       uint8_t tmp[256];                                     // Temp read buffer
       ssize_t n = read(uart_fd, tmp, sizeof(tmp));          // Read available bytes
@@ -208,6 +212,12 @@ int main(int argc, char **argv) {
           //}
         }
       }
+    }
+      */
+    ble_uart_check(uart_fd);
+    char rx_buffer[256]; 
+    if (uart_queue_pop(&uart_queue, rx_buffer) == 0){
+       printf("[UART OUTPUT] %s\r\n", rx_buffer);
     }
   }
 
