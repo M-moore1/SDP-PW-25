@@ -452,6 +452,10 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
 
             esp_ble_gap_update_conn_params(&conn_params);
 
+            /* NEW: delay encryption request to let stack register connection first */
+            vTaskDelay(pdMS_TO_TICKS(500));
+
+
             /* NEW: proactively request security/encryption on the robot side too */
             esp_ble_set_encryption(param->connect.remote_bda, ESP_BLE_SEC_ENCRYPT_MITM);
 

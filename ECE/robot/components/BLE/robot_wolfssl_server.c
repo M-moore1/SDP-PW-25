@@ -43,6 +43,7 @@ static int robot_io_recv(WOLFSSL *ssl, char *buf, int sz, void *ctx) {
     return ret;
 }
 
+/*
 int robot_wolfssl_server_init(RobotWolfSslServer *s) {
     if (!s) return -1;
     memset(s, 0, sizeof(*s));
@@ -78,6 +79,62 @@ int robot_wolfssl_server_init(RobotWolfSslServer *s) {
 
     return 0;
 }
+*/
+
+
+// In robot_wolfssl_server_init(), add logs to each return point:
+int robot_wolfssl_server_init(RobotWolfSslServer *s) {
+    if (!s) { ESP_LOGE("TLS", "null server ptr"); return -1; }
+    memset(s, 0, sizeof(*s));
+
+    robot_tls_transport_init(&s->transport);
+
+    if (wolfSSL_Init() != WOLFSSL_SUCCESS) { 
+        ESP_LOGE("TLS", "wolfSSL_Init failed"); return -2; 
+    }
+
+    s->ctx = wolfSSL_CTX_new(wolfTLSv1_2_server_method());
+    if (!s->ctx) { 
+        ESP_LOGE("TLS", "CTX_new failed"); return -3; 
+    }
+
+    int cert_len = 0;
+    uint8_t *cert_buf = read_spiffs_file("/spiffs/server-cert.pem", &cert_len);
+    if (!cert_buf) { 
+        ESP_LOGE("TLS", "Failed to read cert from SPIFFS - is SPIFFS mounted?"); return -4; 
+    }
+
+    if (wolfSSL_CTX_use_certificate_buffer(s->ctx, cert_buf, cert_len, SSL_FILETYPE_PEM) != SSL_SUCCESS) {
+        ESP_LOGE("TLS", "use_certificate_buffer failed");
+        free(cert_buf); return -5;
+    }
+    free(cert_buf);
+
+    int key_len = 0;
+    uint8_t *key_buf = read_spiffs_file("/spiffs/server-key.pem", &key_len);
+    if (!key_buf) { 
+        ESP_LOGE("TLS", "Failed to read key from SPIFFS"); return -6; 
+    }
+
+    if (wolfSSL_CTX_use_PrivateKey_buffer(s->ctx, key_buf, key_len, SSL_FILETYPE_PEM) != SSL_SUCCESS) {
+        ESP_LOGE("TLS", "use_PrivateKey_buffer failed");
+        free(key_buf); return -7;
+    }
+    free(key_buf);
+
+    s->ssl = wolfSSL_new(s->ctx);
+    if (!s->ssl) { 
+        ESP_LOGE("TLS", "wolfSSL_new failed"); return -8; 
+    }
+
+    wolfSSL_SetIOReadCtx(s->ssl, &s->transport);
+    wolfSSL_SetIOWriteCtx(s->ssl, &s->transport);
+    wolfSSL_set_using_nonblock(s->ssl, 1);
+
+    ESP_LOGI("TLS", "wolfSSL server init SUCCESS");
+    return 0;
+}
+
 
 int robot_wolfssl_server_feed_ciphertext(RobotWolfSslServer *s, const uint8_t *data, int len) {
     if (!s || !data || len <= 0) return -1;
