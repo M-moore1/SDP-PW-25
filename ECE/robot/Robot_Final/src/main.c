@@ -121,6 +121,25 @@ void app_main()
         while (1) { vTaskDelay(pdMS_TO_TICKS(1000)); }
     }
     */
+
+    /* ADDED SECURITY BLOCK */
+    // Mount SPIFFS first before anything else
+    esp_vfs_spiffs_conf_t conf = {
+        .base_path = "/spiffs",
+        .partition_label = NULL,
+        .max_files = 5,
+        .format_if_mount_failed = false
+    };
+
+    esp_err_t ret = esp_vfs_spiffs_register(&conf);
+    if (ret != ESP_OK) {
+        ESP_LOGE("MAIN", "SPIFFS mount failed: %s", esp_err_to_name(ret));
+        // Handle error - certs won't load without this
+    } else {
+        ESP_LOGI("MAIN", "SPIFFS mounted successfully");
+    }
+    /* ------------------------------------------------------------ */
+
     ESP_ERROR_CHECK(nvs_flash_init()); // Initialize NVS
     robot_ble_init();                  // Initialize BLE
 
