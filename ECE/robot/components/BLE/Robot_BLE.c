@@ -179,18 +179,10 @@ void robot_ble_init() {
      * - 16-byte key size
      * ------------------------------------------------------------------ */
 
-    /* Require bonding + MITM protection */
-    esp_ble_auth_req_t auth_req = ESP_LE_AUTH_REQ_SC_MITM_BOND;
+    
+    esp_ble_auth_req_t auth_req = ESP_LE_AUTH_REQ_MITM_BOND; /* removed SC requirement */
+    esp_ble_io_cap_t iocap = ESP_IO_CAP_IN;                  /* ESP32 enters passkey */
 
-    /* IO capability:
-     * OUT = device displays passkey / peer enters it
-     * IN = device enters passkey shown by peer
-     * NONE = Just Works / no keyboard/display
-     *
-     * Choose the one that matches your setup best.
-     * For a fixed-passkey example, many projects use OUT or IN.
-     */
-    esp_ble_io_cap_t iocap = ESP_IO_CAP_OUT;
 
     uint8_t key_size = 16;
 
@@ -427,6 +419,12 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
         //NEW CONNECTION EVENT
         case ESP_GATTS_CONNECT_EVT:
             ESP_LOGI(BLE_TAG, "Device connected, conn_id=%d", param->connect.conn_id);
+
+            /* NEW: clear stale bond to prevent reason=0x63 auth failure */
+            esp_ble_remove_bond_device(param->connect.remote_bda);
+            ESP_LOGI(BLE_TAG, "Cleared stale bond for peer");
+
+
 
             memset(rx_buf, 0, sizeof(rx_buf));
             rx_idx = 0;
