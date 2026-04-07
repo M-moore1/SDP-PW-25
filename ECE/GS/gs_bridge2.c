@@ -203,50 +203,36 @@ int looks_like_json(const char *s) {
 
 
 // ------------------------- Main -------------------------
+
 int main(int argc, char **argv) {
-  setvbuf(stdout, NULL, _IOLBF, 0);
-  // -------------------------------
-  // UART DEVICE SELECTION
-  // Priority:
-  //   1) Environment variable UART_DEV
-  //   2) Command line argument
-  //   3) Default constant
-  // -------------------------------
+  setvbuf(stdout, NULL, _IOLBF, 0);  // Line-buffer stdout immediately
+
   const char *uart_dev = DEFAULT_UART_DEV;
   const char *env_uart = getenv("UART_DEV");
-
   if (env_uart && env_uart[0]) uart_dev = env_uart;
   if (argc >= 2) uart_dev = argv[1];
-  printf("Hello — uart_dev=%s\n", uart_dev);  
-  // -------------------------------
-  // UDS SOCKET PATH (Node.js <-> C bridge)
-  // -------------------------------
-  const char *uds_path = DEFAULT_UDS_PATH;
 
-  // -------------------------------
-  // UART INITIALIZATION
-  // Opens and configures UART for communication with ESP32
-  // -------------------------------
+  printf("Hello — uart_dev=%s\n", uart_dev);  // Will now appear
+
   int uart_fd = uart_open_config(uart_dev, DEFAULT_UART_BAUD);
-  if (uart_fd < 0) return 1;
-
-  // -------------------------------
-  // BLE INITIALIZATION
-  // Sets up ESP32 BLE module via AT commands
-  // -------------------------------
-  if (ble_init(uart_fd) < 0) return 1;
-  printf("hello");
-  // -------------------------------
-  // UDS SERVER SETUP
-  // Creates Unix Domain Socket for Node.js connection
-  // -------------------------------
-  int uds_listen = uds_server_listen(uds_path);
-  if (uds_listen < 0) return 1;
+  if (uart_fd < 0) {
+    fprintf(stderr, "ERROR: uart_open_config(%s) failed: %s\n",
+            uart_dev, strerror(errno));
+    return 1;
+  }
+  printf("UART opened: fd=%d\n", uart_fd);
+  // ...
+  ble_init(uart_fd);
   
-  printf("Bridge up. UDS=%s UART=%s\n", uds_path, uart_dev);
+  const char *uds_path = DEFAULT_UDS_PATH;                 // UDS path (could also make configurable)
 
-  int uds_client = -1;             // Active Node.js connection (none initially)
-  int bt_connect_attempted = 0;    // Ensures BLE connect only happens once
+  int uds_listen = uds_server_listen(uds_path);            // Create UDS listening socket
+  if (uds_listen < 0) return 1;                            // If failed, exit
+
+  printf("Bridge up. UDS=%s UART=%s\n", uds_path, uart_dev);// Helpful startup message
+
+  int uds_client = -1;                                     // Node client fd (none yet)
+  int bt_connect_attempted = 0;
 
   // -------------------------------
   // MAIN EVENT LOOP (SELECT-BASED)
