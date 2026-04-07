@@ -196,6 +196,7 @@ int main(int argc, char **argv) {
     }
 
     // ----- If UART readable: read bytes, parse frames, forward to Node -----
+    /*
     if (FD_ISSET(uart_fd, &rfds)) {                         // UART has data
       uint8_t tmp[256];                                     // Temp read buffer
       ssize_t n = read(uart_fd, tmp, sizeof(tmp));          // Read available bytes
@@ -208,6 +209,12 @@ int main(int argc, char **argv) {
           //}
         }
       }
+    }
+      */
+    ble_uart_check(uart_fd);
+    char rx_buffer[256]; 
+    if (uart_queue_pop(&uart_queue, rx_buffer) == 0){
+       printf("[UART OUTPUT] %s\r\n", rx_buffer);
     }
   }
 
