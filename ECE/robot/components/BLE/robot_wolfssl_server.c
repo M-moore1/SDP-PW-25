@@ -104,6 +104,14 @@ int robot_wolfssl_server_init(RobotWolfSslServer *s) {
         ESP_LOGE("TLS", "Failed to read cert from SPIFFS - is SPIFFS mounted?"); return -4; 
     }
 
+
+    /* NEW: diagnostic logging to verify cert content */
+    ESP_LOGI("TLS", "Cert file read: %d bytes", cert_len);
+    ESP_LOGI("TLS", "Cert starts with: %.27s", (char *)cert_buf);
+    /* END NEW */
+
+
+
     if (wolfSSL_CTX_use_certificate_buffer(s->ctx, cert_buf, cert_len, SSL_FILETYPE_PEM) != SSL_SUCCESS) {
         ESP_LOGE("TLS", "use_certificate_buffer failed");
         free(cert_buf); return -5;
@@ -115,6 +123,13 @@ int robot_wolfssl_server_init(RobotWolfSslServer *s) {
     if (!key_buf) { 
         ESP_LOGE("TLS", "Failed to read key from SPIFFS"); return -6; 
     }
+
+
+    /* NEW: diagnostic logging to verify key content */
+    ESP_LOGI("TLS", "Key file read: %d bytes", key_len);
+    ESP_LOGI("TLS", "Key starts with: %.27s", (char *)key_buf);
+    /* END NEW */
+
 
     if (wolfSSL_CTX_use_PrivateKey_buffer(s->ctx, key_buf, key_len, SSL_FILETYPE_PEM) != SSL_SUCCESS) {
         ESP_LOGE("TLS", "use_PrivateKey_buffer failed");
