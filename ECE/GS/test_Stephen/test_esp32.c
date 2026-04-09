@@ -38,7 +38,7 @@ int main() {
     printf("Starting ESP32 BLE Test\r\n");
     ble_init(bt_uart);
 
-    uint8_t instruction[8] = { 0x12, 0x34, 0x56, 0x78, 0x54, 0x23, 0x08, 0x04 };
+    uint8_t instruction[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
     long message_end = 0;
     long message_start = 0;
@@ -134,7 +134,7 @@ int main() {
         long now = clock() / (CLOCKS_PER_SEC / 1000000);
         if (now - last >= SEND_INTERVAL * 1000) {
             message_start = now;
-            //ble_send_instruction(bt_uart, instruction);
+            ble_send_instruction(bt_uart, instruction);
             //ble_send_pkt(bt_uart, payload, 156);
             last = now;
         }
