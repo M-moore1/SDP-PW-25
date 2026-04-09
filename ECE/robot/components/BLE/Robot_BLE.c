@@ -476,7 +476,7 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
             break;
 
         case ESP_GATTS_DISCONNECT_EVT:
-            ESP_LOGI(BLE_TAG, "Device disconnected");
+            ESP_LOGI(BLE_TAG, "Device disconnected, reason=0x%x", param->disconnect.reason);
 
             device_connected = false;
             notify_enabled = false;
