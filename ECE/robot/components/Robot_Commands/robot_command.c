@@ -39,7 +39,8 @@ void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_m
     if (!any_input) return;
 
     // Enable all motors on any valid move — caller handles disable
-    stepper_enable(F_L); stepper_enable(F_R);
+    stepper_enable(F_L); 
+    stepper_enable(F_R);
     stepper_enable(B_L);
     stepper_enable(B_R);
 
@@ -70,29 +71,29 @@ void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_m
         ESP_LOGI(CMD_TAG, "Strafe Right at speed %d", speed);
         motor_pulse(F_L, speed, 1);
         motor_pulse(F_R, speed, 1);
-        motor_pulse(B_L, speed, 0);
-        motor_pulse(B_R, speed, 0);
+        motor_pulse(B_L, speed, 1); 
+        motor_pulse(B_R, speed, 1);  
     }
     else if (a && !w && !s && !d) {
         ESP_LOGI(CMD_TAG, "Strafe Left at speed %d", speed);
         motor_pulse(F_L, speed, 0);
         motor_pulse(F_R, speed, 0);
-        motor_pulse(B_L, speed, 1);
-        motor_pulse(B_R, speed, 1);
+        motor_pulse(B_L, speed, 0); 
+        motor_pulse(B_R, speed, 0);
     }
     else if (w && d) {
         ESP_LOGI(CMD_TAG, "Diagonal FWD-Right at speed %d", speed);
         motor_pulse(F_L, speed, 1);
-        motor_pulse(F_R, speed, 1);
+        motor_pulse(F_R, speed/2, 0);
         motor_pulse(B_L, speed, 1); 
-        motor_pulse(B_R, speed, 1);  
+        motor_pulse(B_R, speed/2, 0);  
     }
     else if (w && a) {
         ESP_LOGI(CMD_TAG, "Diagonal FWD-Left at speed %d", speed);
-        motor_pulse(F_L, speed, 0);
+        motor_pulse(F_L, speed/2, 1);
         motor_pulse(F_R, speed, 0);
-        motor_pulse(B_L, speed, 0); 
-        motor_pulse(B_R, speed, 0);  
+        motor_pulse(B_L, speed/2, 1); 
+        motor_pulse(B_R, speed, 0); 
     }
     else if (s && d) {
         ESP_LOGI(CMD_TAG, "Diagonal BWD-Right at speed %d", speed);

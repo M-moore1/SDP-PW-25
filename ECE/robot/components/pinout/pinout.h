@@ -15,13 +15,13 @@
 //Front Left Motor
 #define FL_MOTOR_STEP    GPIO_NUM_4 
 #define FL_MOTOR_DIR     GPIO_NUM_19
-#define FL_MOTOR_EN      GPIO_NUM_23
+#define FL_MOTOR_EN      GPIO_NUM_27
 #define FL_MOTOR_PWM     LEDC_CHANNEL_0
 
 //Front Right Motor
 #define FR_MOTOR_STEP    GPIO_NUM_15
 #define FR_MOTOR_DIR     GPIO_NUM_2
-#define FR_MOTOR_EN      GPIO_NUM_23
+#define FR_MOTOR_EN      GPIO_NUM_27
 #define FR_MOTOR_PWM     LEDC_CHANNEL_1
 
 //Back Left Motor
