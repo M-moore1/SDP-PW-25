@@ -200,8 +200,10 @@ void robot_ble_init() {
      * - 16-byte key size
      * ------------------------------------------------------------------ */
 
+    /*BEFORE*/
+    //esp_ble_auth_req_t auth_req = ESP_LE_AUTH_REQ_SC_MITM_BOND;
     
-    esp_ble_auth_req_t auth_req = ESP_LE_AUTH_REQ_SC_MITM_BOND; /* removed SC requirement */
+    esp_ble_auth_req_t auth_req = ESP_LE_AUTH_REQ_MITM_BOND;  /* remove SC */
     esp_ble_io_cap_t iocap = ESP_IO_CAP_OUT;  /* ESP32 displays passkey, ground station enters it */
 
 

@@ -380,7 +380,8 @@ int ble_init(int uart_fd) {
 //---------------------------------------------------------
 
     //Enforce a stronger BLE strategy
-    if (send_at_cmd(uart_fd, "AT+BLESECPARAM=13,4,16,3,3,1\r\n", NULL, NULL, 1000) < 0) return -1;
+    /* CHANGE 13 to 5*/
+    if (send_at_cmd(uart_fd, "AT+BLESECPARAM=5,4,16,3,3,1\r\n", NULL, NULL, 1000) < 0) return -1;
     if (send_at_cmd(uart_fd, "AT+BLESETKEY=123456\r\n", NULL, NULL, 1000) < 0) return -1;
 
 //---------------------------------------------------------
