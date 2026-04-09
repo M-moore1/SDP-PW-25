@@ -22,11 +22,11 @@
 #define ARM_THETA2_MAX   90.0f
 
 #define ARM_SPEED_MIN_STEP  0.1f
-#define ARM_SPEED_MAX_STEP  2.0f
+#define ARM_SPEED_MAX_STEP  0.5f
 
 /*
 Exactly. The math works out like this:
-
+ everything 
 Each BLE command moves the arm 0.1–2.0 cm in one axis
 That translates to maybe 2–10° of joint angle change
 A typical servo does 60° in ~150ms, so 10° takes ~25ms

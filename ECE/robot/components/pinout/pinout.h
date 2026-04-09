@@ -13,7 +13,7 @@
 #define TEST_MOTOR_CHANNEL LEDC_CHANNEL_0
 
 //Front Left Motor
-#define FL_MOTOR_STEP    GPIO_NUM_3 // RX
+#define FL_MOTOR_STEP    GPIO_NUM_4 
 #define FL_MOTOR_DIR     GPIO_NUM_19
 #define FL_MOTOR_EN      GPIO_NUM_23
 #define FL_MOTOR_PWM     LEDC_CHANNEL_0
@@ -26,13 +26,13 @@
 
 //Back Left Motor
 #define BL_MOTOR_STEP    GPIO_NUM_25
-#define BL_MOTOR_DIR     GPIO_NUM_33
+#define BL_MOTOR_DIR     GPIO_NUM_26
 #define BL_MOTOR_EN      GPIO_NUM_23
 #define BL_MOTOR_PWM     LEDC_CHANNEL_2
 
 //Back Right Motor
 #define BR_MOTOR_STEP    GPIO_NUM_12
-#define BR_MOTOR_DIR     GPIO_NUM_14
+#define BR_MOTOR_DIR     GPIO_NUM_33
 #define BR_MOTOR_EN      GPIO_NUM_23
 #define BR_MOTOR_PWM     LEDC_CHANNEL_3
 

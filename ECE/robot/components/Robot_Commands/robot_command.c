@@ -44,13 +44,21 @@ void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_m
     stepper_enable(B_R);
 
     ESP_LOGI(CMD_TAG, "Motor Moving");
+    /*
+      FRONT OF THE BOT
+    F_L               F_R
+    
+    
+    0               0
 
+    */
     if (w && !s && !a && !d) {
         ESP_LOGI(CMD_TAG, "Forward at speed %d", speed);
         motor_pulse(F_L, speed, 1);
         motor_pulse(F_R, speed, 0);
-        motor_pulse(B_L, speed, 1);
-        motor_pulse(B_R, speed, 0);
+
+       motor_pulse(B_L, speed, 1); //0 is backwaqrds
+       motor_pulse(B_R, speed, 0);
     }
     else if (s && !w && !a && !d) {
         ESP_LOGI(CMD_TAG, "Backward at speed %d", speed);
@@ -75,21 +83,21 @@ void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_m
     }
     else if (w && d) {
         ESP_LOGI(CMD_TAG, "Diagonal FWD-Right at speed %d", speed);
-        motor_pulse(F_L, speed, 1);
+        motor_pulse(F_L, speed, 0);
         motor_pulse(B_R, speed, 0);
         motor_pulse(F_R, 0, 0);   // idle
         motor_pulse(B_L, 0, 0);   // idle
     }
     else if (w && a) {
         ESP_LOGI(CMD_TAG, "Diagonal FWD-Left at speed %d", speed);
-        motor_pulse(F_R, speed, 0);
+        motor_pulse(F_R, speed, 1);
         motor_pulse(B_L, speed, 1);
         motor_pulse(F_L, 0, 0);   // idle
         motor_pulse(B_R, 0, 0);   // idle
     }
     else if (s && d) {
         ESP_LOGI(CMD_TAG, "Diagonal BWD-Right at speed %d", speed);
-        motor_pulse(F_R, speed, 1);
+        motor_pulse(F_R, speed, 0);
         motor_pulse(B_L, speed, 0);
         motor_pulse(F_L, 0, 0);   // idle
         motor_pulse(B_R, 0, 0);   // idle
@@ -97,7 +105,7 @@ void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_m
     else if (s && a) {
         ESP_LOGI(CMD_TAG, "Diagonal BWD-Left at speed %d", speed);
         motor_pulse(F_L, speed, 0);
-        motor_pulse(B_R, speed, 1);
+        motor_pulse(B_R, speed, 0);
         motor_pulse(F_R, 0, 0);   // idle
         motor_pulse(B_L, 0, 0);   // idle
     }

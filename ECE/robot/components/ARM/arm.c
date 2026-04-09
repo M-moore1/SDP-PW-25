@@ -7,6 +7,7 @@ static const char* ARM_TAG = "ARM";
 // LEDC timer (50 Hz, 14-bit)
 static void arm_pwm_timer_init(void) {
     ledc_timer_config_t arm_timer = {
+        
         .speed_mode      = LEDC_LOW_SPEED_MODE,
         .duty_resolution = LEDC_TIMER_14_BIT,   // 16,384 steps
         .timer_num       = LEDC_TIMER_0,

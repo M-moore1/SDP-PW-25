@@ -106,7 +106,7 @@ void command_parser(void *pvParameters)
                 break;
             }
 
-            vTaskDelay(pdMS_TO_TICKS(1)); 
+            //vTaskDelay(pdMS_TO_TICKS(1)); 
             
             step_mot_t* motors[] = { &front_left, &front_right, &back_left, &back_right };
             bool all_idle = true;
@@ -146,7 +146,7 @@ void app_main()
     motor_init(&front_right, FR_MOTOR_STEP, FR_MOTOR_DIR, FR_MOTOR_EN, FR_MOTOR_PWM);
     motor_init(&back_left,   BL_MOTOR_STEP, BL_MOTOR_DIR, BL_MOTOR_EN, BL_MOTOR_PWM);
     motor_init(&back_right,  BR_MOTOR_STEP, BR_MOTOR_DIR, BR_MOTOR_EN, BR_MOTOR_PWM);
-    arm_init();
+    //arm_init();
 
     cmd_queue = xQueueCreate(10, sizeof(uint64_t)); // Initialize the command queue
     
@@ -175,7 +175,7 @@ void app_main()
                     //case 0: send_imu(1); break;
                     //case 1: send_imu(2); break;
                     //case 2: send_imu(3); break;
-                    case 3: send_health_report(); break;
+                    //case 3: send_health_report(); break;
                 }
                 
                 rotation_step = (rotation_step + 1) % 4; 
