@@ -352,7 +352,7 @@ void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
                      param->update_conn_params.timeout);
              
             /* NEW: request encryption AFTER conn params are confirmed */
-            
+
             if (device_connected && !link_authenticated) {
                 /* NEW: verify peer_bda is valid before requesting encryption */
                 ESP_LOGI(BLE_TAG, "peer_bda: %02x:%02x:%02x:%02x:%02x:%02x",
@@ -442,11 +442,6 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
         case ESP_GATTS_CONNECT_EVT:
             ESP_LOGI(BLE_TAG, "Device connected, conn_id=%d", param->connect.conn_id);
 
-            /* NEW: clear stale bond to prevent reason=0x63 auth failure */
-            esp_ble_remove_bond_device(param->connect.remote_bda);
-            ESP_LOGI(BLE_TAG, "Cleared stale bond for peer");
-
-
 
             memset(rx_buf, 0, sizeof(rx_buf));
             rx_idx = 0;
@@ -491,6 +486,13 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
 
         case ESP_GATTS_DISCONNECT_EVT:
             ESP_LOGI(BLE_TAG, "Device disconnected, reason=0x%x", param->disconnect.reason);
+
+
+            /* NEW: clear bond here after disconnect so next connection starts fresh */
+            if (memcmp(peer_bda, (esp_bd_addr_t){0}, sizeof(esp_bd_addr_t)) != 0) {
+                esp_ble_remove_bond_device(peer_bda);
+                ESP_LOGI(BLE_TAG, "Cleared bond for peer after disconnect");
+            }
 
             device_connected = false;
             notify_enabled = false;
