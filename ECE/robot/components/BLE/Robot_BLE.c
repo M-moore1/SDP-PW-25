@@ -161,6 +161,27 @@ void robot_ble_init() {
     ESP_ERROR_CHECK(esp_bluedroid_init());
     ESP_ERROR_CHECK(esp_bluedroid_enable());
 
+
+    /* NEW: clear all stored bonds on startup to prevent stale key conflicts */
+    int bond_count = esp_ble_get_bond_device_num();
+    if (bond_count > 0) {
+        esp_ble_bond_dev_t *bond_list = malloc(bond_count * sizeof(esp_ble_bond_dev_t));
+        if (bond_list) {
+            esp_ble_get_bond_device_list(&bond_count, bond_list);
+            for (int i = 0; i < bond_count; i++) {
+                esp_ble_remove_bond_device(bond_list[i].bd_addr);
+                ESP_LOGI(BLE_TAG, "Cleared stored bond %d on startup", i);
+            }
+            free(bond_list);
+        }
+    } else {
+        ESP_LOGI(BLE_TAG, "No stored bonds to clear");
+    }
+    /* END NEW */
+
+
+
+
     ble_recieve_queue = xQueueCreate(10, PACKET_SIZE);
     if (ble_recieve_queue == NULL) {
         ESP_LOGE(BLE_TAG, "Queue creation failed!");
