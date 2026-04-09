@@ -26,7 +26,7 @@ void send_ack(uint16_t id, uint8_t result, int secure, uint64_t instr_specfic) {
 void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* B_L, step_mot_t* B_R){
     if (motor_power == 0){
         ESP_LOGI(CMD_TAG, "Control CMD - Motor OFF");
-        send_ack(ctrl.id, RESULT_CMD_FAILURE, security_flag, MOTORS_DISABLED);
+        //send_ack(ctrl.id, RESULT_CMD_FAILURE, security_flag, MOTORS_DISABLED);
         return;
     }
 
@@ -111,7 +111,7 @@ void arm_cmd   (arm_format_t arm, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* 
     if (arm.reset) {
         arm_reset();
         ESP_LOGI(CMD_TAG, "Arm reset to home");
-        send_ack(arm.id, RESULT_SUCCESS, security_flag, NO_INFO);
+        //send_ack(arm.id, RESULT_SUCCESS, security_flag, NO_INFO);
         return;
     }
 
@@ -133,7 +133,7 @@ void arm_cmd   (arm_format_t arm, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* 
     // arm_move_to solves IK internally and rejects bad positions
     if (arm_move_to(x, y, z) != 0) {
         ESP_LOGW(CMD_TAG, "ARM move rejected (%.2f, %.2f, %.2f)", x, y, z);
-        send_ack(arm.id, RESULT_CMD_FAILURE, security_flag, ARM_CORDINATES_ISSUE);
+        //send_ack(arm.id, RESULT_CMD_FAILURE, security_flag, ARM_CORDINATES_ISSUE);
         return;
     }
 
@@ -152,7 +152,7 @@ void system_cmd(system_format_t sys, step_mot_t* F_L, step_mot_t* F_R, step_mot_
 
     if (AC != authorization_code) { 
         ESP_LOGW(CMD_TAG, "System CMD - Incorrect Authorization Code");
-        send_ack(sys.id, RESULT_AUTH_FAIL, security_flag, NO_INFO );
+        //send_ack(sys.id, RESULT_AUTH_FAIL, security_flag, NO_INFO );
         return;
     }
 
@@ -249,7 +249,7 @@ void system_cmd(system_format_t sys, step_mot_t* F_L, step_mot_t* F_R, step_mot_
             break;
     }
 
-    send_ack(sys.id, result, security_flag, instr_spc_rsp);
+    //send_ack(sys.id, result, security_flag, instr_spc_rsp);
 }
 void query_cmd(query_format_t query, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* B_L, step_mot_t* B_R){
     ESP_LOGI(CMD_TAG, "Executing Query CMD");
@@ -298,7 +298,7 @@ void query_cmd(query_format_t query, step_mot_t* F_L, step_mot_t* F_R, step_mot_
     }
 
 
-    send_ack(query.id, result, security_flag, instr_spc_rsp);
+    //send_ack(query.id, result, security_flag, instr_spc_rsp);
 }
 
 
