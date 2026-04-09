@@ -17,6 +17,8 @@
 
 //gcc -O2 -Wall -Wextra test_esp32.c ../includes/ble/pmod_esp32.c -I.../includes/cmd_structure ../includes/ble/uart_queue.c -o test_esp.o
 
+// gcc -O2 -Wall -Wextra test_esp32.c ../includes/ble/pmod_esp32.c ../includes/ble/uart_queue.c ../includes/ble/ble_tls_transport.c -I../includes/cmd_structure -I../includes/json_uds -I../includes/ble -I../includes/cmd_parser -I../includes/hardware_crypto -I./cJSON-master -o test_esp.o
+
 uint8_t payload[156] = {
     0x8B, 0xDF, 0x57, 0x3D, 0x3D, 0x50, 0xAF, 0x81, 0xFA, 0xD2, 0x9D, 0x95, 0x5B, 0x91, 0xD6, 0xBC,
     0x09, 0xFF, 0x99, 0x70, 0x95, 0x65, 0xF1, 0x14, 0xAC, 0xDA, 0x91, 0x46, 0x93, 0x79, 0xB8, 0x6E,
