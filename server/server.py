@@ -6,6 +6,7 @@ import sys
 import os
 
 import websockets
+from bleak import BleakClient, BleakScanner
 
 # Allow importing from ubertooth/script.py
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "ubertooth"))
@@ -15,6 +16,9 @@ HOST = "localhost"
 PORT = 8080
 
 OPCODE_FILTER = None
+
+DEVICE_NAME = "ROBOT_ESP32"
+CHAR_UUID = "0000ff01-0000-1000-8000-00805f9b34fb"
 
 connected_clients: set = set()
 
@@ -92,20 +96,68 @@ async def capture_loop() -> None:
         print("[capture] Pipeline stopped.")
 
 
+async def ble_inject(hex_data: str) -> dict:
+    """Scan for the robot, connect, and write raw bytes to its GATT characteristic."""
+    clean = hex_data.replace(" ", "")
+    if len(clean) % 2 != 0 or not all(c in "0123456789abcdefABCDEF" for c in clean):
+        return {"type": "ble_ack", "status": "error", "msg": "Invalid hex string"}
+
+    data = bytes.fromhex(clean)
+    print(f"[ble] Scanning for {DEVICE_NAME}...")
+
+    device = await BleakScanner.find_device_by_filter(
+        lambda d, ad: d.name and DEVICE_NAME in d.name,
+        timeout=5.0,
+    )
+
+    if not device:
+        print("[ble] Device not found")
+        return {"type": "ble_ack", "status": "error", "msg": "Device not found"}
+
+    print(f"[ble] Found device: {device.address}")
+
+    try:
+        async with BleakClient(device.address) as client:
+            print(f"[ble] Connected: {client.is_connected}")
+            await client.write_gatt_char(CHAR_UUID, data, response=True)
+            print(f"[ble] Sent: {data.hex()}")
+            return {"type": "ble_ack", "status": "ok", "msg": f"Sent {len(data)} bytes"}
+    except Exception as e:
+        print(f"[ble] Write failed: {e}")
+        return {"type": "ble_ack", "status": "error", "msg": str(e)}
+
+
 async def ws_handler(websocket) -> None:
     connected_clients.add(websocket)
     print(f"[ws] Client connected ({len(connected_clients)} total)")
     try:
-        await websocket.wait_closed()
+        async for raw in websocket:
+            try:
+                msg = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+
+            if msg.get("type") == "ble_inject":
+                hex_data = msg.get("data", "")
+                print(f"[ws] BLE inject request: {hex_data}")
+                result = await ble_inject(hex_data)
+                await broadcast(json.dumps(result))
     finally:
         connected_clients.discard(websocket)
         print(f"[ws] Client disconnected ({len(connected_clients)} total)")
 
 
 async def main() -> None:
+    capture_available = shutil.which("ubertooth-btle") and shutil.which("tshark")
+
     async with websockets.serve(ws_handler, HOST, PORT):
         print(f"[ws] Server listening on ws://{HOST}:{PORT}")
-        await capture_loop()
+
+        if capture_available:
+            await capture_loop()
+        else:
+            print("[capture] ubertooth-btle or tshark not found — sniffing disabled, BLE injection still active")
+            await asyncio.Future()  # run forever
 
 
 if __name__ == "__main__":

@@ -29,6 +29,11 @@ function App() {
     onMessage: (data) => {
       try {
         const pkt = JSON.parse(data);
+        if (pkt.type === 'ble_ack') {
+          const prefix = pkt.status === 'ok' ? '[BLE OK]' : '[BLE ERR]';
+          addPacket(`${prefix} ${pkt.msg}`, 'injected');
+          return;
+        }
         if (pkt.opcode && pkt.value) {
           addPacket(`[Frame ${pkt.frame}] ${pkt.opcode} | ${pkt.value}`, 'sniffed');
           return;
@@ -41,7 +46,7 @@ function App() {
   });
 
   const handleInject = useCallback((payload: string) => {
-    sendRaw(payload);
+    sendRaw(JSON.stringify({ type: 'ble_inject', data: payload }));
     addPacket(payload, 'injected');
   }, [sendRaw, addPacket]);
 
@@ -53,10 +58,10 @@ function App() {
   const isConnected = status === 'connected';
 
   const KEY_PAYLOADS: Record<string, string> = {
-    w: '{"type":"C","forward":1,"backward":0,"left":0,"right":0,"speed":50}',
-    s: '{"type":"C","forward":0,"backward":1,"left":0,"right":0,"speed":50}',
-    a: '{"type":"C","forward":0,"backward":0,"left":1,"right":0,"speed":50}',
-    d: '{"type":"C","forward":0,"backward":0,"left":0,"right":1,"speed":50}',
+    w: '85 90 01 00 00 00 00 00',
+    s: '05 92 01 00 00 00 00 00',
+    a: '05 91 01 00 00 00 00 00',
+    d: '05 94 01 00 00 00 00 00',
   };
 
   const [activeKey, setActiveKey] = useState<string | null>(null);
@@ -64,6 +69,8 @@ function App() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       const key = e.key.toLowerCase();
       if (!KEY_PAYLOADS[key] || pressedRef.current.has(key)) return;
       e.preventDefault();
