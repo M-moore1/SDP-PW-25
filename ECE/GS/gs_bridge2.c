@@ -188,12 +188,6 @@ int main(int argc, char **argv) {
           handle_encrypted_data(uart_fd, uds_client, buf);
         }
 
-<<<<<<< Updated upstream
-        //printf("\r\n Recieved Data:\r\n");
-        //printf("%s \r\n", buf);
-
-=======
->>>>>>> Stashed changes
         free(buf);                                         // Free buffer
       }
     }

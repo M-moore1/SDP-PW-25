@@ -14,6 +14,7 @@
 #include "i2c.h"
 #include "imu.h"
 #include "aes_gcm_decrypt.h"
+#include "arm.h"
 
 
 step_mot_t front_left;
@@ -74,7 +75,6 @@ void command_parser(void *pvParameters)
     robot_bt_packet_t cmd;
     while (1)
     {
-
         if (xQueueReceive(cmd_queue, &cmd, portMAX_DELAY))
         {
             ESP_LOGI(MAIN_TAG, "Packet Parsing Initiated");
@@ -83,15 +83,12 @@ void command_parser(void *pvParameters)
 
             switch (cmd_type){
                 case CONTROL_CMD:
-                    //ESP_LOGI(MAIN_TAG, "Control CMD Recieved");
-                    // trigger enable on
                     control_cmd(cmd.ctrl, &front_left, &front_right, &back_left, &back_right);
-
                 break;
 
                 case ARM_CMD:
                     ESP_LOGI(MAIN_TAG, "Arm CMD Recieved");
-                    arm_cmd(cmd.arm, &front_left, &front_right, &back_left, &back_right); // CHANGE MOTORS
+                    arm_cmd(cmd.arm, &front_left, &front_right, &back_left, &back_right);
                 break;
 
                 case System_CMD:
@@ -105,18 +102,31 @@ void command_parser(void *pvParameters)
                 break;
                 
                 default:
-                    //ESP_LOGW(MAIN_TAG, "Unknown CMD Recieved");
                     send_ack(0, RESULT_UNKNOWN_CMD, security_flag, NO_INFO);
                 break;
-                
             }
-                
-        }
 
-        // if no motors running 
+            vTaskDelay(pdMS_TO_TICKS(1)); 
+            
+            step_mot_t* motors[] = { &front_left, &front_right, &back_left, &back_right };
+            bool all_idle = true;
+            for (int i = 0; i < 4; i++) {
+                if (motors[i]->status == MOTOR_RUNNING) {
+                    all_idle = false;
+                    break;
+                }
+            }
+
+            if (all_idle) {
+                ESP_LOGI(MAIN_TAG, "All motors idle — disabling");
+                stepper_disable(&front_left);
+                stepper_disable(&front_right);
+                stepper_disable(&back_left);
+                stepper_disable(&back_right);
+            }
+        }
     }
 }
-
 
 void app_main()
 {
@@ -136,6 +146,7 @@ void app_main()
     motor_init(&front_right, FR_MOTOR_STEP, FR_MOTOR_DIR, FR_MOTOR_EN, FR_MOTOR_PWM);
     motor_init(&back_left,   BL_MOTOR_STEP, BL_MOTOR_DIR, BL_MOTOR_EN, BL_MOTOR_PWM);
     motor_init(&back_right,  BR_MOTOR_STEP, BR_MOTOR_DIR, BR_MOTOR_EN, BR_MOTOR_PWM);
+    arm_init();
 
     cmd_queue = xQueueCreate(10, sizeof(uint64_t)); // Initialize the command queue
     
@@ -148,32 +159,32 @@ void app_main()
     xTaskCreatePinnedToCore( command_parser, "robot_command_parser", 4096, NULL, 5, NULL, 1);
 
     while (1) {
-        
+        /*
         if (gpio_get_level(IMU_INT_PIN) == 0) {
             while (gpio_get_level(IMU_INT_PIN) == 0) {
                // imu_check_safe(imu);
             }
         }
-        
+        */
         
         now = esp_timer_get_time();
         if (num_connected > 0) {
-            if (now - last_send_time >= 500000) {
-                /*
+            if (now - last_send_time >= 500000) { // in us
+                
                 switch (rotation_step) {
-                    case 0: send_imu(1); break;
-                    case 1: send_imu(2); break;
-                    case 2: send_imu(3); break;
+                    //case 0: send_imu(1); break;
+                    //case 1: send_imu(2); break;
+                    //case 2: send_imu(3); break;
                     case 3: send_health_report(); break;
                 }
-                */
+                
                 rotation_step = (rotation_step + 1) % 4; 
 
                 last_send_time = now;
             }
         }
         
-        //vTaskDelay(pdMS_TO_TICKS(1));
+        vTaskDelay(pdMS_TO_TICKS(1));
         
     }
     return;

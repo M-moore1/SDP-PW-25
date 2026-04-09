@@ -1,6 +1,7 @@
 #include "robot_commands.h"
 #include "Robot_BLE.h"
 #include "imu.h"
+#include "arm.h"
 
 volatile int security_flag = 0;
 volatile uint16_t AC = 0x3FF;  // PUT IN NVS
@@ -19,62 +20,124 @@ void send_ack(uint16_t id, uint8_t result, int secure, uint64_t instr_specfic) {
     response.ack.instruction_specific = instr_specfic;
     send_cmd(response.bytes, secure);
 
-    //ESP_LOGI(CMD_TAG, "Sent ACK for ID %d with Result %d", id, result);
+    ESP_LOGI(CMD_TAG, "Sent ACK for ID %d with Result %d", id, result);
 }
 
 void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* B_L, step_mot_t* B_R){
-   // ESP_LOGI(CMD_TAG, "Executing Control CMD");
     if (motor_power == 0){
         ESP_LOGI(CMD_TAG, "Control CMD - Motor OFF");
         send_ack(ctrl.id, RESULT_CMD_FAILURE, security_flag, MOTORS_DISABLED);
         return;
     }
 
-    bool w = ctrl.w; bool a = ctrl.a; 
+    bool w = ctrl.w; bool a = ctrl.a;
     bool s = ctrl.s; bool d = ctrl.d;
     uint8_t speed = ctrl.speed;
+
+    // Check if any valid move input exists
+    bool any_input = w || s || a || d;
+    if (!any_input) return;
+
+    // Enable all motors on any valid move — caller handles disable
+    stepper_enable(F_L); stepper_enable(F_R);
+    stepper_enable(B_L);
+    stepper_enable(B_R);
+
     ESP_LOGI(CMD_TAG, "Motor Moving");
-    
-    if(w) { 
-        //printf("\nMotor moving forward at speed %d\n", speed);
-        
-        motor_pulse(F_L, speed, 1); 
-        motor_pulse(F_R, speed, 0); 
-        motor_pulse(B_L, speed, 0); 
-        motor_pulse(B_R, speed, 0); 
-    }
-    if(s) { 
-        //printf("\nMotor moving backwards at speed %d\n", speed);
-        motor_pulse(F_L, speed, 1); 
-        motor_pulse(F_R, speed, 1);  
-        motor_pulse(B_L, speed, 1); 
-        motor_pulse(B_R, speed, 1);
-    }
-    if (d){
-        printf("\nMotor moving forward at speed %d\n", speed);
-        motor_pulse(B_L, speed, 0); 
+
+    if (w && !s && !a && !d) {
+        ESP_LOGI(CMD_TAG, "Forward at speed %d", speed);
+        motor_pulse(F_L, speed, 1);
+        motor_pulse(F_R, speed, 0);
+        motor_pulse(B_L, speed, 1);
         motor_pulse(B_R, speed, 0);
     }
-    if (a){
-        printf("\nMotor moving forward at speed %d\n", speed);
-        motor_pulse(B_L, speed, 1); 
+    else if (s && !w && !a && !d) {
+        ESP_LOGI(CMD_TAG, "Backward at speed %d", speed);
+        motor_pulse(F_L, speed, 0);
+        motor_pulse(F_R, speed, 1);
+        motor_pulse(B_L, speed, 0);
         motor_pulse(B_R, speed, 1);
     }
-    
-   // send_ack(ctrl.id, RESULT_SUCCESS, security_flag, NO_INFO );
+    else if (d && !w && !s && !a) {
+        ESP_LOGI(CMD_TAG, "Strafe Right at speed %d", speed);
+        motor_pulse(F_L, speed, 1);
+        motor_pulse(F_R, speed, 1);
+        motor_pulse(B_L, speed, 0);
+        motor_pulse(B_R, speed, 0);
+    }
+    else if (a && !w && !s && !d) {
+        ESP_LOGI(CMD_TAG, "Strafe Left at speed %d", speed);
+        motor_pulse(F_L, speed, 0);
+        motor_pulse(F_R, speed, 0);
+        motor_pulse(B_L, speed, 1);
+        motor_pulse(B_R, speed, 1);
+    }
+    else if (w && d) {
+        ESP_LOGI(CMD_TAG, "Diagonal FWD-Right at speed %d", speed);
+        motor_pulse(F_L, speed, 1);
+        motor_pulse(B_R, speed, 0);
+        motor_pulse(F_R, 0, 0);   // idle
+        motor_pulse(B_L, 0, 0);   // idle
+    }
+    else if (w && a) {
+        ESP_LOGI(CMD_TAG, "Diagonal FWD-Left at speed %d", speed);
+        motor_pulse(F_R, speed, 0);
+        motor_pulse(B_L, speed, 1);
+        motor_pulse(F_L, 0, 0);   // idle
+        motor_pulse(B_R, 0, 0);   // idle
+    }
+    else if (s && d) {
+        ESP_LOGI(CMD_TAG, "Diagonal BWD-Right at speed %d", speed);
+        motor_pulse(F_R, speed, 1);
+        motor_pulse(B_L, speed, 0);
+        motor_pulse(F_L, 0, 0);   // idle
+        motor_pulse(B_R, 0, 0);   // idle
+    }
+    else if (s && a) {
+        ESP_LOGI(CMD_TAG, "Diagonal BWD-Left at speed %d", speed);
+        motor_pulse(F_L, speed, 0);
+        motor_pulse(B_R, speed, 1);
+        motor_pulse(F_R, 0, 0);   // idle
+        motor_pulse(B_L, 0, 0);   // idle
+    }
+
+    // send_ack(ctrl.id, RESULT_SUCCESS, security_flag, NO_INFO);
 }
 
 void arm_cmd   (arm_format_t arm, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* B_L, step_mot_t* B_R){
     ESP_LOGI(CMD_TAG, "Executing Arm CMD");
-    int coordinates_approved = 1;
-    // TODO: IMPLEMENT THE ARM 
-    if(!coordinates_approved){
-        ESP_LOGW(CMD_TAG, "ARM movement not allowed");
+    
+    if (arm.reset) {
+        arm_reset();
+        ESP_LOGI(CMD_TAG, "Arm reset to home");
+        send_ack(arm.id, RESULT_SUCCESS, security_flag, NO_INFO);
+        return;
+    }
+
+    // Map speed (1–127) to step size in cm
+    float step = ARM_SPEED_MIN_STEP + 
+                 (arm.speed / 127.0f) * (ARM_SPEED_MAX_STEP - ARM_SPEED_MIN_STEP);
+
+    // Read current position and apply deltas tentatively
+    float x, y, z;
+    arm_get_position(&x, &y, &z);
+
+    if (arm.up)    z += step;
+    if (arm.down)  z -= step;
+    if (arm.left)  y -= step;
+    if (arm.right) y += step;
+    if (arm.in)    x += step;
+    if (arm.out)   x -= step;
+
+    // arm_move_to solves IK internally and rejects bad positions
+    if (arm_move_to(x, y, z) != 0) {
+        ESP_LOGW(CMD_TAG, "ARM move rejected (%.2f, %.2f, %.2f)", x, y, z);
         send_ack(arm.id, RESULT_CMD_FAILURE, security_flag, ARM_CORDINATES_ISSUE);
         return;
     }
 
-    send_ack(arm.id, RESULT_SUCCESS, security_flag, NO_INFO );
+    send_ack(arm.id, RESULT_SUCCESS, security_flag, NO_INFO);
 
 }
 
@@ -308,6 +371,8 @@ void send_health_report(){
     health_report.health.arm_en = arm_power;
 
     send_cmd(health_report.bytes, security_flag);
+
+    ESP_LOGI(CMD_TAG, "Sending Health Report");
 }
 
 void send_HPA(){
