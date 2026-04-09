@@ -113,10 +113,17 @@ int robot_wolfssl_server_init(RobotWolfSslServer *s) {
 
 
     if (wolfSSL_CTX_use_certificate_buffer(s->ctx, cert_buf, cert_len, SSL_FILETYPE_PEM) != SSL_SUCCESS) {
-        ESP_LOGE("TLS", "use_certificate_buffer failed");
+        /* NEW: get specific wolfSSL error code */
+        char err_buf[80];
+        int err = wolfSSL_ERR_get_error();
+        wolfSSL_ERR_error_string(err, err_buf);
+        ESP_LOGE("TLS", "use_certificate_buffer failed, wolfSSL error: %d - %s", err, err_buf);
+        /* END NEW */
         free(cert_buf); return -5;
     }
     free(cert_buf);
+
+
 
     int key_len = 0;
     uint8_t *key_buf = read_spiffs_file("/spiffs/server-key.pem", &key_len);
