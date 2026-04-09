@@ -17,7 +17,7 @@
 #include "esp_gatt_common_api.h"
 #include "pinout.h"
 #include "robot_commands.h"
-#include "aes_gcm_encrypt.h"
+//#include "aes_gcm_encrypt.h"
 
 #define ROBOT_PROFILE_NUM                       1
 #define ROBOT_PROFILE_APP_IDX                   0

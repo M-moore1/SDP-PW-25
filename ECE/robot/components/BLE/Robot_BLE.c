@@ -174,6 +174,7 @@ void send_cmd(uint8_t* pkt, int sec_lvl) {
         send_string(hex_str);
         //send_bytes_to_all(pkt, 8);
     }else{
+        /*
         uint8_t cipher_text[PACKET_SIZE] = {0};
         
         if(aes_gcm_encrypt_packet((const char *)pkt, cipher_text) == 0){
@@ -182,6 +183,7 @@ void send_cmd(uint8_t* pkt, int sec_lvl) {
         }else{
             ESP_LOGE("SEND_CMD", "Encryption FAILED");
         }
+        */
     }
 }
 

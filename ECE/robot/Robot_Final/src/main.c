@@ -175,7 +175,7 @@ void app_main()
                     //case 0: send_imu(1); break;
                     //case 1: send_imu(2); break;
                     //case 2: send_imu(3); break;
-                    case 3: send_string("TEST"); break;//send_health_report(); break;
+                    case 3: send_health_report(); break;
                 }
                 
                 rotation_step = (rotation_step + 1) % 4; 
