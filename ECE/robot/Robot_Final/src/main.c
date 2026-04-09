@@ -16,6 +16,7 @@
 //#include "aes_gcm_decrypt.h"
 
 #include "esp_spiffs.h"
+#include "nvs_flash.h"
 
 
 step_mot_t front_left;
@@ -112,6 +113,7 @@ void command_parser(void *pvParameters)
 }
 
 
+
 void app_main()
 {
     /*
@@ -125,7 +127,19 @@ void app_main()
     */
 
     /* ADDED SECURITY BLOCK */
-    // Mount SPIFFS first before anything else
+
+    /* NEW: Initialize NVS and erase if corrupted or stale BLE security state */
+    esp_err_t nvs_ret = nvs_flash_init();
+    if (nvs_ret == ESP_ERR_NVS_NO_FREE_PAGES || 
+        nvs_ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_LOGW("MAIN", "Erasing NVS flash to clear stale BLE security state...");
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        nvs_ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(nvs_ret);
+    ESP_LOGI("MAIN", "NVS initialized successfully");
+    /* END NEW */
+
     esp_vfs_spiffs_conf_t conf = {
         .base_path = "/spiffs",
         .partition_label = NULL,
@@ -136,13 +150,11 @@ void app_main()
     esp_err_t ret = esp_vfs_spiffs_register(&conf);
     if (ret != ESP_OK) {
         ESP_LOGE("MAIN", "SPIFFS mount failed: %s", esp_err_to_name(ret));
-        // Handle error - certs won't load without this
     } else {
         ESP_LOGI("MAIN", "SPIFFS mounted successfully");
     }
     /* ------------------------------------------------------------ */
 
-    ESP_ERROR_CHECK(nvs_flash_init()); // Initialize NVS
     robot_ble_init();                  // Initialize BLE
 
     motor_init(&front_left,  FL_MOTOR_STEP, FL_MOTOR_DIR, FL_MOTOR_EN, FL_MOTOR_PWM);
@@ -150,7 +162,7 @@ void app_main()
     motor_init(&back_left,   BL_MOTOR_STEP, BL_MOTOR_DIR, BL_MOTOR_EN, BL_MOTOR_PWM);
     motor_init(&back_right,  BR_MOTOR_STEP, BR_MOTOR_DIR, BR_MOTOR_EN, BR_MOTOR_PWM);
 
-    cmd_queue = xQueueCreate(10, sizeof(uint64_t)); // Initialize the command queue
+    cmd_queue = xQueueCreate(10, sizeof(uint64_t));
     
     int64_t last_send_time = 0;
     int rotation_step = 0;
@@ -168,7 +180,6 @@ void app_main()
         }
         */
         
-        
         if (device_connected && notify_enabled) {
             if (now - last_send_time >= 500000) {
         
@@ -180,7 +191,6 @@ void app_main()
                 }
 
                 rotation_step = (rotation_step + 1) % 4; 
-
                 last_send_time = now;
             }
         }
