@@ -352,12 +352,26 @@ void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
                      param->update_conn_params.timeout);
              
             /* NEW: request encryption AFTER conn params are confirmed */
+            
             if (device_connected && !link_authenticated) {
-                ESP_LOGI(BLE_TAG, "Requesting encryption after conn param update");
-                esp_ble_set_encryption(peer_bda, ESP_BLE_SEC_ENCRYPT_MITM);
+                /* NEW: verify peer_bda is valid before requesting encryption */
+                ESP_LOGI(BLE_TAG, "peer_bda: %02x:%02x:%02x:%02x:%02x:%02x",
+                        peer_bda[0], peer_bda[1], peer_bda[2],
+                        peer_bda[3], peer_bda[4], peer_bda[5]);
+
+                /* Only proceed if peer_bda is not zeroed */
+                bool bda_valid = false;
+                for (int i = 0; i < 6; i++) {
+                    if (peer_bda[i] != 0) { bda_valid = true; break; }
+                }
+
+                if (bda_valid) {
+                    ESP_LOGI(BLE_TAG, "Requesting encryption after conn param update");
+                    esp_ble_set_encryption(peer_bda, ESP_BLE_SEC_ENCRYPT_MITM);
+                } else {
+                    ESP_LOGE(BLE_TAG, "peer_bda is zero - skipping encryption request");
+                }
             }
-
-
             break;
 
         /* -----------------------------------------------------------
