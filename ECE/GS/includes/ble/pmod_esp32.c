@@ -388,7 +388,8 @@ int ble_init(int uart_fd) {
 //---------------------------------------------------------
 
     //Enforce a stronger BLE strategy
-    if (send_at_cmd(uart_fd, "AT+BLESECPARAM=5,4,16,3,3,1\r\n", NULL, NULL, 1000) < 0) return -1;
+    /* CHANGED: iocap 4 -> 3 (KeyboardOnly) so PMOD inputs the passkey */
+    if (send_at_cmd(uart_fd, "AT+BLESECPARAM=5,3,16,3,3,1\r\n", NULL, NULL, 1000) < 0) return -1;
     if (send_at_cmd(uart_fd, "AT+BLESETKEY=123456\r\n", NULL, NULL, 1000) < 0) return -1;
 
 //---------------------------------------------------------
@@ -451,6 +452,17 @@ int wait_for_ble_auth_complete(int uart_fd, int timeout_ms) {
                 bytes_received = 0;
                 continue;
             }
+
+            if (strstr(buffer, "+BLEKEYREQ:0")) {
+                /* ESP32 is displaying passkey, PMOD enters it */
+                if (send_at_cmd(uart_fd, "AT+BLEKEYREPLY=0,123456\r\n", NULL, NULL, 1000) < 0) {
+                    return -1;
+                }
+                memset(buffer, 0, sizeof(buffer));
+                bytes_received = 0;
+                continue;
+            }
+
 
             // If a passkey is requested/notified, reply with the same key
             if (strstr(buffer, "+BLESECNTFYKEY:0,")) {
