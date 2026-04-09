@@ -107,7 +107,7 @@ void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_m
 
 void arm_cmd   (arm_format_t arm, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* B_L, step_mot_t* B_R){
     ESP_LOGI(CMD_TAG, "Executing Arm CMD");
-    
+
     if (arm.reset) {
         arm_reset();
         ESP_LOGI(CMD_TAG, "Arm reset to home");
@@ -137,7 +137,7 @@ void arm_cmd   (arm_format_t arm, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* 
         return;
     }
 
-    send_ack(arm.id, RESULT_SUCCESS, security_flag, NO_INFO);
+    //send_ack(arm.id, RESULT_SUCCESS, security_flag, NO_INFO);
 
 }
 

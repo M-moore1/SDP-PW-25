@@ -4,9 +4,8 @@
 
 static const char* ARM_TAG = "ARM";
 
-// LEDC timer (50 Hz, 14-bit, Timer 0)
-
-void arm_pwm_timer_init(void) {
+// LEDC timer (50 Hz, 14-bit)
+static void arm_pwm_timer_init(void) {
     ledc_timer_config_t arm_timer = {
         .speed_mode      = LEDC_LOW_SPEED_MODE,
         .duty_resolution = LEDC_TIMER_14_BIT,   // 16,384 steps
@@ -17,26 +16,23 @@ void arm_pwm_timer_init(void) {
     ledc_timer_config(&arm_timer);
 }
 
-//  Servo instances 
-//  Pin / link / pwm_offset_us / start_angle / start_pwm / channel
-//  Matches the original app_main servo declarations exactly.
+// Servo instances 
+//  { pin, link_length, pwm_offset_us, current_angle, target_angle, pwm, channel }
+static servo_t servo_base     = {16, ARM_D1,  550,  45, 45, 1000, LEDC_CHANNEL_4};
+static servo_t servo_shoulder = {17, ARM_A2,  500,  45, 45, 1000, LEDC_CHANNEL_5};
+static servo_t servo_elbow    = {18, ARM_A3, 1120,  45, 45, 1120, LEDC_CHANNEL_6};
 
-static servo_t servo_base     = {16, ARM_D1,  550,  45, 1000, LEDC_CHANNEL_4};
-static servo_t servo_shoulder = {17, ARM_A2,  500,  45, 1000, LEDC_CHANNEL_5};
-static servo_t servo_elbow    = {18, ARM_A3, 1120,  45, 1120, LEDC_CHANNEL_6};
+// Current arm position 
 
-// Current arm position
 static float arm_x = ARM_HOME_X;
 static float arm_y = ARM_HOME_Y;
 static float arm_z = ARM_HOME_Z;
 
 // Internal helpers 
-
-// Degree-based trig wrappers (mirrors the original code)
-static float sin_d(float deg) { return sinf(deg / 180.0f * (float)M_PI); }
-static float cos_d(float deg) { return cosf(deg / 180.0f * (float)M_PI); }
+static float sin_d(float deg)          { return sinf(deg / 180.0f * (float)M_PI); }
+static float cos_d(float deg)          { return cosf(deg / 180.0f * (float)M_PI); }
 static float atan2_d(float y, float x) { return atan2f(y, x) / (float)M_PI * 180.0f; }
-static float acos_d(float v) { return acosf(v) / (float)M_PI * 180.0f; }
+static float acos_d(float v)           { return acosf(v)      / (float)M_PI * 180.0f; }
 
 static void servo_init_channel(servo_t *s) {
     ledc_channel_config_t cfg = {
@@ -51,29 +47,16 @@ static void servo_init_channel(servo_t *s) {
     ledc_channel_config(&cfg);
 }
 
-// Convert angle → PWM duty and push to hardware.
-// Formula: angle * 10/9 + offset_us gives pulse width in µs.
-// Duty = pulse_us / 20000 * 16384  (14-bit @ 50 Hz → 20 ms period)
+// Writes an angle directly to hardware — called every time a valid move comes in.
 static void servo_write(servo_t *s, float angle) {
     s->current_angle = angle;
+    s->target_angle  = angle;   // keep in sync — no interpolation in this version
     s->pwm           = angle * (10.0f / 9.0f) + (float)s->pwm_offset_us;
     uint32_t duty    = (uint32_t)(s->pwm * 16384.0f / 20000.0f);
     ledc_set_duty(LEDC_LOW_SPEED_MODE, s->channel, duty);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, s->channel);
 }
 
-
-void arm_init(void) {
-    arm_pwm_timer_init();
-
-    servo_init_channel(&servo_base);
-    servo_init_channel(&servo_shoulder);
-    servo_init_channel(&servo_elbow);
-
-    // Drive to home on startup
-    arm_reset();
-    ESP_LOGI(ARM_TAG, "Arm initialized at home (%.2f, %.2f, %.2f)", arm_x, arm_y, arm_z);
-}
 
 int arm_ik_solve(float x, float y, float z, float servo_angles[3]) {
     float theta[3];
@@ -86,9 +69,9 @@ int arm_ik_solve(float x, float y, float z, float servo_angles[3]) {
     float zr = z - ARM_D1;
 
     // θ1 — shoulder: elevation angle + law of cosines
-    float r2    = xr * xr + zr * zr;
-    float r     = sqrtf(r2);
-    float cos1  = (r2 + ARM_A2 * ARM_A2 - ARM_A3 * ARM_A3) / (2.0f * r * ARM_A2);
+    float r2   = xr * xr + zr * zr;
+    float r    = sqrtf(r2);
+    float cos1 = (r2 + ARM_A2 * ARM_A2 - ARM_A3 * ARM_A3) / (2.0f * r * ARM_A2);
 
     if (cos1 < -1.0f || cos1 > 1.0f) {
         ESP_LOGW(ARM_TAG, "IK: shoulder acos domain error (cos=%.3f)", cos1);
@@ -107,17 +90,17 @@ int arm_ik_solve(float x, float y, float z, float servo_angles[3]) {
 
     // Joint limit checks
     if (theta[0] < ARM_THETA0_MIN || theta[0] > ARM_THETA0_MAX) {
-        ESP_LOGW(ARM_TAG, "IK: base angle %.1f° out of [%.0f, %.0f]",
+        ESP_LOGW(ARM_TAG, "IK: base %.1f° out of [%.0f, %.0f]",
                  theta[0], ARM_THETA0_MIN, ARM_THETA0_MAX);
         return 1;
     }
     if (theta[1] < ARM_THETA1_MIN || theta[1] > ARM_THETA1_MAX) {
-        ESP_LOGW(ARM_TAG, "IK: shoulder angle %.1f° out of [%.0f, %.0f]",
+        ESP_LOGW(ARM_TAG, "IK: shoulder %.1f° out of [%.0f, %.0f]",
                  theta[1], ARM_THETA1_MIN, ARM_THETA1_MAX);
         return 1;
     }
     if (theta[2] < ARM_THETA2_MIN || theta[2] > ARM_THETA2_MAX) {
-        ESP_LOGW(ARM_TAG, "IK: elbow angle %.1f° out of [%.0f, %.0f]",
+        ESP_LOGW(ARM_TAG, "IK: elbow %.1f° out of [%.0f, %.0f]",
                  theta[2], ARM_THETA2_MIN, ARM_THETA2_MAX);
         return 1;
     }
@@ -167,4 +150,15 @@ void arm_get_position(float *x, float *y, float *z) {
     *x = arm_x;
     *y = arm_y;
     *z = arm_z;
+}
+
+void arm_init(void) {
+    arm_pwm_timer_init();
+
+    servo_init_channel(&servo_base);
+    servo_init_channel(&servo_shoulder);
+    servo_init_channel(&servo_elbow);
+
+    arm_reset();
+    ESP_LOGI(ARM_TAG, "Arm initialized at home (%.2f, %.2f, %.2f)", arm_x, arm_y, arm_z);
 }
