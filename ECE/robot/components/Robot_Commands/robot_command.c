@@ -68,14 +68,14 @@ void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_m
         motor_pulse(B_R, speed, 1);
     }
     else if (d && !w && !s && !a) {
-        ESP_LOGI(CMD_TAG, "Strafe Right at speed %d", speed);
+        ESP_LOGI(CMD_TAG, "In Place Right at speed %d", speed);
         motor_pulse(F_L, speed, 1);
         motor_pulse(F_R, speed, 1);
         motor_pulse(B_L, speed, 1); 
         motor_pulse(B_R, speed, 1);  
     }
     else if (a && !w && !s && !d) {
-        ESP_LOGI(CMD_TAG, "Strafe Left at speed %d", speed);
+        ESP_LOGI(CMD_TAG, "In Place Left at speed %d", speed);
         motor_pulse(F_L, speed, 0);
         motor_pulse(F_R, speed, 0);
         motor_pulse(B_L, speed, 0); 
@@ -97,17 +97,17 @@ void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_m
     }
     else if (s && d) {
         ESP_LOGI(CMD_TAG, "Diagonal BWD-Right at speed %d", speed);
-        motor_pulse(F_R, speed, 0);
+        motor_pulse(F_L, speed, 0);
+        motor_pulse(F_R, speed/2, 1);
         motor_pulse(B_L, speed, 0);
-        motor_pulse(F_L, 0, 0);   // idle
-        motor_pulse(B_R, 0, 0);   // idle
+        motor_pulse(B_R, speed/2, 1);
     }
     else if (s && a) {
         ESP_LOGI(CMD_TAG, "Diagonal BWD-Left at speed %d", speed);
-        motor_pulse(F_L, speed, 0);
-        motor_pulse(B_R, speed, 0);
-        motor_pulse(F_R, 0, 0);   // idle
-        motor_pulse(B_L, 0, 0);   // idle
+        motor_pulse(F_L, speed/2, 0);
+        motor_pulse(F_R, speed, 1);
+        motor_pulse(B_L, speed/2, 0);
+        motor_pulse(B_R, speed, 1);
     }
 
     // send_ack(ctrl.id, RESULT_SUCCESS, security_flag, NO_INFO);
