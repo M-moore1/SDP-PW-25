@@ -20,8 +20,6 @@
 #define REPORT_SET_FEATURE      0xFD
 #define REPORT_ID_OFFSET  13
 #define DATA_OFFSET       17
-#define IMU_INT_PIN   GPIO_NUM_18
-#define IMU_RESET_PIN GPIO_NUM_19
 #define IMU_MAX_ERROR  1
 
 extern quaternion_t g_imu_quat;

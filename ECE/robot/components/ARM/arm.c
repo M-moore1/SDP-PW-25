@@ -19,9 +19,9 @@ static void arm_pwm_timer_init(void) {
 
 // Servo instances 
 //  { pin, link_length, pwm_offset_us, current_angle, target_angle, pwm, channel }
-static servo_t servo_base     = {16, ARM_D1,  550,  45, 45, 1000, LEDC_CHANNEL_4};
-static servo_t servo_shoulder = {17, ARM_A2,  500,  45, 45, 1000, LEDC_CHANNEL_5};
-static servo_t servo_elbow    = {18, ARM_A3, 1120,  45, 45, 1120, LEDC_CHANNEL_6};
+static servo_t servo_base     = {SERVO_BASE_PIN,     ARM_D1,  550,  45, 45, 1000, SERVO_BASE_CHANNEL};
+static servo_t servo_shoulder = {SERVO_SHOULDER_PIN, ARM_A2,  500,  45, 45, 1000, SERVO_SHOULDER_CHANNEL};
+static servo_t servo_elbow    = {SERVO_ELBOW_PIN,    ARM_A3, 1120,  45, 45, 1120, SERVO_ELBOW_CHANNEL};
 
 // Current arm position 
 

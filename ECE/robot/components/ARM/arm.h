@@ -3,6 +3,7 @@
 
 #include "driver/ledc.h"
 #include "driver/gpio.h"
+#include "pinout.h"
 #include <math.h>
 
 // Kinematics constants 

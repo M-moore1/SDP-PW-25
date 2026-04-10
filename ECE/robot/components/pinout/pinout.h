@@ -40,6 +40,27 @@
 #define BR_MOTOR_PWM     LEDC_CHANNEL_3
 #define BR_MOTOR_TIMER   LEDC_TIMER_1 
 
+// Servo Base
+#define SERVO_BASE_PIN      GPIO_NUM_16
+#define SERVO_BASE_CHANNEL  LEDC_CHANNEL_4
+
+// Servo Shoulder
+#define SERVO_SHOULDER_PIN      GPIO_NUM_17
+#define SERVO_SHOULDER_CHANNEL  LEDC_CHANNEL_5
+
+// Servo Elbow
+#define SERVO_ELBOW_PIN      GPIO_NUM_18
+#define SERVO_ELBOW_CHANNEL  LEDC_CHANNEL_6
+
+// i2c
+#define i2c_scl_pin GPIO_NUM_22
+#define i2c_sda_pin GPIO_NUM_21
+
+//imu 
+#define IMU_INT_PIN   GPIO_NUM_18 // CHANGE
+#define IMU_RESET_PIN GPIO_NUM_19 // CHANGE
+
+
 //TAGS ESP LOG TAGS
 #define MAIN_TAG "ROBOT_MAIN"
 #define BLE_TAG  "ROBOT_BLE"
