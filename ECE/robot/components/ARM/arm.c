@@ -10,7 +10,7 @@ static void arm_pwm_timer_init(void) {
         
         .speed_mode      = LEDC_LOW_SPEED_MODE,
         .duty_resolution = LEDC_TIMER_14_BIT,   // 16,384 steps
-        .timer_num       = LEDC_TIMER_0,
+        .timer_num       = LEDC_TIMER_2,
         .freq_hz         = 50,                   // Standard servo frequency
         .clk_cfg         = LEDC_AUTO_CLK
     };
@@ -41,7 +41,7 @@ static void servo_init_channel(servo_t *s) {
         .speed_mode = LEDC_LOW_SPEED_MODE,
         .channel    = s->channel,
         .intr_type  = LEDC_INTR_DISABLE,
-        .timer_sel  = LEDC_TIMER_0,
+        .timer_sel  = LEDC_TIMER_2,
         .duty       = 0,
         .hpoint     = 0
     };

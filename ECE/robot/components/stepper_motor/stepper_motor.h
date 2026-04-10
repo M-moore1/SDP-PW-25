@@ -27,7 +27,7 @@ typedef struct step_mot {
     motor_state_t status; 
 } step_mot_t;
 
-void motor_init(step_mot_t* m, const int step_pin, const int dir_pin, const int en_pin, ledc_channel_t channel);
+void motor_init(step_mot_t* m, const int step_pin, const int dir_pin, const int en_pin, ledc_channel_t channel, ledc_timer_t timer);
 void stepper_enable(step_mot_t* m);
 void stepper_disable(step_mot_t* m);
 uint32_t map_speed_to_hz(int speed);

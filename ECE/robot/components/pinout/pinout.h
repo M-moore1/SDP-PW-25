@@ -17,24 +17,28 @@
 #define FL_MOTOR_DIR     GPIO_NUM_19
 #define FL_MOTOR_EN      GPIO_NUM_27
 #define FL_MOTOR_PWM     LEDC_CHANNEL_0
+#define FL_MOTOR_TIMER   LEDC_TIMER_0
 
 //Front Right Motor
 #define FR_MOTOR_STEP    GPIO_NUM_15
 #define FR_MOTOR_DIR     GPIO_NUM_2
 #define FR_MOTOR_EN      GPIO_NUM_27
 #define FR_MOTOR_PWM     LEDC_CHANNEL_1
+#define FR_MOTOR_TIMER   LEDC_TIMER_1
 
 //Back Left Motor
 #define BL_MOTOR_STEP    GPIO_NUM_25
 #define BL_MOTOR_DIR     GPIO_NUM_26
 #define BL_MOTOR_EN      GPIO_NUM_23
 #define BL_MOTOR_PWM     LEDC_CHANNEL_2
+#define BL_MOTOR_TIMER   LEDC_TIMER_0
 
 //Back Right Motor
 #define BR_MOTOR_STEP    GPIO_NUM_12
 #define BR_MOTOR_DIR     GPIO_NUM_33
 #define BR_MOTOR_EN      GPIO_NUM_23
 #define BR_MOTOR_PWM     LEDC_CHANNEL_3
+#define BR_MOTOR_TIMER   LEDC_TIMER_1 
 
 //TAGS ESP LOG TAGS
 #define MAIN_TAG "ROBOT_MAIN"
