@@ -11,7 +11,7 @@
 #define ARM_A2  6.25f
 #define ARM_A3  8.5f
 
-#define ARM_HOME_X  -5.0f
+#define ARM_HOME_X   0.0f
 #define ARM_HOME_Y   7.5f
 #define ARM_HOME_Z   5.5f
 

@@ -41,15 +41,15 @@
 #define BR_MOTOR_TIMER   LEDC_TIMER_1 
 
 // Servo Base
-#define SERVO_BASE_PIN      GPIO_NUM_16
+#define SERVO_BASE_PIN      16
 #define SERVO_BASE_CHANNEL  LEDC_CHANNEL_4
 
 // Servo Shoulder
-#define SERVO_SHOULDER_PIN      GPIO_NUM_17
+#define SERVO_SHOULDER_PIN      17
 #define SERVO_SHOULDER_CHANNEL  LEDC_CHANNEL_5
 
 // Servo Elbow
-#define SERVO_ELBOW_PIN      GPIO_NUM_18
+#define SERVO_ELBOW_PIN      18
 #define SERVO_ELBOW_CHANNEL  LEDC_CHANNEL_6
 
 // i2c

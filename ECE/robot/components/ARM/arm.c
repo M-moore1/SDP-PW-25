@@ -32,7 +32,7 @@ static float arm_z = ARM_HOME_Z;
 // Internal helpers 
 static float sin_d(float deg)          { return sinf(deg / 180.0f * (float)M_PI); }
 static float cos_d(float deg)          { return cosf(deg / 180.0f * (float)M_PI); }
-static float atan2_d(float y, float x) { return atan2f(y, x) / (float)M_PI * 180.0f; }
+static float atan2_d(float yy, float xx) { return atan2f(yy, xx) / (float)M_PI * 180.0f; }
 static float acos_d(float v)           { return acosf(v)      / (float)M_PI * 180.0f; }
 
 static void servo_init_channel(servo_t *s) {
@@ -52,7 +52,7 @@ static void servo_init_channel(servo_t *s) {
 static void servo_write(servo_t *s, float angle) {
     s->current_angle = angle;
     s->target_angle  = angle;   // keep in sync — no interpolation in this version
-    s->pwm           = angle * (10.0f / 9.0f) + (float)s->pwm_offset_us;
+    s->pwm           = angle * (100.0f / 9.0f) + (float)s->pwm_offset_us;
     uint32_t duty    = (uint32_t)(s->pwm * 16384.0f / 20000.0f);
     ledc_set_duty(LEDC_LOW_SPEED_MODE, s->channel, duty);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, s->channel);
@@ -74,22 +74,22 @@ int arm_ik_solve(float x, float y, float z, float servo_angles[3]) {
     float r    = sqrtf(r2);
     float cos1 = (r2 + ARM_A2 * ARM_A2 - ARM_A3 * ARM_A3) / (2.0f * r * ARM_A2);
 
-    if (cos1 < -1.0f || cos1 > 1.0f) {
+    /*if (cos1 < -1.0f || cos1 > 1.0f) {
         ESP_LOGW(ARM_TAG, "IK: shoulder acos domain error (cos=%.3f)", cos1);
         return 1;
-    }
+    }*/
     theta[1] = atan2_d(zr, xr) + acos_d(cos1);
 
     // θ2 — elbow: interior angle via law of cosines (complement form)
     float cos2 = (ARM_A3 * ARM_A3 + ARM_A2 * ARM_A2 - r2) / (2.0f * ARM_A2 * ARM_A3);
 
-    if (cos2 < -1.0f || cos2 > 1.0f) {
+    /*if (cos2 < -1.0f || cos2 > 1.0f) {
         ESP_LOGW(ARM_TAG, "IK: elbow acos domain error (cos=%.3f)", cos2);
         return 1;
-    }
-    theta[2] = 180.0f - acos_d(cos2);
+    }*/
+    theta[2] = 170.0f - acos_d(cos2);
 
-    // Joint limit checks
+   /* // Joint limit checks
     if (theta[0] < ARM_THETA0_MIN || theta[0] > ARM_THETA0_MAX) {
         ESP_LOGW(ARM_TAG, "IK: base %.1f° out of [%.0f, %.0f]",
                  theta[0], ARM_THETA0_MIN, ARM_THETA0_MAX);
@@ -104,7 +104,7 @@ int arm_ik_solve(float x, float y, float z, float servo_angles[3]) {
         ESP_LOGW(ARM_TAG, "IK: elbow %.1f° out of [%.0f, %.0f]",
                  theta[2], ARM_THETA2_MIN, ARM_THETA2_MAX);
         return 1;
-    }
+    }*/
 
     servo_angles[0] = theta[0];
     servo_angles[1] = theta[1];
