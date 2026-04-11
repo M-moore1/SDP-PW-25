@@ -178,7 +178,7 @@ void send_cmd(uint8_t* pkt, int sec_lvl) {
         uint8_t cipher_text[PACKET_SIZE] = {0};
         
         if(aes_gcm_encrypt_packet((const char *)pkt, cipher_text) == 0){
-            ESP_LOGI("SEND_CMD", "Secure packet sent (156 bytes)");
+            //ESP_LOGI("SEND_CMD", "Secure packet sent (156 bytes)");
             send_bytes_to_all(cipher_text, sizeof(cipher_text));
         }else{
             ESP_LOGE("SEND_CMD", "Encryption FAILED");

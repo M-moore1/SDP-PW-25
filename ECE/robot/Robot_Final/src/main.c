@@ -44,11 +44,11 @@ void ble_recieve_parser(void *pvParameters)
                 tag_check = aes_gcm_decrypt_packet(received_packet, plaintext, &pt_len);
 
                 if (tag_check == 0) {
-                    memcpy(cmd_packet.bytes, plaintext, 8);
+                    /*
                     ESP_LOGI(MAIN_TAG, "Decrypted Hex: %02X %02X %02X %02X %02X %02X %02X %02X",
                          cmd_packet.bytes[0], cmd_packet.bytes[1], cmd_packet.bytes[2], cmd_packet.bytes[3],
                          cmd_packet.bytes[4], cmd_packet.bytes[5], cmd_packet.bytes[6], cmd_packet.bytes[7]);
-
+                    */
                     memcpy(cmd_packet.bytes, plaintext, 8);
                 } else {
                     ESP_LOGW(MAIN_TAG, "Secure Mode - Decryption Failed");
