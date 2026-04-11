@@ -9,6 +9,7 @@ typedef enum {
 
 device_conn_t connected_devices[MAX_DEVICES];
 int num_connected = 0;
+volatile bool ble_congested = false;  // tracks BLE TX congestion state
 
 uint16_t robot_handle_table[ROBOT_IDX_NB];
 
@@ -149,12 +150,13 @@ void robot_ble_init(){
 }
 
 void send_bytes_to_all(uint8_t *packet, size_t len) {
+    if (ble_congested) return;  // drop if BLE TX queue is backed up
     for (int i = 0; i < MAX_DEVICES; i++) {
         if (connected_devices[i].conn_id != CONN_ID_INVALID && connected_devices[i].notify_enabled) {
             esp_ble_gatts_send_indicate(
                 connected_devices[i].gatts_if,
                 connected_devices[i].conn_id,
-                robot_handle_table[ROBOT_IDX_RX_VAL],  // notify on RX characteristic
+                robot_handle_table[ROBOT_IDX_RX_VAL],
                 len,
                 packet,
                 false
@@ -294,7 +296,16 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
                 dev->data_mode = WAITING;
                 if (num_connected > 0) num_connected--;
             }
+            ble_congested = false;  // reset on disconnect
             esp_ble_gap_start_advertising(&adv_params);
+            break;
+        }
+
+        // Congestion event — BLE TX queue full/clear feedback from stack
+        case ESP_GATTS_CONGEST_EVT:
+        {
+            ble_congested = param->congest.congested;
+            ESP_LOGW(BLE_TAG, "BLE congestion: %s", ble_congested ? "CONGESTED" : "CLEAR");
             break;
         }
 

@@ -111,7 +111,7 @@ void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_m
         motor_pulse(B_R, speed, 1);
     }
 
-    //send_ack(ctrl.id, RESULT_SUCCESS, security_flag, NO_INFO);
+    send_ack(ctrl.id, RESULT_SUCCESS, security_flag, NO_INFO);
 }
 
 void arm_cmd   (arm_format_t arm, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* B_L, step_mot_t* B_R){
@@ -381,7 +381,7 @@ void send_health_report(){
 
     send_cmd(health_report.bytes, security_flag);
 
-    //ESP_LOGI(CMD_TAG, "Sending Health Report");
+    ESP_LOGI(CMD_TAG, "Sending Health Report");
 }
 
 void send_HPA(){
