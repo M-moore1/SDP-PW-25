@@ -104,7 +104,7 @@ void parse_notify_and_process(char *line, int uds_fd) {
     }
 
 
-    uint8_t *payload = &data[1];
+    uint8_t *payload = data;
 
     robot_bt_packet_t pkt;
     memcpy(pkt.bytes, payload, 8);

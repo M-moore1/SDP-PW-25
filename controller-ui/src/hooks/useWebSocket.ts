@@ -10,6 +10,7 @@ interface UseWebSocketOptions {
   encryptionKey?: string;
   /** Called with the actual payload sent over the wire (encrypted or plain JSON string). */
   onMessageSent?: (payload: string) => void;
+  onMessage?: (msg: any) => void;
 }
 
 interface UseWebSocketReturn {
@@ -33,6 +34,7 @@ const HEARTBEAT_INTERVAL = 25000; // 25s
 export function useWebSocket(url: string, options?: UseWebSocketOptions): UseWebSocketReturn {
   const encryptionKey = options?.encryptionKey;
   const onMessageSent = options?.onMessageSent;
+  const onMessage = options?.onMessage;
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const [lastError, setLastError] = useState<string | null>(null);
 
@@ -194,15 +196,22 @@ export function useWebSocket(url: string, options?: UseWebSocketOptions): UseWeb
       };
 
       ws.onmessage = (event) => {
-        // Handle incoming messages (e.g., pong responses)
         try {
           const data = JSON.parse(event.data);
+
           if (data.type === 'pong') {
-            // Heartbeat response received
             console.debug('Heartbeat pong received');
+            return;
           }
+
+          // 🔥 THIS IS THE FIX
+          console.log("FROM SERVER:", data);
+
+          if (onMessage) {
+            onMessage(data);
+          }
+
         } catch (error) {
-          // Ignore parse errors for non-JSON messages
           console.debug('Received non-JSON message:', event.data);
         }
       };

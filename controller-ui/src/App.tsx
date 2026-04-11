@@ -44,6 +44,18 @@ function App() {
   const { status, sendMessage, lastError } = useWebSocket(WS_URL, {
     encryptionKey: encryptionEnabled && ENCRYPTION_KEY ? ENCRYPTION_KEY : undefined,
     onMessageSent: logMessage,
+
+    onMessage: (msg: any) => {
+      console.log("UI RECEIVED:", msg);
+
+      setMessageLog((prev) => [
+        {
+          payload: JSON.stringify(msg),
+          timestamp: new Date().toLocaleTimeString(),
+        },
+        ...prev,
+      ].slice(0, 10));
+    },
   });
 
   const sendActiveDirections = useCallback((directions: Set<Direction>) => {
