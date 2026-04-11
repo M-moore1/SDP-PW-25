@@ -2,6 +2,7 @@
 #include "Robot_BLE.h"
 #include "imu.h"
 #include "arm.h"
+#include "aes_gcm_encrypt.h"
 
 volatile int security_flag = 0;
 volatile uint16_t AC = 0x3FF;  // PUT IN NVS
