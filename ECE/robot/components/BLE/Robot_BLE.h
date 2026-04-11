@@ -1,4 +1,3 @@
-// Robot_BLE.h
 #ifndef ROBOT_BLE_H
 #define ROBOT_BLE_H
 
@@ -46,9 +45,14 @@ extern QueueHandle_t ble_recieve_queue;
 enum
 {
     ROBOT_IDX_SVC,
-    ROBOT_IDX_CHAR,
-    ROBOT_IDX_VAL,
-    ROBOT_IDX_CFG,
+
+    ROBOT_IDX_CHAR,      // TX char declaration  (central → peripheral, WRITE)
+    ROBOT_IDX_VAL,       // TX char value        (0xFF01)
+
+    ROBOT_IDX_RX_CHAR,   // RX char declaration  (peripheral → central, NOTIFY)
+    ROBOT_IDX_RX_VAL,    // RX char value        (0xFF02)
+    ROBOT_IDX_CFG,       // RX CCCD (notify subscription descriptor)
+
     ROBOT_IDX_NB,
 };
 
@@ -66,4 +70,3 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
 void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
 
 #endif
-

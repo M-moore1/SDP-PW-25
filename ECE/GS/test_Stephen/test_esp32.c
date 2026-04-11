@@ -13,7 +13,7 @@
 
 #define byte_test_size  156
 #define AVG_SAMPLES    100   
-#define SEND_INTERVAL  1000
+#define SEND_INTERVAL  50
 
 //gcc -O2 -Wall -Wextra test_esp32.c ../includes/ble/pmod_esp32.c -I.../includes/cmd_structure ../includes/ble/uart_queue.c -o test_esp.o
 
@@ -38,7 +38,7 @@ int main() {
     printf("Starting ESP32 BLE Test\r\n");
     ble_init(bt_uart);
 
-    uint8_t instruction[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    uint8_t instruction[8] = { 0x85, 0x90, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
     long message_end = 0;
     long message_start = 0;
@@ -48,10 +48,10 @@ int main() {
 
     while(1){
         ble_uart_check(bt_uart);
-        char rx_buffer[256]; 
+        char rx_buffer[1024]; 
 
         if (uart_queue_pop(&uart_queue, rx_buffer) == 0){
-            printf("[UART OUTPUT] %s\r\n", rx_buffer);
+            //printf("[UART OUTPUT] %s\r\n", rx_buffer);
             if (strstr(rx_buffer, "NOTIFY") != NULL) 
             {
                 
@@ -134,7 +134,7 @@ int main() {
         long now = clock() / (CLOCKS_PER_SEC / 1000000);
         if (now - last >= SEND_INTERVAL * 1000) {
             message_start = now;
-            //ble_send_instruction(bt_uart, instruction);
+            ble_send_instruction(bt_uart, instruction);
             //ble_send_pkt(bt_uart, payload, 156);
             last = now;
         }
