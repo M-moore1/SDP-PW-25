@@ -51,7 +51,7 @@ int main() {
         char rx_buffer[1024]; 
 
         if (uart_queue_pop(&uart_queue, rx_buffer) == 0){
-            //printf("[UART OUTPUT] %s\r\n", rx_buffer);
+            printf("[UART OUTPUT] %s\r\n", rx_buffer);
             if (strstr(rx_buffer, "NOTIFY") != NULL) 
             {
                 
@@ -134,7 +134,7 @@ int main() {
         long now = clock() / (CLOCKS_PER_SEC / 1000000);
         if (now - last >= SEND_INTERVAL * 1000) {
             message_start = now;
-            ble_send_instruction(bt_uart, instruction);
+            //ble_send_instruction(bt_uart, instruction);
             //ble_send_pkt(bt_uart, payload, 156);
             last = now;
         }

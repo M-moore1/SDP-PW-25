@@ -33,7 +33,13 @@
 #define PAYLOAD_BYTES    156
 #define PAYLOAD_HEX_LEN  (PAYLOAD_BYTES * 2)  
 #define PACKET_BYTES     160                   
-#define PACKET_HEX_LEN   (PACKET_BYTES * 2)  
+#define PACKET_HEX_LEN   (PACKET_BYTES * 2)
+
+// Custom GATT service indices (discovered via AT+BLEGATTCCHAR)
+#define ROBOT_SRV      3  // Custom robot service
+#define ROBOT_TX_CHR   1  // 0xFF01 — central writes commands here
+#define ROBOT_RX_CHR   2  // 0xFF02 — peripheral notifies responses here
+#define ROBOT_RX_DESC  1  // CCCD descriptor on RX characteristic
 
 extern volatile int BLE_CONNECTED;
 
@@ -51,7 +57,6 @@ int pmod_esp32_reset(int uart_fd);
 int pmod_esp32_init(int uart_fd);
 
 // BLE Functions
-
 int get_pmod_mac(int uart_fd, char *MAC_Output);
 int pmod_name(int uart_fd, const char *set_name, char *out_name); 
 
