@@ -142,10 +142,10 @@ void app_main()
     ESP_ERROR_CHECK(nvs_flash_init()); // Initialize NVS
     robot_ble_init();                  // Initialize BLE
 
-    motor_init(&FL, FL_MOTOR_STEP, FL_MOTOR_DIR, FL_MOTOR_EN, FL_MOTOR_PWM, FL_MOTOR_TIMER );
-    motor_init(&BL, BL_MOTOR_STEP, BL_MOTOR_DIR, BL_MOTOR_EN, BL_MOTOR_PWM, BL_MOTOR_TIMER);
-    motor_init(&FR, FR_MOTOR_STEP, FR_MOTOR_DIR, FR_MOTOR_EN, FR_MOTOR_PWM, FR_MOTOR_TIMER );
-    motor_init(&BR, BR_MOTOR_STEP, BR_MOTOR_DIR, BR_MOTOR_EN, BR_MOTOR_PWM, BR_MOTOR_TIMER );
+    motor_init(&front_left, FL_MOTOR_STEP, FL_MOTOR_DIR, FL_MOTOR_EN, FL_MOTOR_PWM, FL_MOTOR_TIMER );
+    motor_init(&back_left, BL_MOTOR_STEP, BL_MOTOR_DIR, BL_MOTOR_EN, BL_MOTOR_PWM, BL_MOTOR_TIMER);
+    motor_init(&front_right, FR_MOTOR_STEP, FR_MOTOR_DIR, FR_MOTOR_EN, FR_MOTOR_PWM, FR_MOTOR_TIMER );
+    motor_init(&back_right, BR_MOTOR_STEP, BR_MOTOR_DIR, BR_MOTOR_EN, BR_MOTOR_PWM, BR_MOTOR_TIMER );
     arm_init();
 
     cmd_queue = xQueueCreate(10, sizeof(uint64_t)); // Initialize the command queue
@@ -175,7 +175,7 @@ void app_main()
                     //case 0: send_imu(1); break;
                     //case 1: send_imu(2); break;
                     //case 2: send_imu(3); break;
-                    //case 3: send_health_report(); break;
+                    case 3: send_health_report(); break;
                 }
                 
                 rotation_step = (rotation_step + 1) % 4; 
