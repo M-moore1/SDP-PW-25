@@ -150,8 +150,7 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
         json_get_u8(root, "L",  &l,     0, 1)   ||
         json_get_u8(root, "R",  &r_move,0, 1)   ||
         json_get_u8(root, "S",  &speed, 0, 100) ||
-        json_get_u8(root, "PL", &pl,    0, 3)   ||
-        json_get_u8(root, "ID", &pl,    1, 2047)) 
+        json_get_u8(root, "PL", &pl,    0, 3)  ) 
     {
       uds_send_json(uds_fd, "{\"type\":\"ERR\",\"msg\":\"bad C fields\"}");
       cJSON_Delete(root);
