@@ -1,50 +1,33 @@
-// gs_bridge.c
-// -----------------------------------------------------------------------------
-// Bridge daemon:
-//   Node.js <-> Unix Domain Socket (JSON, length-prefixed) <-> C bridge
-//   C bridge <-> UART (BT2/RN-42 SPP) (binary framed 64-bit payload) <-> ESP32
-//
-// UART frame format (v1):
-//   [0]=0xAA [1]=0x55 [2]=len(=8) [3..10]=payload(8 bytes, big-endian) [11]=xor
-//
-// UDS frame format:
-//   4-byte big-endian length, then JSON bytes
-//
-// Build example:
-//   make all
-//   make clean
-// -----------------------------------------------------------------------------
+#define _GNU_SOURCE
+#include <arpa/inet.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/select.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/un.h>
+#include <termios.h>
+#include <unistd.h>
+#include <time.h>
 
-#define _GNU_SOURCE                     // Enables some GNU extensions (safe on Linux)
-#include <arpa/inet.h>                  // htonl/ntohl for endian conversion
-#include <errno.h>                      // errno and error codes
-#include <fcntl.h>                      // open(), fcntl() flags
-#include <stdint.h>                     // uint8_t/uint16_t/uint32_t/uint64_t
-#include <stdio.h>                      // printf(), perror()
-#include <stdlib.h>                     // malloc(), free(), getenv()
-#include <string.h>                     // memset(), memcpy(), strncpy(), strcmp()
-#include <sys/select.h>                 // select()
-#include <sys/socket.h>                 // socket(), bind(), listen(), accept()
-#include <sys/stat.h>                   // chmod()
-#include <sys/un.h>                     // sockaddr_un for Unix domain sockets
-#include <termios.h>                    // termios UART config
-#include <unistd.h>                     // read(), write(), close(), unlink()
 #include "includes/cmd_structure.h"
 #include "../includes/ble/pmod_esp32.h"
 #include "includes/ble/uart_queue.h"
 #include "includes/cmd_parser/cmd_parser.h"
 #include "includes/json_uds/json_uds.h"
+#include "cJSON.h"
 
-#include "cJSON.h"                     // cJSON library header (vendored)
-#include <time.h>
-// 004B1224B0A6
-// ------------------------- Defaults / Config -------------------------
-
-#define DEFAULT_UDS_PATH "/tmp/gs_bridge.sock" // Socket file path for Node<->C IPC
-#define DEFAULT_UART_DEV "/dev/ttyPS2"         // Default UART device (Zynq PS UART)
-
+#define DEFAULT_UDS_PATH "/tmp/gs_bridge.sock"
+#define DEFAULT_UART_DEV "/dev/ttyPS2"
 #define MAX_TRACKED_CMDS 64
 
+// =========================
+// LATENCY TRACKING
+// =========================
 typedef struct {
     uint16_t id;
     uint64_t timestamp_ms;
@@ -53,8 +36,13 @@ typedef struct {
 
 static cmd_tracker_t cmd_buffer[MAX_TRACKED_CMDS];
 
-void store_command(uint16_t id) {
+uint64_t get_now_ms() {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint64_t)(ts.tv_sec * 1000ULL + ts.tv_nsec / 1000000ULL);
+}
 
+void store_command(uint16_t id) {
     uint64_t now = get_now_ms();
 
     for (int i = 0; i < MAX_TRACKED_CMDS; i++) {
@@ -66,114 +54,20 @@ void store_command(uint16_t id) {
         }
     }
 
-    // Optional: overwrite oldest if full
     cmd_buffer[0].id = id;
     cmd_buffer[0].timestamp_ms = now;
     cmd_buffer[0].valid = 1;
 }
 
-void parse_notify_and_process(char *line, int uds_fd) {
-
-    int conn, srv, chr, ascii_len;
-
-    // ---------------------------------------
-    // Parse BLE notify header
-    // ---------------------------------------
-    if (sscanf(line, "+NOTIFY:%d,%d,%d,%d,", &conn, &srv, &chr, &ascii_len) != 4)
-        return;
-
-    // ---------------------------------------
-    // Move pointer to hex payload
-    // ---------------------------------------
-    char *p = line;
-    for (int i = 0; i < 4; i++) {
-        p = strchr(p, ',');
-        if (!p) return;
-        p++;
-    }
-
-    int byte_len = ascii_len / 2;
-
-    uint8_t data[512];
-
-    // ---------------------------------------
-    // Convert ASCII hex → binary
-    // ---------------------------------------
-    for (int i = 0; i < byte_len; i++) {
-        sscanf(&p[i * 2], "%2hhx", &data[i]);
-    }
-
-    // ---------------------------------------
-    // Validate packet framing
-    // ---------------------------------------
-    if (data[0] != 0x0A || data[byte_len - 1] != 0x0D)
-        return;
-
-    uint8_t *payload = &data[1];
-
-    // ---------------------------------------
-    // Decode 64-bit robot packet
-    // ---------------------------------------
-    robot_bt_packet_t pkt;
-    memcpy(pkt.bytes, payload, 8);
-
-    // ---------------------------------------
-    // 1. Convert to JSON and send to UI
-    // ---------------------------------------
-    cJSON *json = robot_packet_to_json(pkt);
-
-    if (json && uds_fd >= 0) {
-        char *json_str = cJSON_PrintUnformatted(json);
-        if (json_str) {
-            uds_send_json(uds_fd, json_str);
-            free(json_str);
-        }
-    }
-
-    if (json) cJSON_Delete(json);
-
-    // ---------------------------------------
-    // 2. Extract ID for latency tracking
-    // ---------------------------------------
-    uint16_t id = 0;
-
-    switch (pkt.ctrl.type) {
-        case System_CMD:
-            id = pkt.sys.id;
-            break;
-
-        case Query_CMD:
-            id = pkt.query.id;
-            break;
-
-        case ACK_CMD:
-            id = pkt.ack.id;
-            break;
-    }
-
-    // ---------------------------------------
-    // 3. Process latency (if valid)
-    // ---------------------------------------
-    if (id != 0) {
-        process_received_id(id, uds_fd);
-    }
-}
-
-void process_received_id(uint16_t id, int uds_fd);
-
 void process_received_id(uint16_t id, int uds_fd) {
-
     uint64_t now = get_now_ms();
 
     for (int i = 0; i < MAX_TRACKED_CMDS; i++) {
-
         if (cmd_buffer[i].valid && cmd_buffer[i].id == id) {
 
             uint64_t latency = now - cmd_buffer[i].timestamp_ms;
-
             cmd_buffer[i].valid = 0;
 
-            // Send to UI
             cJSON *root = cJSON_CreateObject();
             cJSON_AddStringToObject(root, "type", "LATENCY");
             cJSON_AddNumberToObject(root, "id", id);
@@ -184,251 +78,223 @@ void process_received_id(uint16_t id, int uds_fd) {
 
             free(json);
             cJSON_Delete(root);
-
             return;
         }
     }
-
-    printf("ID not found: %d\n", id);
 }
 
+// =========================
+// BLE NOTIFY PARSER
+// =========================
+void parse_notify_and_process(char *line, int uds_fd) {
 
+    int conn, srv, chr, ascii_len;
 
+    if (sscanf(line, "+NOTIFY:%d,%d,%d,%d,", &conn, &srv, &chr, &ascii_len) != 4)
+        return;
 
+    char *p = line;
+    for (int i = 0; i < 4; i++) {
+        p = strchr(p, ',');
+        if (!p) return;
+        p++;
+    }
+
+    int byte_len = ascii_len / 2;
+    uint8_t data[512];
+
+    for (int i = 0; i < byte_len; i++) {
+        sscanf(&p[i * 2], "%2hhx", &data[i]);
+    }
+
+    if (data[0] != 0x0A || data[byte_len - 1] != 0x0D)
+        return;
+
+    uint8_t *payload = &data[1];
+
+    robot_bt_packet_t pkt;
+    memcpy(pkt.bytes, payload, 8);
+
+    cJSON *json = robot_packet_to_json(pkt);
+
+    if (json && uds_fd >= 0) {
+        char *json_str = cJSON_PrintUnformatted(json);
+        uds_send_json(uds_fd, json_str);
+        free(json_str);
+    }
+
+    if (json) cJSON_Delete(json);
+
+    uint16_t id = 0;
+
+    switch (pkt.ctrl.type) {
+        case System_CMD: id = pkt.sys.id; break;
+        case Query_CMD: id = pkt.query.id; break;
+        case ACK_CMD: id = pkt.ack.id; break;
+    }
+
+    if (id != 0)
+        process_received_id(id, uds_fd);
+}
+
+// =========================
+// JSON CHECK
+// =========================
 int looks_like_json(const char *s) {
-  if (!s) return 0;
-  while (*s == ' ' || *s == '\n' || *s == '\r' || *s == '\t') s++;
-  return (*s == '{' || *s == '[');
+    if (!s) return 0;
+    while (*s == ' ' || *s == '\n' || *s == '\r' || *s == '\t') s++;
+    return (*s == '{' || *s == '[');
 }
 
-
-// ------------------------- Main -------------------------
-
+// =========================
+// MAIN
+// =========================
 int main(int argc, char **argv) {
-  setvbuf(stdout, NULL, _IOLBF, 0);  // Line-buffer stdout immediately
 
-  const char *uart_dev = DEFAULT_UART_DEV;
-  const char *env_uart = getenv("UART_DEV");
-  if (env_uart && env_uart[0]) uart_dev = env_uart;
-  if (argc >= 2) uart_dev = argv[1];
+    setvbuf(stdout, NULL, _IOLBF, 0);
 
-  printf("Hello — uart_dev=%s\n", uart_dev);  // Will now appear
+    const char *uart_dev = DEFAULT_UART_DEV;
+    if (argc >= 2) uart_dev = argv[1];
 
-  int uart_fd = uart_open_config(uart_dev, DEFAULT_UART_BAUD);
-  if (uart_fd < 0) {
-    fprintf(stderr, "ERROR: uart_open_config(%s) failed: %s\n",
-            uart_dev, strerror(errno));
-    return 1;
-  }
-  printf("UART opened: fd=%d\n", uart_fd);
-  // ...
-  ble_init(uart_fd);
-  
-  const char *uds_path = DEFAULT_UDS_PATH;                 // UDS path (could also make configurable)
-
-  int uds_listen = uds_server_listen(uds_path);            // Create UDS listening socket
-  if (uds_listen < 0) return 1;                            // If failed, exit
-
-  printf("Bridge up. UDS=%s UART=%s\n", uds_path, uart_dev);// Helpful startup message
-
-  int uds_client = -1;                                     // Node client fd (none yet)
-  int bt_connect_attempted = 0;
-
-  // -------------------------------
-  // MAIN EVENT LOOP (SELECT-BASED)
-  // Handles FULL DUPLEX communication:
-  //   - UI → Robot (UDS → UART → BLE)
-  //   - Robot → UI (BLE → UART → UDS)
-  // -------------------------------
-  while (1) {
-
-    // -------------------------------
-    // ACCEPT NODE CONNECTION
-    // Only one client allowed at a time
-    // -------------------------------
-    if (uds_client < 0) {
-      printf("Waiting for Node connection...\n");
-
-      uds_client = accept(uds_listen, NULL, NULL);
-      if (uds_client < 0) {
-        perror("accept");
-        continue;
-      }
-
-      // Set non-blocking mode so select() works properly
-      fcntl(uds_client, F_SETFL, O_NONBLOCK);
-
-      printf("Node connected.\n");
-
-      // -------------------------------
-      // BLE CONNECTION (RUNS ONCE)
-      // Connect ESP32 after UI connects
-      // NOTE: Could be upgraded later to reconnect dynamically
-      // -------------------------------
-      if (!bt_connect_attempted) {
-        bt_connect_attempted = 1;
-
-        printf("BLE: connecting to ESP32 MAC %s...\n", ESP32_MAC);
-
-        if (ble_connect(uart_fd, ESP32_MAC) != 0) {
-          printf("BLE: connect failed\n");
-        } else {
-          printf("BLE: connected\n");
-        }
-      }
+    int uart_fd = uart_open_config(uart_dev, DEFAULT_UART_BAUD);
+    if (uart_fd < 0) {
+        perror("UART open failed");
+        return 1;
     }
 
-    // -------------------------------
-    // SELECT SETUP (SAFE VERSION)
-    // FIX: Only add uds_client if valid (prevents FD_SET(-1) bug)
-    // -------------------------------
-    fd_set rfds;
-    FD_ZERO(&rfds);
+    ble_init(uart_fd);
 
-    if (uds_client >= 0)
-      FD_SET(uds_client, &rfds);   // Monitor Node socket (UI → Robot)
+    int uds_listen = uds_server_listen(DEFAULT_UDS_PATH);
+    if (uds_listen < 0) return 1;
 
-    FD_SET(uart_fd, &rfds);        // Monitor UART (Robot → UI)
+    int uds_client = -1;
+    int bt_connected = 0;
 
-    int maxfd = uart_fd;
-    if (uds_client > maxfd) maxfd = uds_client;
+    while (1) {
 
-    // Timeout = 20ms (keeps system responsive)
-    struct timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = 20000;
+        // =========================
+        // ACCEPT UI
+        // =========================
+        if (uds_client < 0) {
+            printf("Waiting for Node...\n");
+            uds_client = accept(uds_listen, NULL, NULL);
+            if (uds_client < 0) continue;
 
-    int rc = select(maxfd + 1, &rfds, NULL, NULL, &tv);
+            fcntl(uds_client, F_SETFL, O_NONBLOCK);
 
-    if (rc < 0) {
-      if (errno == EINTR) continue;
-      perror("select");
-      break;
-    }
+            printf("Node connected\n");
 
-    // =====================================================
-    // UI → ROBOT PATH (UDS READ)
-    // =====================================================
-    if (uds_client >= 0 && FD_ISSET(uds_client, &rfds)) {
-
-      // Read 4-byte length prefix
-      uint32_t len_be = 0;
-      int r = read_full(uds_client, &len_be, 4);
-
-      // Node disconnected
-      if (r == 0) {
-        printf("Node disconnected\n");
-        close(uds_client);
-        uds_client = -1;
-        continue;
-      }
-
-      if (r > 0) {
-
-        uint32_t len = ntohl(len_be);
-
-        // FIX: Limit JSON size (prevents memory abuse)
-        if (len == 0 || len > 4096) {
-          close(uds_client);
-          uds_client = -1;
-          continue;
+            if (!bt_connected) {
+                bt_connected = 1;
+                ble_connect(uart_fd, ESP32_MAC);
+            }
         }
 
-        char *buf = malloc(len + 1);
-        if (!buf) continue;
+        // =========================
+        // SELECT SETUP
+        // =========================
+        fd_set rfds;
+        FD_ZERO(&rfds);
 
-        int r2 = read_full(uds_client, buf, len);
+        if (uds_client >= 0)
+            FD_SET(uds_client, &rfds);
 
-        if (r2 <= 0) {
-          free(buf);
-          close(uds_client);
-          uds_client = -1;
-          continue;
+        FD_SET(uart_fd, &rfds);
+
+        int maxfd = uart_fd;
+        if (uds_client > maxfd) maxfd = uds_client;
+
+        struct timeval tv = {0, 20000};
+
+        int rc = select(maxfd + 1, &rfds, NULL, NULL, &tv);
+        if (rc < 0) {
+            if (errno == EINTR) continue;
+            perror("select");
+            break;
         }
 
-        buf[len] = '\0';
+        // =========================
+        // UI → ROBOT
+        // =========================
+        if (uds_client >= 0 && FD_ISSET(uds_client, &rfds)) {
 
-        // -------------------------------
-        // Determine if plaintext JSON or encrypted
-        // -------------------------------
-        if (looks_like_json(buf)) {
-          cJSON *probe = cJSON_Parse(buf);
-          if (probe) {
-            cJSON_Delete(probe);
+            uint32_t len_be;
+            int r = read_full(uds_client, &len_be, 4);
 
-            // Send instruction to robot
-            handle_node_json(uart_fd, uds_client, buf);
-          }
-        } else {
-          // Encrypted path
-          handle_encrypted_data(uart_fd, uds_client, buf);
-        }
-
-        free(buf);
-      }
-    }
-
-    // =====================================================
-    // ROBOT → UI PATH (UART READ)
-    // =====================================================
-
-
-      uint8_t tmp[256];
-      ble_uart_check(uart_fd);
-
-      if (uart_queue_pop(&uart_queue, tmp) == 0){
-
-        // Line buffer for assembling UART messages
-        static char uart_line[4096];
-        static int uart_idx = 0;
-
-        for (ssize_t i = 0; i < strlen(tmp); i++) {
-
-          char c = tmp[i];
-
-          // -------------------------------
-          // End of line → process message
-          // -------------------------------
-          if (c == '\n') {
-
-            uart_line[uart_idx] = '\0';
-
-            // Debug print (can disable later)
-            printf("[UART] %s\n", uart_line);
-
-            // -------------------------------
-            // BLE NOTIFICATION HANDLING
-            // FIX: Only send to UI if connected
-            // -------------------------------
-            if (strstr(uart_line, "+NOTIFY:") != NULL) {
-              if (uds_client >= 0) {
-                parse_notify_and_process(uart_line, uds_client);
-              }
+            if (r == 0) {
+                close(uds_client);
+                uds_client = -1;
+                continue;
             }
 
-            uart_idx = 0;
-          }
-          else {
-            // Build line safely
-            if (uart_idx < sizeof(uart_line) - 1) {
-              uart_line[uart_idx++] = c;
-            } else {
-              // FIX: Prevent buffer corruption
-              uart_idx = 0;
+            if (r > 0) {
+
+                uint32_t len = ntohl(len_be);
+                if (len == 0 || len > 4096) continue;
+
+                char *buf = malloc(len + 1);
+                read_full(uds_client, buf, len);
+                buf[len] = '\0';
+
+                if (looks_like_json(buf)) {
+                    cJSON *probe = cJSON_Parse(buf);
+                    if (probe) {
+                        cJSON_Delete(probe);
+
+                        handle_node_json(uart_fd, uds_client, buf);
+
+                        // OPTIONAL: extract ID here and track
+                        // store_command(id);
+                    }
+                } else {
+                    handle_encrypted_data(uart_fd, uds_client, buf);
+                }
+
+                free(buf);
             }
-          }
         }
-      }
-    
-  }
 
-  // -------------------------------
-  // CLEANUP (on exit)
-  // -------------------------------
-  if (uds_client >= 0) close(uds_client);
-  close(uds_listen);
-  close(uart_fd);
-  unlink(uds_path);
+        // =========================
+        // ROBOT → UI (FIXED)
+        // =========================
+        if (FD_ISSET(uart_fd, &rfds)) {
 
-  return 0;
+            ble_uart_check(uart_fd);
+
+            char tmp[256];
+
+            if (uart_queue_pop(&uart_queue, tmp) == 0) {
+
+                static char line[4096];
+                static int idx = 0;
+
+                int len = strlen(tmp);
+
+                for (int i = 0; i < len; i++) {
+
+                    char c = tmp[i];
+
+                    if (c == '\n') {
+                        line[idx] = '\0';
+
+                        printf("[UART] %s\n", line);
+
+                        if (strstr(line, "+NOTIFY:") && uds_client >= 0) {
+                            parse_notify_and_process(line, uds_client);
+                        }
+
+                        idx = 0;
+                    }
+                    else {
+                        if (idx < sizeof(line) - 1)
+                            line[idx++] = c;
+                        else
+                            idx = 0;
+                    }
+                }
+            }
+        }
+    }
+
+    return 0;
 }
