@@ -389,31 +389,20 @@ int ble_init(int uart_fd) {
     BLE_INITIALIZED = 0;
     BLE_CONNECTED   = 0;
 
-    //printf("[INIT] Starting BLE initialization...\r\n");
-
-    //printf("[INIT] Resetting ESP32 hardware...\r\n");
     if (pmod_esp32_init(uart_fd) < 0) {
-        //printf("[INIT][ERROR] Hardware reset failed\r\n");
         return -1;
     }
-    //printf("[INIT] Hardware reset complete\r\n");
     usleep(100000);
 
-    //printf("[INIT] Disabling WiFi...\r\n");
     if (send_at_cmd(uart_fd, "AT+CWMODE=0\r\n", NULL, NULL, 1000) < 0) {
-        //printf("[INIT][ERROR] Failed to disable WiFi\r\n");
         return -1;
     }
-    //printf("[INIT] WiFi disabled\r\n");
     usleep(100000);
 
-    //printf("[INIT] Tearing down BLE stack...\r\n");
     send_at_cmd(uart_fd, "AT+BLEINIT=0\r\n", NULL, NULL, 1000);
     usleep(500000);
 
-    //printf("[INIT] Starting BLE stack...\r\n");
     if (send_at_cmd(uart_fd, "AT+BLEINIT=1\r\n", NULL, NULL, 2000) < 0) {
-        //printf("[INIT][ERROR] Failed to start BLE stack\r\n");
         return -1;
     }
     usleep(200000);
@@ -421,37 +410,42 @@ int ble_init(int uart_fd) {
     char bleinit_state[32] = {0};
     if (send_at_cmd(uart_fd, "AT+BLEINIT?\r\n", "+BLEINIT:", bleinit_state, 2000) < 0
         || bleinit_state[0] != '1') {
-        //printf("[INIT][ERROR] BLE stack did not start (state='%s')\r\n", bleinit_state);
         return -1;
     }
-    //printf("[INIT] BLE stack confirmed up\r\n");
 
-    //printf("[INIT] Firmware version:\r\n");
-    //send_at_cmd(uart_fd, "AT+GMR\r\n", NULL, NULL, 1000);
+    /* NEW: diagnostic - check firmware version */
+    write(uart_fd, "AT+GMR\r\n", strlen("AT+GMR\r\n"));
+    usleep(500000);
+    char diag_buf[512] = {0};
+    int n = uart_read_and_queue(uart_fd, diag_buf, sizeof(diag_buf) - 1);
+    if (n > 0) printf("[PMOD FW VERSION] %s\n", diag_buf);
 
-    //printf("[INIT] Setting security params...\r\n");
+    /* NEW: diagnostic - check stored bonds */
+    write(uart_fd, "AT+BLEGETPEERDEV=0\r\n", strlen("AT+BLEGETPEERDEV=0\r\n"));
+    usleep(500000);
+    memset(diag_buf, 0, sizeof(diag_buf));
+    n = uart_read_and_queue(uart_fd, diag_buf, sizeof(diag_buf) - 1);
+    if (n > 0) printf("[PMOD STORED BONDS] %s\n", diag_buf);
+    /* END NEW */
+
     if (send_at_cmd(uart_fd, "AT+BLESECPARAM=4,1,16,3,3,0\r\n", NULL, NULL, 1000) < 0) {
-        //printf("[INIT][ERROR] Failed to set security params\r\n");
         return -1;
     }
     if (send_at_cmd(uart_fd, "AT+BLESETKEY=123456\r\n", NULL, NULL, 1000) < 0) {
-        //printf("[INIT][ERROR] Failed to set passkey\r\n");
         return -1;
     }
-    //printf("[INIT] Security configured\r\n");
 
-    //printf("[INIT] Setting device name...\r\n");
     if (pmod_name(uart_fd, PMOD_DEV_NAME, NULL) < 0) {
-        //printf("[INIT][ERROR] Failed to set device name\r\n");
         return -1;
     }
 
-    //printf("[INIT] ==========================================\r\n");
     printf("[INIT] BLE ready\r\n");
-    //printf("[INIT] ==========================================\r\n");
     BLE_INITIALIZED = 1;
     return 0;
 }
+
+
+
 
 int ble_send_pkt(int uart_fd, uint8_t *data, int data_len) {
     if (data_len != PAYLOAD_BYTES) return -1;
