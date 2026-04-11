@@ -220,6 +220,6 @@ int main(int argc, char **argv) {
   close(uds_listen);                                        // Close UDS server
   close(uart_fd);                                           // Close UART
   unlink(uds_path);                                         // Remove socket file
-
+ 
   return 0;                                                 // Exit
 }
