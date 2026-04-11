@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
         
 
         if (looks_like_json(buf)) {
-          printf("I GOT a JSON\r\n");
+          //printf("I GOT a JSON\r\n");
           cJSON *probe = cJSON_Parse(buf);
           if (probe) {
             cJSON_Delete(probe);
@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
         }
         // If not handled, attempt decrypt path or send raw string over Bluetooth
         if (!handled) {
-          printf("I GOT SOMETHING ENCRYPTED\r\n");
+          //printf("I GOT SOMETHING ENCRYPTED\r\n");
           handle_encrypted_data(uart_fd, uds_client, buf);
         }
 
@@ -211,7 +211,7 @@ int main(int argc, char **argv) {
     ble_uart_check(uart_fd);
     char rx_buffer[256]; 
     if (uart_queue_pop(&uart_queue, rx_buffer) == 0){
-       printf("[UART OUTPUT] %s\r\n", rx_buffer);
+       //printf("[UART OUTPUT] %s\r\n", rx_buffer);
     }
   }
 

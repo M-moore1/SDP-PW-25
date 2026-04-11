@@ -180,7 +180,6 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
       cJSON_Delete(root);
       return -1;
     }
-    printf("Doing this\r\n");
     packet.ctrl.type  = CONTROL_CMD;
     packet.ctrl.pl    = pl;
     packet.ctrl.w     = f;
