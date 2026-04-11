@@ -17,4 +17,5 @@ void query_cmd(int uart_fd, query_format_t query_inst);
 int handle_encrypted_data(int uart_fd, int uds_fd, const char *encrypt_str);
 int handle_node_json(int uart_fd, int uds_fd, const char *json_str);
 cJSON* robot_packet_to_json(robot_bt_packet_t pkt);
+void store_command(uint16_t id);
 #endif

@@ -36,11 +36,7 @@ typedef struct {
 
 static cmd_tracker_t cmd_buffer[MAX_TRACKED_CMDS];
 
-uint64_t get_now_ms() {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (uint64_t)(ts.tv_sec * 1000ULL + ts.tv_nsec / 1000000ULL);
-}
+extern uint64_t get_now_ms();
 
 void store_command(uint16_t id) {
     uint64_t now = get_now_ms();
@@ -286,7 +282,7 @@ int main(int argc, char **argv) {
                         idx = 0;
                     }
                     else {
-                        if (idx < sizeof(line) - 1)
+                        if ((size_t)idx < sizeof(line) - 1)
                             line[idx++] = c;
                         else
                             idx = 0;
