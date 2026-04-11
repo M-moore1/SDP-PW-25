@@ -103,8 +103,6 @@ void parse_notify_and_process(char *line, int uds_fd) {
         sscanf(&p[i * 2], "%2hhx", &data[i]);
     }
 
-    if (data[0] != 0x0A || data[byte_len - 1] != 0x0D)
-        return;
 
     uint8_t *payload = &data[1];
 
