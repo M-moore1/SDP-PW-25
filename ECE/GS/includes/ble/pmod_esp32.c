@@ -428,9 +428,8 @@ int ble_init(int uart_fd) {
     if (n > 0) printf("[PMOD STORED BONDS] %s\n", diag_buf);
     /* END NEW */
 
-    if (send_at_cmd(uart_fd, "AT+BLESECPARAM=4,1,16,3,3,0\r\n", NULL, NULL, 1000) < 0) {
-        return -1;
-    }
+
+    if (send_at_cmd(uart_fd, "AT+BLESECPARAM=0,3,16,3,3,0\r\n", NULL, NULL, 1000) < 0) return -1;
     if (send_at_cmd(uart_fd, "AT+BLESETKEY=123456\r\n", NULL, NULL, 1000) < 0) {
         return -1;
     }

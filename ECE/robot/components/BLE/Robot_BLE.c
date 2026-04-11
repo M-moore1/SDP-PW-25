@@ -213,8 +213,8 @@ void robot_ble_init() {
     13 = SC + MITM + Bond    ← what we had before
     */
 
-    esp_ble_auth_req_t auth_req = (esp_ble_auth_req_t)4;  /* MITM, no bond */
-    esp_ble_io_cap_t iocap = ESP_IO_CAP_IO;               /* DisplayYesNo - numeric comparison */
+    esp_ble_auth_req_t auth_req = (esp_ble_auth_req_t)0;  /* Just Works */
+    esp_ble_io_cap_t iocap = ESP_IO_CAP_NONE;
 
 
     uint8_t key_size = 16;
@@ -386,7 +386,7 @@ void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
              
             /* NEW: request encryption AFTER conn params are confirmed */
 
-            
+            /*
             if (device_connected && !link_authenticated) {
                 
                 ESP_LOGI(BLE_TAG, "peer_bda: %02x:%02x:%02x:%02x:%02x:%02x",
@@ -406,7 +406,7 @@ void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
                     ESP_LOGE(BLE_TAG, "peer_bda is zero - skipping encryption request");
                 }
             }
-            
+            */
             
             break;
 
