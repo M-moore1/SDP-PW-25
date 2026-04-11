@@ -135,7 +135,7 @@ int handle_encrypted_data(int uart_fd, int uds_fd, const char *encrypt_str) {
 
     json_out[CT_SZ] = '\0';
 
-    printf("[encrypt] Decrypted JSON (%d bytes): %s\n", len, json_out);
+    //printf("[encrypt] Decrypted JSON (%d bytes): %s\n", len, json_out);
     fflush(stdout);
 
     handle_node_json(uart_fd, uds_fd, json_out);
@@ -296,9 +296,9 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
       uint8_t ciphertext[TOTAL_SZ] = {0};
       size_t out_len = 0;
 
-      printf("Packet (8 bytes): ");
-      for (int i = 0; i < 8; i++) printf("%02X ", packet.bytes[i]);
-      printf("\n");
+      //printf("Packet (8 bytes): ");
+      //for (int i = 0; i < 8; i++) printf("%02X ", packet.bytes[i]);
+      //printf("\n");
 
       if (encrypt_cmd(&packet, ciphertext, &out_len) != 0) return -1;
       //printf("Ciphertext (%zu bytes): ", out_len);
