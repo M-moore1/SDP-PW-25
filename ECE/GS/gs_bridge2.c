@@ -209,7 +209,7 @@ int main(int argc, char **argv) {
     }
       */
     ble_uart_check(uart_fd);
-    char rx_buffer[256]; 
+    char rx_buffer[1024]; 
     if (uart_queue_pop(&uart_queue, rx_buffer) == 0){
        //printf("[UART OUTPUT] %s\r\n", rx_buffer);
     }
