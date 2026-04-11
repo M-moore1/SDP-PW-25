@@ -128,17 +128,11 @@ void app_main()
 
     /* ADDED SECURITY BLOCK */
 
-    /* NEW: Initialize NVS and erase if corrupted or stale BLE security state */
-    esp_err_t nvs_ret = nvs_flash_init();
-    if (nvs_ret == ESP_ERR_NVS_NO_FREE_PAGES || 
-        nvs_ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_LOGW("MAIN", "Erasing NVS flash to clear stale BLE security state...");
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        nvs_ret = nvs_flash_init();
-    }
-    ESP_ERROR_CHECK(nvs_ret);
+    /* Force erase NVS on every boot to clear stale BLE bond data */
+    ESP_LOGW("MAIN", "Force erasing NVS to clear BLE bond state...");
+    ESP_ERROR_CHECK(nvs_flash_erase());
+    ESP_ERROR_CHECK(nvs_flash_init());
     ESP_LOGI("MAIN", "NVS initialized successfully");
-    /* END NEW */
 
     esp_vfs_spiffs_conf_t conf = {
         .base_path = "/spiffs",
