@@ -213,7 +213,7 @@ void robot_ble_init() {
     13 = SC + MITM + Bond    ← what we had before
     */
 
-    esp_ble_auth_req_t auth_req = (esp_ble_auth_req_t)5;  /* MITM + BOND, no SC */
+    esp_ble_auth_req_t auth_req = (esp_ble_auth_req_t)4;  /* MITM w/ NO BOND, no SC */
     esp_ble_io_cap_t iocap = ESP_IO_CAP_OUT;  /* ESP32 displays passkey, ground station enters it */
 
 

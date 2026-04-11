@@ -374,22 +374,27 @@ int ble_init(int uart_fd) {
     if (send_at_cmd(uart_fd, "AT+CWMODE=0\r\n", NULL, NULL, 1000) < 0) return -1;
     usleep(100000);
 
+
+    /* NEW: deinit BLE first to clear any active state */
+    if (send_at_cmd(uart_fd, "AT+BLEINIT=0\r\n", NULL, NULL, 1000) < 0) return -1;
+    usleep(100000);
+
+    /* NEW: wipe stored BLE keys from PMOD flash */
+    send_at_cmd(uart_fd, "AT+SYSFLASH=0,\"ble_key\"\r\n", NULL, NULL, 2000);
+    usleep(200000);
+
+
+
     // BLE init
     if (send_at_cmd(uart_fd, "AT+BLEINIT=0\r\n", NULL, NULL, 1000) < 0) return -1; /* NEW: deinit first to clear state */
     usleep(100000);
-    if (send_at_cmd(uart_fd, "AT+BLEINIT=1\r\n", NULL, NULL, 1000) < 0) return -1;
-    usleep(100000);
-
-    /* NEW: clear all stored bonds on PMOD side to prevent stale key conflicts */
-    send_at_cmd(uart_fd, "AT+BLEAPPDATACLR=0\r\n", NULL, NULL, 1000);
-    usleep(100000);
-    /* END NEW */
 
 //---------------------------------------------------------
 
     //Enforce a stronger BLE strategy
     /* CHANGED: iocap 4 -> 3 (KeyboardOnly) so PMOD inputs the passkey */
-    if (send_at_cmd(uart_fd, "AT+BLESECPARAM=5,3,16,3,3,1\r\n", NULL, NULL, 1000) < 0) return -1;
+    /* 5 -> 4 for removing the bonding requirement */
+    if (send_at_cmd(uart_fd, "AT+BLESECPARAM=4,3,16,3,3,1\r\n", NULL, NULL, 1000) < 0) return -1;
     if (send_at_cmd(uart_fd, "AT+BLESETKEY=123456\r\n", NULL, NULL, 1000) < 0) return -1;
 
 //---------------------------------------------------------
