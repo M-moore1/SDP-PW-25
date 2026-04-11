@@ -10,7 +10,7 @@ uint64_t get_now_ms() { // gets system updates
     return (ts.tv_sec * 1000L) + (ts.tv_nsec / 1000000L); // converts seconds to ms and nanoseconds to ms (Used for timeouts)
 }
 
-int uart_open_config(const char *dev, speed_t baud) { // UART COnfiguration
+int uart_open_config(const char *dev, speed_t baud) { // UART Configuration
   int fd = open(dev, O_RDWR | O_NOCTTY | O_NONBLOCK); // Open UART nonblocking
   if (fd < 0) {                                       // If open failed
     perror("open uart");                              // Print reason (errno)
@@ -145,7 +145,6 @@ int send_at_cmd(int uart_fd, const char *cmd, const char *prefix, char *out_valu
 
             if (strstr(buffer, "OK")) return 0;
             if (strstr(buffer, "ERROR")) {
-                //printf("[AT ERROR] cmd: %s response: %s\n", cmd, buffer);
                 return -1;
             }
         }
@@ -197,8 +196,6 @@ int pmod_esp32_reset(int uart_fd) {
     if (gpio_write(PMOD_0_RST, 1) != 0) return -1;
 
     while (elapsed_ms < timeout_ms) {
-        
-
         if (uart_read_and_queue(uart_fd, response, sizeof(response)) > 0) {
             if (strstr(response, "ready") != NULL) {
                 return 0;
@@ -213,7 +210,6 @@ int pmod_esp32_reset(int uart_fd) {
     return -1;
 }
 
-
 int pmod_esp32_init(int uart_fd) {
     int ret = 0;
     uart_queue_init(&uart_queue);
@@ -226,7 +222,6 @@ int pmod_esp32_init(int uart_fd) {
 
     if (ret != 0) return -1;
 
-    
     gpio_write(PMOD_0_RST,    1);   
     gpio_write(PMOD_0_MODE, 0);   
     gpio_write(PMOD_0_GPIO_0, 0);
@@ -237,7 +232,6 @@ int pmod_esp32_init(int uart_fd) {
     return send_at_cmd(uart_fd, "ATE0\r\n", NULL, NULL, 50);;
 
 }
-
 
 int pmod_name(int uart_fd, const char *set_name, char *out_name) {
     int ret;
@@ -259,17 +253,8 @@ int pmod_name(int uart_fd, const char *set_name, char *out_name) {
     return 0;
 }
 
-
-int set_pmod_name(int uart_fd, const char *dev_name){
-    char cmd_buffer[128];
-    snprintf(cmd_buffer, sizeof(cmd_buffer), "AT+BLENAME=\"%s\"\r\n", dev_name);
-    return send_at_cmd(uart_fd, cmd_buffer, NULL, NULL, 1000);
-}
-
-
 int ble_discon(int uart_fd){
     BLE_CONNECTED = 0;
-
     return send_at_cmd(uart_fd, "AT+BLEDISCONN=0\r\n", NULL, NULL, 1000);
 }
 
@@ -279,10 +264,11 @@ int ble_notification(int uart_fd, int enable) {
     uint8_t enable_cccd[2]  = {0x01, 0x00};
     uint8_t disable_cccd[2] = {0x00, 0x00};
 
+    // CCCD is descriptor 1 on RX characteristic (chr=2) in service 3
     if (!enable) {
-        return ble_write(uart_fd, 3, 1, 1, disable_cccd, 2);
+        return ble_write(uart_fd, ROBOT_SRV, ROBOT_RX_CHR, ROBOT_RX_DESC, disable_cccd, 2);
     }
-    return ble_write(uart_fd, 3, 1, 1, enable_cccd, 2);
+    return ble_write(uart_fd, ROBOT_SRV, ROBOT_RX_CHR, ROBOT_RX_DESC, enable_cccd, 2);
 }
 
 int ble_connect(int uart_fd, const char *MAC) {
@@ -302,17 +288,15 @@ int ble_connect(int uart_fd, const char *MAC) {
         return -1;
     }
 
-    
     usleep(500000); 
     BLE_CONNECTED = 1;
 
     if (send_at_cmd(uart_fd, "AT+BLEDATALEN=0,251\r\n", NULL, NULL, 2000) < 0) return -1;  // Set Data Length
     if (send_at_cmd(uart_fd, "AT+BLECFGMTU=0,512\r\n", NULL, NULL, 2000) < 0) return -1;   // Set MTU
     if (send_at_cmd(uart_fd, "AT+BLEGATTCPRIMSRV=0\r\n", NULL, NULL, 5000) < 0) return -1; // Get BLE Connection Service and makes index
-    if (send_at_cmd(uart_fd, "AT+BLEGATTCCHAR=0,3\r\n", NULL, NULL, 10000) < 0) return -1; // Gets the Robot custom Service 
-    if (ble_notification(uart_fd, 1) < 0) return -1;                                       // Enable Robot Custom service notifications
+    if (send_at_cmd(uart_fd, "AT+BLEGATTCCHAR=0,3\r\n", NULL, NULL, 5000) < 0) return -1;  // Get Robot custom service characteristics
+    if (ble_notification(uart_fd, 1) < 0) return -1;                                       // Enable notifications on RX characteristic (0xFF02)
 
-    
     return 0;
 }
 
@@ -321,12 +305,11 @@ int get_ble_conn_params(int uart_fd, char *params_out) {
     return send_at_cmd(uart_fd, "AT+BLECONNPARAM?\r\n", "+BLECONNPARAM:", params_out, 1000);
 }
 
-
 int ble_init(int uart_fd) {
     ble_discon(uart_fd);
 
     if (pmod_esp32_init(uart_fd) < 0) return -1;  
-    usleep(500000);
+    usleep(1000000);
 
     // Wifi off
     if (send_at_cmd(uart_fd, "AT+CWMODE=0\r\n", NULL, NULL, 1000) < 0) return -1;
@@ -339,12 +322,8 @@ int ble_init(int uart_fd) {
     // Set Device Name
     if (pmod_name(uart_fd, PMOD_DEV_NAME, NULL) < 0) return -1;
 
-    //send_at_cmd(uart_fd, "AT+GMR\r\n", NULL, NULL, 1000);
-
     return 0;
 }
-
-
 
 int ble_send_pkt(int uart_fd, uint8_t *data, int data_len) {
     if (data_len != PAYLOAD_BYTES) return -1;
@@ -357,16 +336,9 @@ int ble_send_pkt(int uart_fd, uint8_t *data, int data_len) {
     packet[158] = 0xDA;
     packet[159] = 0x0D;
 
-    return ble_write(uart_fd, 3, 1, -1, packet, PACKET_BYTES);
+    return ble_write(uart_fd, ROBOT_SRV, ROBOT_TX_CHR, -1, packet, PACKET_BYTES);
 }
 
 int ble_send_instruction(int uart_fd, uint8_t instruction[8]) {
-    return ble_write(uart_fd, 3, 1, -1, instruction, 8);
-    /*
-    uint8_t payload[PAYLOAD_BYTES];
-    memset(payload, 0x00, PAYLOAD_BYTES);
-    memcpy(payload, instruction, 8);
-    return ble_send_pkt(uart_fd, payload, PAYLOAD_BYTES);
-    */
+    return ble_write(uart_fd, ROBOT_SRV, ROBOT_TX_CHR, -1, instruction, 8);
 }
-
