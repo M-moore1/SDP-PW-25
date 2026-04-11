@@ -184,7 +184,7 @@ void app_main()
             }
         }
         
-        vTaskDelay(pdMS_TO_TICKS(1));
+        //vTaskDelay(pdMS_TO_TICKS(1));
         
     }
     return;
