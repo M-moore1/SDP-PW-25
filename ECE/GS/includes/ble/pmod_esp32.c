@@ -156,9 +156,14 @@ int send_at_cmd(int uart_fd, const char *cmd, const char *prefix, char *out_valu
                 }
             }
 
-            if (strstr(buffer, "OK")) return 0;
+            if (strstr(buffer, "OK")) {
+                /* NEW: print full response for diagnostic commands */
+                printf("[UART OUTPUT] %s\n", buffer);
+                return 0;
+            }
             if (strstr(buffer, "ERROR")) {
-                //printf("[AT ERROR] cmd: %s response: %s\n", cmd, buffer);
+                /* NEW: print full response including errors */
+                printf("[UART OUTPUT] %s\n", buffer);
                 return -1;
             }
         }
