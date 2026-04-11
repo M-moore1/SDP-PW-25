@@ -386,6 +386,13 @@ int ble_init(int uart_fd) {
     if (send_at_cmd(uart_fd, "AT+BLEINIT=1\r\n", NULL, NULL, 1000) < 0) return -1;
     usleep(100000);
 
+    /* NEW: diagnostic - check firmware version and stored bonds */
+    send_at_cmd(uart_fd, "AT+GMR\r\n", NULL, NULL, 2000);
+    usleep(100000);
+    send_at_cmd(uart_fd, "AT+BLEGETPEERDEV=0\r\n", NULL, NULL, 2000);
+    usleep(100000);
+    /* END NEW */
+
 //---------------------------------------------------------
 
     /* iocap 1 = DisplayYesNo for numeric comparison */
