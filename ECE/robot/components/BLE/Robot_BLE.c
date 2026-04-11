@@ -213,8 +213,8 @@ void robot_ble_init() {
     13 = SC + MITM + Bond    ← what we had before
     */
 
-    esp_ble_auth_req_t auth_req = (esp_ble_auth_req_t)4;  /* MITM w/ NO BOND, no SC */
-    esp_ble_io_cap_t iocap = ESP_IO_CAP_OUT;  /* ESP32 displays passkey, ground station enters it */
+    esp_ble_auth_req_t auth_req = (esp_ble_auth_req_t)0;  /* MITM w/ NO BOND, no SC */
+    esp_ble_io_cap_t iocap = ESP_IO_CAP_NONE;  /* ESP32 displays passkey, ground station enters it */
 
 
     uint8_t key_size = 16;
@@ -386,13 +386,14 @@ void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
              
             /* NEW: request encryption AFTER conn params are confirmed */
 
+            /*
             if (device_connected && !link_authenticated) {
-                /* NEW: verify peer_bda is valid before requesting encryption */
+                
                 ESP_LOGI(BLE_TAG, "peer_bda: %02x:%02x:%02x:%02x:%02x:%02x",
                         peer_bda[0], peer_bda[1], peer_bda[2],
                         peer_bda[3], peer_bda[4], peer_bda[5]);
 
-                /* Only proceed if peer_bda is not zeroed */
+                
                 bool bda_valid = false;
                 for (int i = 0; i < 6; i++) {
                     if (peer_bda[i] != 0) { bda_valid = true; break; }
@@ -405,6 +406,8 @@ void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
                     ESP_LOGE(BLE_TAG, "peer_bda is zero - skipping encryption request");
                 }
             }
+            */
+            
             break;
 
         /* -----------------------------------------------------------

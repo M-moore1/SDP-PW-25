@@ -389,7 +389,7 @@ int ble_init(int uart_fd) {
 //---------------------------------------------------------
 
     /* MITM only, no bonding (4), KeyboardOnly iocap (3) */
-    if (send_at_cmd(uart_fd, "AT+BLESECPARAM=4,3,16,3,3,1\r\n", NULL, NULL, 1000) < 0) return -1;
+    if (send_at_cmd(uart_fd, "AT+BLESECPARAM=0,3,16,3,3,1\r\n", NULL, NULL, 1000) < 0) return -1;
     if (send_at_cmd(uart_fd, "AT+BLESETKEY=123456\r\n", NULL, NULL, 1000) < 0) return -1;
 
 //---------------------------------------------------------
