@@ -1,19 +1,12 @@
 import { useState } from 'react';
+import type { Preset } from './SettingsPanel';
 
 interface AttackPanelProps {
   onInject: (payload: string) => void;
   isConnected: boolean;
   activeKey: string | null;
+  presets: Preset[];
 }
-
-// Packed bitfield bytes matching control_format_t (pl=1, type=0x01, speed=50)
-// Bridge auto-frames these into 0x0A 0xD0 [156 padded] 0xDA 0x0D
-const PRESET_COMMANDS = [
-  { label: 'Forward',  key: 'w', payload: '85 90 01 00 00 00 00 00' },
-  { label: 'Left',     key: 'a', payload: '05 91 01 00 00 00 00 00' },
-  { label: 'Backward', key: 's', payload: '05 92 01 00 00 00 00 00' },
-  { label: 'Right',    key: 'd', payload: '05 94 01 00 00 00 00 00' },
-];
 
 type InputMode = 'hex' | 'json';
 
@@ -37,7 +30,7 @@ function stringToHex(text: string): string {
     .join(' ');
 }
 
-export function AttackPanel({ onInject, isConnected, activeKey }: AttackPanelProps) {
+export function AttackPanel({ onInject, isConnected, activeKey, presets }: AttackPanelProps) {
   const [customPayload, setCustomPayload] = useState('');
   const [inputMode, setInputMode] = useState<InputMode>('hex');
 
@@ -63,27 +56,29 @@ export function AttackPanel({ onInject, isConnected, activeKey }: AttackPanelPro
       </h2>
 
       <div className="grid grid-cols-3 grid-rows-2 gap-3 mb-5">
-        {/* Forward — col 2, row 1 */}
-        {[
-          { label: 'Forward',  key: 'w', col: 2,     row: 1          },
-          { label: 'Left',     key: 'a', col: 1,     row: 'span 2'   },
-          { label: 'Backward', key: 's', col: 2,     row: 2          },
-          { label: 'Right',    key: 'd', col: 3,     row: 'span 2'   },
-        ].map((cmd) => (
-          <button
-            key={cmd.label}
-            onClick={() => onInject(PRESET_COMMANDS.find(c => c.key === cmd.key)!.payload)}
-            disabled={!isConnected}
-            style={{ gridColumn: cmd.col, gridRow: cmd.row }}
-            className={`flex items-center justify-center py-2.5 px-4 border text-base font-bold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-              activeKey === cmd.key
-                ? 'bg-red-600 border-red-400 text-white shadow-lg shadow-red-900/50'
-                : 'bg-red-900/50 hover:bg-red-800 border-red-700 hover:border-red-500 text-white'
-            }`}
-          >
-            {cmd.label}
-          </button>
-        ))}
+        {([
+          { key: 'w', col: 2,     row: 1        },
+          { key: 'a', col: 1,     row: 'span 2' },
+          { key: 's', col: 2,     row: 2        },
+          { key: 'd', col: 3,     row: 'span 2' },
+        ] as const).map((cmd) => {
+          const preset = presets.find(p => p.key === cmd.key);
+          return (
+            <button
+              key={cmd.key}
+              onClick={() => preset && onInject(preset.payload)}
+              disabled={!isConnected || !preset}
+              style={{ gridColumn: cmd.col, gridRow: cmd.row }}
+              className={`flex items-center justify-center py-2.5 px-4 border text-base font-bold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                activeKey === cmd.key
+                  ? 'bg-red-600 border-red-400 text-white shadow-lg shadow-red-900/50'
+                  : 'bg-red-900/50 hover:bg-red-800 border-red-700 hover:border-red-500 text-white'
+              }`}
+            >
+              {preset?.label ?? cmd.key.toUpperCase()}
+            </button>
+          );
+        })}
       </div>
 
       <div className="space-y-3">
