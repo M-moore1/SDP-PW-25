@@ -11,6 +11,7 @@ DEVICE_NAME = "ROBOT_ESP32"
 CHAR_UUID = "0000ff01-0000-1000-8000-00805f9b34fb"
 
 connected_clients: set = set()
+ble_client: BleakClient | None = None
 
 
 async def broadcast(message: str) -> None:
@@ -18,19 +19,35 @@ async def broadcast(message: str) -> None:
         await asyncio.gather(*(ws.send(message) for ws in connected_clients))
 
 
-MAX_RETRIES = 3
+async def connect_ble() -> BleakClient | None:
+    """Scan for the robot and establish a persistent connection."""
+    global ble_client
 
+    if ble_client and ble_client.is_connected:
+        return ble_client
 
-PAYLOAD_BYTES = 156
-PACKET_BYTES = 160
+    for attempt in range(1, 4):
+        print(f"[ble] Scanning for {DEVICE_NAME} (attempt {attempt}/3)...")
+        devices = await BleakScanner.discover(timeout=5.0)
+        matches = [d for d in devices if d.name and DEVICE_NAME in d.name]
 
+        if not matches:
+            print("[ble] Device not found")
+            continue
 
-def frame_payload(raw: bytes) -> bytes:
-    """Wrap raw bytes in the robot's frame protocol: 0x0A 0xD0 [156 bytes padded] 0xDA 0x0D."""
-    if len(raw) == PACKET_BYTES:
-        return raw
-    payload = raw[:PAYLOAD_BYTES].ljust(PAYLOAD_BYTES, b"\x00")
-    return b"\x0a\xd0" + payload + b"\xda\x0d"
+        for device in matches:
+            print(f"[ble] Trying device: {device.address}")
+            try:
+                client = BleakClient(device.address, timeout=10.0)
+                await client.connect()
+                print(f"[ble] Connected: {client.is_connected}")
+                ble_client = client
+                return ble_client
+            except Exception as e:
+                print(f"[ble] Failed on {device.address}: {e}")
+                continue
+
+    return None
 
 
 async def ble_inject(hex_data: str) -> dict:
@@ -38,35 +55,25 @@ async def ble_inject(hex_data: str) -> dict:
     if len(clean) % 2 != 0 or not all(c in "0123456789abcdefABCDEF" for c in clean):
         return {"type": "ble_ack", "status": "error", "msg": "Invalid hex string"}
 
-    data = frame_payload(bytes.fromhex(clean))
+    data = bytes.fromhex(clean)
 
-    for attempt in range(1, MAX_RETRIES + 1):
-        print(f"[ble] Scanning for {DEVICE_NAME} (attempt {attempt}/{MAX_RETRIES})...")
+    client = await connect_ble()
+    if not client:
+        return {"type": "ble_ack", "status": "error", "msg": "Could not connect to device"}
 
-        devices = await BleakScanner.discover(timeout=5.0)
-        matches = [d for d in devices if d.name and DEVICE_NAME in d.name]
-
-        if not matches:
-            print("[ble] Device not found")
-            if attempt < MAX_RETRIES:
-                continue
-            return {"type": "ble_ack", "status": "error", "msg": "Device not found"}
-
-        for device in matches:
-            print(f"[ble] Trying device: {device.address}")
-            try:
-                async with BleakClient(device.address, timeout=10.0) as client:
-                    print(f"[ble] Connected: {client.is_connected}")
-                    await client.write_gatt_char(CHAR_UUID, data, response=True)
-                    print(f"[ble] Sent: {data.hex()}")
-                    return {"type": "ble_ack", "status": "ok", "msg": f"Sent {len(data)} bytes"}
-            except Exception as e:
-                print(f"[ble] Failed on {device.address}: {e}")
-                continue
-
-        print(f"[ble] All addresses failed on attempt {attempt}")
-
-    return {"type": "ble_ack", "status": "error", "msg": "All connection attempts failed"}
+    try:
+        await client.write_gatt_char(CHAR_UUID, data, response=True)
+        print(f"[ble] Sent: {data.hex()}")
+        return {"type": "ble_ack", "status": "ok", "msg": f"Sent {len(data)} bytes"}
+    except Exception as e:
+        print(f"[ble] Write failed: {e}, reconnecting...")
+        global ble_client
+        ble_client = None
+        try:
+            await client.disconnect()
+        except Exception:
+            pass
+        return {"type": "ble_ack", "status": "error", "msg": str(e)}
 
 
 async def ws_handler(websocket) -> None:
@@ -90,9 +97,15 @@ async def ws_handler(websocket) -> None:
 
 
 async def main() -> None:
+    print(f"[ble-bridge] Connecting to {DEVICE_NAME} on startup...")
+    client = await connect_ble()
+    if client:
+        print(f"[ble-bridge] Persistent BLE connection established")
+    else:
+        print(f"[ble-bridge] WARNING: Could not connect to {DEVICE_NAME}, will retry on first inject")
+
     async with websockets.serve(ws_handler, HOST, PORT):
         print(f"[ble-bridge] Listening on ws://{HOST}:{PORT}")
-        print(f"[ble-bridge] Ready to inject into {DEVICE_NAME}")
         await asyncio.Future()
 
 
@@ -100,4 +113,7 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
+        if ble_client:
+            print("[ble-bridge] Disconnecting BLE...")
+            asyncio.run(ble_client.disconnect())
         print("\n[ble-bridge] Shutting down.")
