@@ -15,12 +15,15 @@
 #define ARM_HOME_Y   7.5f
 #define ARM_HOME_Z   5.5f
 
-#define ARM_THETA0_MIN  -50.0f
-#define ARM_THETA0_MAX   50.0f
-#define ARM_THETA1_MIN    0.0f
-#define ARM_THETA1_MAX   90.0f
-#define ARM_THETA2_MIN    0.0f
-#define ARM_THETA2_MAX   90.0f
+#define ARM_THETA0_MIN   10.0f
+#define ARM_THETA0_MAX   170.0f
+
+#define ARM_THETA1_MIN    10.0f
+#define ARM_THETA1_MAX   170.0f
+
+
+#define ARM_THETA2_MIN    10.0f
+#define ARM_THETA2_MAX   170.0f
 
 #define ARM_SPEED_MIN_STEP  0.1f
 #define ARM_SPEED_MAX_STEP  0.5f

@@ -74,22 +74,22 @@ int arm_ik_solve(float x, float y, float z, float servo_angles[3]) {
     float r    = sqrtf(r2);
     float cos1 = (r2 + ARM_A2 * ARM_A2 - ARM_A3 * ARM_A3) / (2.0f * r * ARM_A2);
 
-    /*if (cos1 < -1.0f || cos1 > 1.0f) {
+    if (cos1 < -1.0f || cos1 > 1.0f) {
         ESP_LOGW(ARM_TAG, "IK: shoulder acos domain error (cos=%.3f)", cos1);
         return 1;
-    }*/
+    }
     theta[1] = atan2_d(zr, xr) + acos_d(cos1);
 
     // θ2 — elbow: interior angle via law of cosines (complement form)
     float cos2 = (ARM_A3 * ARM_A3 + ARM_A2 * ARM_A2 - r2) / (2.0f * ARM_A2 * ARM_A3);
 
-    /*if (cos2 < -1.0f || cos2 > 1.0f) {
+    if (cos2 < -1.0f || cos2 > 1.0f) {
         ESP_LOGW(ARM_TAG, "IK: elbow acos domain error (cos=%.3f)", cos2);
         return 1;
-    }*/
+    }
     theta[2] = 170.0f - acos_d(cos2);
 
-   /* // Joint limit checks
+    // Joint limit checks
     if (theta[0] < ARM_THETA0_MIN || theta[0] > ARM_THETA0_MAX) {
         ESP_LOGW(ARM_TAG, "IK: base %.1f° out of [%.0f, %.0f]",
                  theta[0], ARM_THETA0_MIN, ARM_THETA0_MAX);
@@ -104,7 +104,7 @@ int arm_ik_solve(float x, float y, float z, float servo_angles[3]) {
         ESP_LOGW(ARM_TAG, "IK: elbow %.1f° out of [%.0f, %.0f]",
                  theta[2], ARM_THETA2_MIN, ARM_THETA2_MAX);
         return 1;
-    }*/
+    }
 
     servo_angles[0] = theta[0];
     servo_angles[1] = theta[1];
