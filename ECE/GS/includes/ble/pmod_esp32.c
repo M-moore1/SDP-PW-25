@@ -233,7 +233,7 @@ int pmod_esp32_init(int uart_fd) {
 
 }
 
-int pmod_name(int uart_fd, const char *set_name, char *out_name) {
+int pmod_name(int uart_fd, const char *set_name, char *out_name) { // READ THIS for name of robot esp and pmod change for security
     int ret;
 
     if (set_name != NULL) {
@@ -303,6 +303,22 @@ int ble_connect(int uart_fd, const char *MAC) {
 int get_ble_conn_params(int uart_fd, char *params_out) {
     if (!BLE_CONNECTED) return -1;
     return send_at_cmd(uart_fd, "AT+BLECONNPARAM?\r\n", "+BLECONNPARAM:", params_out, 1000);
+}
+
+int ble_get_rssi(int uart_fd, int *rssi_out) {
+    if (!BLE_CONNECTED) return -1;
+    if (rssi_out == NULL) return -1;
+
+    char cmd[32];
+    char rssi_str[32] = {0};
+
+    snprintf(cmd, sizeof(cmd), "AT+BLERDRSSI=%d\r\n", CONN_IDX);
+
+    int ret = send_at_cmd(uart_fd, cmd, "+BLERDRSSI:", rssi_str, 1000);
+    if (ret != 0) return ret;
+
+    *rssi_out = atoi(rssi_str);
+    return 0;
 }
 
 int ble_init(int uart_fd) {

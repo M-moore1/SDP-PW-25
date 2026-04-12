@@ -24,7 +24,7 @@
 #define PMOD_1_GPIO_3 523
 
 #define PMOD_DEV_NAME "SDP_2635_GS"
-#define ESP32_MAC "44:1d:64:f1:1a:86"
+#define ESP32_MAC "44:1d:64:f1:70:66"
 
 //test "44:1d:64:f1:1a:86"
 // real "44:1d:64:f1:70:66"
@@ -65,6 +65,7 @@ int ble_discon(int uart_fd);
 int ble_notification(int uart_fd, int enable);
 int ble_connect(int uart_fd, const char *MAC);
 int get_ble_conn_params(int uart_fd, char *params_out);
+int ble_get_rssi(int uart_fd, int *rssi_out);
 
 int ble_send_pkt(int uart_fd, uint8_t *data, int data_len);
 int ble_send_instruction(int uart_fd, uint8_t instruction[8]);

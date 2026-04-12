@@ -1,7 +1,7 @@
 #include "cmd_parser.h"
 #include "../cmd_structure.h"
 
-volatile int security_level = 0;
+volatile int security_level = 0; // use for sendback from bruidge for confirmation of secuirty level
 volatile int connection_status = 0;
 volatile int authorization_code = 0x3FF;
 
@@ -93,7 +93,7 @@ int query_cmd(int uart_fd, query_format_t query_inst){
 }
 
 int handle_encrypted_data(int uart_fd, int uds_fd, const char *encrypt_str) {
-    if (!encrypt_str) {
+    if (!security_level){
         fprintf(stderr, "[encrypt] ERROR: null input\n");
         return -1;
     }
@@ -313,76 +313,91 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
   return 0;
 }
 
-cJSON* robot_packet_to_json(robot_bt_packet_t pkt) {
-
+cJSON *robot_packet_to_json(robot_bt_packet_t pkt) {
     cJSON *root = cJSON_CreateObject();
 
-    uint8_t type = pkt.ctrl.type;
-
-    switch(type) {
-
-        // =========================
-        // STATUS REPORT (SR)
-        // =========================
-        case STATUS_REPORT_CMD:
-
-            cJSON_AddStringToObject(root, "type", "SR");
-
-            cJSON_AddNumberToObject(root, "pl", pkt.sr.pl);
-            cJSON_AddNumberToObject(root, "part", pkt.sr.part);
-
-            if (pkt.sr.part == 0) {
-                cJSON_AddNumberToObject(root, "px", pkt.sr.px);
-                cJSON_AddNumberToObject(root, "py", pkt.sr.py);
-                cJSON_AddNumberToObject(root, "pz", pkt.sr.pz);
-            }
-            else if (pkt.sr.part == 1) {
-                cJSON_AddNumberToObject(root, "yaw", pkt.sr.yaw);
-                cJSON_AddNumberToObject(root, "pitch", pkt.sr.pitch);
-                cJSON_AddNumberToObject(root, "roll", pkt.sr.roll);
-            }
-
-            break;
+    switch (pkt.ctrl.type) {
 
         // =========================
         // HEALTH REPORT (HR)
         // =========================
-        case HEALTH_REPORT_CMD:
-
+        case HEALTH_CMD: {
             cJSON_AddStringToObject(root, "type", "HR");
-
-            cJSON_AddNumberToObject(root, "battery", pkt.health.bt);
-            cJSON_AddNumberToObject(root, "security", pkt.health.sl);
-            cJSON_AddNumberToObject(root, "motor_enabled", pkt.health.me);
-            cJSON_AddNumberToObject(root, "arm_enabled", pkt.health.ae);
-
+            cJSON_AddNumberToObject(root, "battery", pkt.health.battery);
+            cJSON_AddNumberToObject(root, "security", pkt.health.sec_en);
+            cJSON_AddNumberToObject(root, "motor_enabled", pkt.health.motor_en);
+            cJSON_AddNumberToObject(root, "arm_enabled", pkt.health.arm_en);
             break;
+        }
 
         // =========================
-        // ACK
+        // ACKNOWLEDGEMENT (ACK)
         // =========================
-        case ACK_CMD:
-
+        case ACK_CMD: {
             cJSON_AddStringToObject(root, "type", "ACK");
-
             cJSON_AddNumberToObject(root, "id", pkt.ack.id);
-            cJSON_AddNumberToObject(root, "result", pkt.ack.r);
+            cJSON_AddNumberToObject(root, "result", pkt.ack.result_code);
+            cJSON_AddNumberToObject(root, "info", pkt.ack.instruction_specific);
+            break;
+        }
+
+        // =========================
+        // ROBOT UPDATE (NAV / POSE / INERT)
+        // =========================
+        case ROBOT_UPDATE_CMD: {
+
+            // ---------- NAVIGATION ----------
+            if (pkt.nav.part == 0) {
+                cJSON_AddStringToObject(root, "type", "NAV");
+
+                cJSON_AddNumberToObject(root, "px", pkt.nav.pos_x);
+                cJSON_AddNumberToObject(root, "py", pkt.nav.pos_y);
+                cJSON_AddNumberToObject(root, "pz", pkt.nav.pos_z);
+                cJSON_AddNumberToObject(root, "speed", pkt.nav.speed);
+            }
+
+            // ---------- POSE ----------
+            else if (pkt.pose.part == 1) {
+                cJSON_AddStringToObject(root, "type", "POSE");
+
+                cJSON_AddNumberToObject(root, "yaw", pkt.pose.yaw);
+                cJSON_AddNumberToObject(root, "pitch", pkt.pose.pitch);
+                cJSON_AddNumberToObject(root, "roll", pkt.pose.roll);
+            }
+
+            // ---------- INERTIA ----------
+            else if (pkt.inert.part == 2) {
+                cJSON_AddStringToObject(root, "type", "INERT");
+
+                cJSON_AddNumberToObject(root, "ax", pkt.inert.accel_x);
+                cJSON_AddNumberToObject(root, "ay", pkt.inert.accel_y);
+                cJSON_AddNumberToObject(root, "az", pkt.inert.accel_z);
+
+                cJSON_AddNumberToObject(root, "gx", pkt.inert.gyro_x);
+                cJSON_AddNumberToObject(root, "gy", pkt.inert.gyro_y);
+                cJSON_AddNumberToObject(root, "gz", pkt.inert.gyro_z);
+            }
 
             break;
+        }
 
         // =========================
-        // HIGH PRIORITY REPORT
+        // HIGH PRIORITY ALERT (HPR)
         // =========================
-        case HPR_CMD:
-
+        case HPR_CMD: {
             cJSON_AddStringToObject(root, "type", "HPR");
-
             cJSON_AddNumberToObject(root, "alert", pkt.hpr.alert_type);
-
             break;
+        }
 
-        default:
+        // =========================
+        // UNKNOWN TYPE
+        // =========================
+        default: {
             cJSON_AddStringToObject(root, "type", "UNKNOWN");
+            cJSON_AddNumberToObject(root, "raw_type", pkt.ctrl.type);
+            break;
+        }
     }
 
     return root;

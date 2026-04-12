@@ -79,87 +79,7 @@ void process_received_id(uint16_t id, int uds_fd) {
     }
 }
 
-cJSON* robot_packet_to_json(robot_bt_packet_t pkt) {
 
-    cJSON *root = cJSON_CreateObject();
-    uint8_t type = pkt.ctrl.type;
-
-    switch(type) {
-
-        // =========================
-        // ROBOT UPDATE (SR)
-        // =========================
-        case ROBOT_UPDATE_CMD:
-
-            cJSON_AddStringToObject(root, "type", "SR");
-
-            if (pkt.nav.part == 0) {
-                cJSON_AddNumberToObject(root, "px", pkt.nav.pos_x);
-                cJSON_AddNumberToObject(root, "py", pkt.nav.pos_y);
-                cJSON_AddNumberToObject(root, "pz", pkt.nav.pos_z);
-                cJSON_AddNumberToObject(root, "speed", pkt.nav.speed);
-            }
-
-            else if (pkt.pose.part == 1) {
-                cJSON_AddNumberToObject(root, "yaw", pkt.pose.yaw);
-                cJSON_AddNumberToObject(root, "pitch", pkt.pose.pitch);
-                cJSON_AddNumberToObject(root, "roll", pkt.pose.roll);
-            }
-
-            else if (pkt.inert.part == 2) {
-                cJSON_AddNumberToObject(root, "ax", pkt.inert.accel_x);
-                cJSON_AddNumberToObject(root, "ay", pkt.inert.accel_y);
-                cJSON_AddNumberToObject(root, "az", pkt.inert.accel_z);
-
-                cJSON_AddNumberToObject(root, "gx", pkt.inert.gyro_x);
-                cJSON_AddNumberToObject(root, "gy", pkt.inert.gyro_y);
-                cJSON_AddNumberToObject(root, "gz", pkt.inert.gyro_z);
-            }
-
-            break;
-
-        // =========================
-        // HEALTH
-        // =========================
-        case HEALTH_CMD:
-
-            cJSON_AddStringToObject(root, "type", "HR");
-
-            cJSON_AddNumberToObject(root, "battery", pkt.health.battery);
-            cJSON_AddNumberToObject(root, "security", pkt.health.sec_lvl);
-            cJSON_AddNumberToObject(root, "motor_enabled", pkt.health.motor_en);
-
-            break;
-
-        // =========================
-        // ACK
-        // =========================
-        case ACK_CMD:
-
-            cJSON_AddStringToObject(root, "type", "ACK");
-
-            cJSON_AddNumberToObject(root, "id", pkt.ack.id);
-            cJSON_AddNumberToObject(root, "result", pkt.ack.result_code);
-
-            break;
-
-        // =========================
-        // HPR
-        // =========================
-        case HPR_CMD:
-
-            cJSON_AddStringToObject(root, "type", "HPR");
-
-            cJSON_AddNumberToObject(root, "alert", pkt.hpr.alert_type);
-
-            break;
-
-        default:
-            cJSON_AddStringToObject(root, "type", "UNKNOWN");
-    }
-
-    return root;
-}
 // =========================
 // BLE NOTIFY PARSER
 // =========================
@@ -332,43 +252,43 @@ int main(int argc, char **argv) {
         // =========================
         // ROBOT → UI (FIXED)
         // =========================
-        if (FD_ISSET(uart_fd, &rfds)) {
 
-            ble_uart_check(uart_fd);
 
-            char tmp[256];
+        ble_uart_check(uart_fd);
 
-            if (uart_queue_pop(&uart_queue, tmp) == 0) {
+        char tmp[256];
 
-                static char line[4096];
-                static int idx = 0;
+        if (uart_queue_pop(&uart_queue, tmp) == 0) {
 
-                int len = strlen(tmp);
+            static char line[4096];
+            static int idx = 0;
 
-                for (int i = 0; i < len; i++) {
+            int len = strlen(tmp);
 
-                    char c = tmp[i];
+            for (int i = 0; i < len; i++) {
 
-                    if (c == '\n') {
-                        line[idx] = '\0';
+                char c = tmp[i];
 
-                        printf("[UART] %s\n", line);
+                if (c == '\n') {
+                    line[idx] = '\0';
 
-                        if (strstr(line, "+NOTIFY:") && uds_client >= 0) {
-                            parse_notify_and_process(line, uds_client);
-                        }
+                    printf("[UART] %s\n", line);
 
+                    if (strstr(line, "+NOTIFY:") && uds_client >= 0) {
+                        parse_notify_and_process(line, uds_client);
+                    }
+
+                    idx = 0;
+                }
+                else {
+                    if ((size_t)idx < sizeof(line) - 1)
+                        line[idx++] = c;
+                    else
                         idx = 0;
-                    }
-                    else {
-                        if ((size_t)idx < sizeof(line) - 1)
-                            line[idx++] = c;
-                        else
-                            idx = 0;
-                    }
                 }
             }
         }
+        
     }
 
     return 0;
