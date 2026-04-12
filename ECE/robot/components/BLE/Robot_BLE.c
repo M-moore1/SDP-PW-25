@@ -181,10 +181,24 @@ void send_cmd(uint8_t* pkt, int sec_lvl) {
         }
         send_string(hex_str);
     }else{
+        /*
         uint8_t cipher_text[PACKET_SIZE] = {0};
 
         if(aes_gcm_encrypt_packet((const char *)pkt, cipher_text) == 0){
             send_bytes_to_all(cipher_text, sizeof(cipher_text));
+        }else{
+            ESP_LOGE("SEND_CMD", "Encryption FAILED");
+        }
+        */
+        uint8_t cipher_text[PACKET_SIZE] = {0};
+        
+        if(aes_gcm_encrypt_packet((const char *)pkt, cipher_text) == 0){
+            ESP_LOGI("SEND_CMD", "Secure packet sent (156 bytes)");
+            char hex_cipher[PACKET_SIZE * 2 + 1];
+            for(int i = 0; i < PACKET_SIZE; i++){
+                sprintf(hex_cipher + (i * 2), "%02X", cipher_text[i]);
+            }
+            send_string(hex_cipher);
         }else{
             ESP_LOGE("SEND_CMD", "Encryption FAILED");
         }
