@@ -312,3 +312,78 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
   }
   return 0;
 }
+
+cJSON* robot_packet_to_json(robot_bt_packet_t pkt) {
+
+    cJSON *root = cJSON_CreateObject();
+
+    uint8_t type = pkt.ctrl.type;
+
+    switch(type) {
+
+        // =========================
+        // STATUS REPORT (SR)
+        // =========================
+        case STATUS_REPORT_CMD:
+
+            cJSON_AddStringToObject(root, "type", "SR");
+
+            cJSON_AddNumberToObject(root, "pl", pkt.sr.pl);
+            cJSON_AddNumberToObject(root, "part", pkt.sr.part);
+
+            if (pkt.sr.part == 0) {
+                cJSON_AddNumberToObject(root, "px", pkt.sr.px);
+                cJSON_AddNumberToObject(root, "py", pkt.sr.py);
+                cJSON_AddNumberToObject(root, "pz", pkt.sr.pz);
+            }
+            else if (pkt.sr.part == 1) {
+                cJSON_AddNumberToObject(root, "yaw", pkt.sr.yaw);
+                cJSON_AddNumberToObject(root, "pitch", pkt.sr.pitch);
+                cJSON_AddNumberToObject(root, "roll", pkt.sr.roll);
+            }
+
+            break;
+
+        // =========================
+        // HEALTH REPORT (HR)
+        // =========================
+        case HEALTH_REPORT_CMD:
+
+            cJSON_AddStringToObject(root, "type", "HR");
+
+            cJSON_AddNumberToObject(root, "battery", pkt.health.bt);
+            cJSON_AddNumberToObject(root, "security", pkt.health.sl);
+            cJSON_AddNumberToObject(root, "motor_enabled", pkt.health.me);
+            cJSON_AddNumberToObject(root, "arm_enabled", pkt.health.ae);
+
+            break;
+
+        // =========================
+        // ACK
+        // =========================
+        case ACK_CMD:
+
+            cJSON_AddStringToObject(root, "type", "ACK");
+
+            cJSON_AddNumberToObject(root, "id", pkt.ack.id);
+            cJSON_AddNumberToObject(root, "result", pkt.ack.r);
+
+            break;
+
+        // =========================
+        // HIGH PRIORITY REPORT
+        // =========================
+        case HPR_CMD:
+
+            cJSON_AddStringToObject(root, "type", "HPR");
+
+            cJSON_AddNumberToObject(root, "alert", pkt.hpr.alert_type);
+
+            break;
+
+        default:
+            cJSON_AddStringToObject(root, "type", "UNKNOWN");
+    }
+
+    return root;
+}
