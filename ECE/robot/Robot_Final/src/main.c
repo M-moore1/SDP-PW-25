@@ -169,13 +169,13 @@ void app_main()
         
         now = esp_timer_get_time();
         if (num_connected > 0) {
-            if (now - last_send_time >= 500000) { // in us
-                
+            if (now - last_send_time >= 5000000) { // in us
+                send_health_report();
                 switch (rotation_step) {
                     //case 0: send_imu(1); break;
                     //case 1: send_imu(2); break;
                     //case 2: send_imu(3); break;
-                    case 3: send_health_report(); break;
+                    //case 3: send_health_report(); break;
                 }
                 
                 rotation_step = (rotation_step + 1) % 4; 

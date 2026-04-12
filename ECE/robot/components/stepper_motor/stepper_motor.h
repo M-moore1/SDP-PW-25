@@ -8,7 +8,7 @@
 // Configuration constants
 #define STEPPER_LEDC_RESOLUTION  LEDC_TIMER_8_BIT
 #define STEPPER_LEDC_DUTY        128   // 50% of 255
-#define PULSE_DURATION_US        80000 // 80 ms
+#define PULSE_DURATION_US        200000 // 200 ms
 
 typedef enum {
     MOTOR_DISABLE = 0,
