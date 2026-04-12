@@ -90,6 +90,7 @@ void parse_notify_and_process(char *line, int uds_fd) {
     if (sscanf(line, "+NOTIFY:%d,%d,%d,%d,", &conn, &srv, &chr, &ascii_len) != 4)
         return;
 
+    // Move pointer to payload start
     char *p = line;
     for (int i = 0; i < 4; i++) {
         p = strchr(p, ',');
@@ -98,17 +99,50 @@ void parse_notify_and_process(char *line, int uds_fd) {
     }
 
     int byte_len = ascii_len / 2;
-    uint8_t data[512];
+    uint8_t data[512] = {0};
 
     for (int i = 0; i < byte_len; i++) {
         sscanf(&p[i * 2], "%2hhx", &data[i]);
     }
 
+    // =========================
+    //  SECURE MODE (DECRYPT)
+    // =========================
+    if (security_level == 1) {
 
-    uint8_t *payload = data;
+        printf("[BLE] Encrypted packet received (%d bytes)\n", byte_len);
+
+        char json_out[CT_SZ + 1] = {0};
+
+        int len = decrypt_json(data, json_out, sizeof(json_out));
+        if (len < 0) {
+            printf("[BLE] ERROR: decrypt failed (%d)\n", len);
+            return;
+        }
+
+        json_out[len] = '\0';
+
+        printf("[BLE] Decrypted JSON: %s\n", json_out);
+
+        // Send directly to Node/UI
+        if (uds_fd >= 0) {
+            uds_send_json(uds_fd, json_out);
+        }
+
+        // OPTIONAL: If you want latency tracking from decrypted JSON,
+        // you would extract ID here (depends on your JSON format)
+
+        return;
+    }
+
+    // =========================
+    // NON-SECURE MODE (RAW 8B PACKET)
+    // =========================
+
+    printf("[BLE] Raw packet received (%d bytes)\n", byte_len);
 
     robot_bt_packet_t pkt;
-    memcpy(pkt.bytes, payload, 8);
+    memcpy(pkt.bytes, data, 8);
 
     cJSON *json = robot_packet_to_json(pkt);
 
@@ -120,12 +154,15 @@ void parse_notify_and_process(char *line, int uds_fd) {
 
     if (json) cJSON_Delete(json);
 
+    // =========================
+    // LATENCY TRACKING
+    // =========================
     uint16_t id = 0;
 
     switch (pkt.ctrl.type) {
         case System_CMD: id = pkt.sys.id; break;
-        case Query_CMD: id = pkt.query.id; break;
-        case ACK_CMD: id = pkt.ack.id; break;
+        case Query_CMD:  id = pkt.query.id; break;
+        case ACK_CMD:    id = pkt.ack.id; break;
     }
 
     if (id != 0)
