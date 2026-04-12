@@ -372,4 +372,3 @@ int uart_send_instruction(int uart_fd, uint8_t instruction[8]) {
     return uart_send_str(uart_fd, hex_str, strlen(hex_str));
 
 }
-

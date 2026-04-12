@@ -7,6 +7,7 @@
 #define AES_KEY_SRC         0x00FFCA1004
 #define AES_KEY_LOAD        0x00FFCA1008
 #define AES_START_MSG_ADDR  0x00FFCA100C
+#define AES_RESET           0x00FFCA1010
 #define AES_KEY_CLEAR_ADDR  0x00FFCA1014
 #define AES_CFG_ADDR        0x00FFCA1018
 #define AES_KUP_7_ADDR      0x00FFCA103C // 0-31
@@ -29,10 +30,23 @@
 #define CSU_DMA_DST_SIZE    0x00FFC80804
 #define CSU_DMA_DST_STS     0x00FFC80808
 
+#define IV_SZ               12
+#define TAG_SZ              16
+#define CT_SZ               128
+#define TOTAL_SZ            (IV_SZ + CT_SZ + TAG_SZ)   /* 156 bytes        */
+#define PAYLOAD_HEX_STR_LEN (TOTAL_SZ * 2)             /* 312 hex chars    */
+#define PAD_BYTE            0xFF
+#define KEY_SIZE            32
+#define AES_KEY_HEX "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456"
+#define AES_KEY_LEN 8 // words
 
+static uint32_t AES_KEY[AES_KEY_LEN];
+static int aes_key_ready = 0;
 
+void convert_hex_to_uint32_8(const char *hex_str, uint32_t out_array[8]);
 uint32_t read_csu_reg(uint64_t addr);
+int reg_write_check(uint64_t addr, uint32_t mask, uint32_t value);
 int write_csu_reg(uint64_t addr, uint32_t mask, uint32_t value);
-int gs_cryptography_init();
+int hw_crypto_init(void);
 
 #endif

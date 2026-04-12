@@ -23,10 +23,16 @@
 #define PAD_BYTE            0xFF
 #define KEY_SIZE            32
 
+#include "../cmd_structure.h"
+
 int strip_pad(const uint8_t *buf, int len);
-int sw_encryption(const char *Plaintext, char Ciphertext[PAYLOAD_HEX_STR_LEN + 1]);
-int sw_decryption (const char *Ciphertext, uint8_t output[CT_SZ + 1]);
-int encrypt_instr(const uint8_t instruction[8], char encrypted_string[PAYLOAD_HEX_STR_LEN+1]);
+
+int encrypt_json(const char *Plaintext, uint8_t Ciphertext[TOTAL_SZ]);
+int encrypt_cmd(const robot_bt_packet_t *packet, uint8_t *cipher_out, size_t *cipher_out_len);
+
+int decrypt_json(const uint8_t *encrypted, char *json_out, size_t json_out_len);
+int decrypt_cmd(const uint8_t *encrypted, robot_bt_packet_t *pkt_out);
+
 
 int gs_sw_crypto_init();
 void gs_sw_crypto_deinit();
