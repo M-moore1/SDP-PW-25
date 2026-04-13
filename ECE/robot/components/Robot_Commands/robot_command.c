@@ -114,9 +114,8 @@ void control_cmd(control_format_t ctrl, step_mot_t* F_L, step_mot_t* F_R, step_m
     send_ack(ctrl.id, RESULT_SUCCESS, security_flag, NO_INFO);
 }
 
-void arm_cmd   (arm_format_t arm, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* B_L, step_mot_t* B_R){
+void arm_cmd(arm_format_t arm, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* B_L, step_mot_t* B_R){
     ESP_LOGI(CMD_TAG, "Executing Arm CMD");
-
     if (arm.reset) {
         arm_reset();
         ESP_LOGI(CMD_TAG, "Arm reset to home");
@@ -128,16 +127,21 @@ void arm_cmd   (arm_format_t arm, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* 
     float step = ARM_SPEED_MIN_STEP + 
                  (arm.speed / 127.0f) * (ARM_SPEED_MAX_STEP - ARM_SPEED_MIN_STEP);
 
-    // Read current position and apply deltas tentatively
+    // Read current position and apply deltas
     float x, y, z;
     arm_get_position(&x, &y, &z);
 
+    // Z axis — unchanged
     if (arm.up)    z += step;
     if (arm.down)  z -= step;
-    if (arm.left)  y -= step;
-    if (arm.right) y += step;
-    if (arm.in)    x += step;
-    if (arm.out)   x -= step;
+
+    // X axis — left/right buttons now control reach (in/out)
+    if (arm.right)  x += step;   // left  → extend in  (was: arm.in)
+    if (arm.left) x -= step;   // right → retract out (was: arm.out)
+
+    // Y axis — in/out buttons now control yaw (turn left/right)
+    if (arm.in)    y += step;   // in  → turn right (was: arm.right)
+    if (arm.out)   y -= step;   // out → turn left  (was: arm.left)
 
     // arm_move_to solves IK internally and rejects bad positions
     if (arm_move_to(x, y, z) != 0) {
@@ -145,11 +149,8 @@ void arm_cmd   (arm_format_t arm, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* 
         send_ack(arm.id, RESULT_CMD_FAILURE, security_flag, ARM_CORDINATES_ISSUE);
         return;
     }
-
     send_ack(arm.id, RESULT_SUCCESS, security_flag, NO_INFO);
-
 }
-
 
 void system_cmd(system_format_t sys, step_mot_t* F_L, step_mot_t* F_R, step_mot_t* B_L, step_mot_t* B_R){
     ESP_LOGI(CMD_TAG, "Executing System CMD");

@@ -25,8 +25,8 @@
 #define ARM_THETA2_MIN    10.0f
 #define ARM_THETA2_MAX   170.0f
 
-#define ARM_SPEED_MIN_STEP  0.1f
-#define ARM_SPEED_MAX_STEP  0.5f
+#define ARM_SPEED_MIN_STEP  0.3f
+#define ARM_SPEED_MAX_STEP  1.5f
 
 /*
 Each BLE command moves the arm 0.1–0.5in in one axis
