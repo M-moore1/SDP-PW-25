@@ -196,6 +196,8 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
     uint8_t  speed;
     uint16_t id_tag;
 
+    printf("I Got An ARM CMD");
+
     if (json_get_u8(root,  "U",  &up,    0, 1)    ||
         json_get_u8(root,  "D",  &down,  0, 1)    ||
         json_get_u8(root,  "L",  &left,  0, 1)    ||
@@ -211,6 +213,8 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
         cJSON_Delete(root);
         return -1;
     }
+
+    printf("Packaging an arm cmd");
 
     packet.arm.type  = ARM_CMD;
     packet.arm.pl    = pl;
