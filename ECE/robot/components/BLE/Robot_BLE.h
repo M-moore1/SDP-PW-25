@@ -1,4 +1,3 @@
-// Robot_BLE.h
 #ifndef ROBOT_BLE_H
 #define ROBOT_BLE_H
 
@@ -17,7 +16,7 @@
 #include "esp_gatt_common_api.h"
 #include "pinout.h"
 #include "robot_commands.h"
-//#include "aes_gcm_encrypt.h"
+#include "aes_gcm_encrypt.h"
 
 #define ROBOT_PROFILE_NUM                       1
 #define ROBOT_PROFILE_APP_IDX                   0
@@ -27,63 +26,47 @@
 #define CHAR_DECLARATION_SIZE                   (sizeof(uint8_t))
 #define GATTS_DEMO_CHAR_VAL_LEN_MAX             500
 
+#define MAX_DEVICES     2
+#define CONN_ID_INVALID 0xFFFF
+
+typedef struct {
+    uint16_t conn_id;
+    esp_gatt_if_t gatts_if;
+    bool notify_enabled;
+    uint8_t rx_buf[200];
+    int rx_idx;
+    uint8_t data_mode;
+} device_conn_t;
+
+extern device_conn_t connected_devices[MAX_DEVICES];
+extern int num_connected;
 extern QueueHandle_t ble_recieve_queue;
 
 enum
 {
-    ROBOT_IDX_SVC,     // Service container for entire robot communication
+    ROBOT_IDX_SVC,
 
-    ROBOT_IDX_CHAR,    // Characteristic metadata (UUID + properties: READ/WRITE/NOTIFY)
+    ROBOT_IDX_CHAR,      // TX char declaration  (central → peripheral, WRITE)
+    ROBOT_IDX_VAL,       // TX char value        (0xFF01)
 
-    ROBOT_IDX_VAL,     // Actual data pipe 
+    ROBOT_IDX_RX_CHAR,   // RX char declaration  (peripheral → central, NOTIFY)
+    ROBOT_IDX_RX_VAL,    // RX char value        (0xFF02)
+    ROBOT_IDX_CFG,       // RX CCCD (notify subscription descriptor)
 
-    ROBOT_IDX_CFG,     // Client config descriptor (enables/disables NOTIFY)
-
-    ROBOT_IDX_NB,      // Total number of attributes in this service
+    ROBOT_IDX_NB,
 };
 
-// BLE globals
-extern uint16_t robot_conn_id;
-extern esp_gatt_if_t robot_gatts_if;
-extern bool device_connected;
-extern bool notify_enabled;
 extern uint16_t robot_handle_table[ROBOT_IDX_NB];
 extern esp_ble_adv_data_t adv_data;
 extern esp_ble_adv_params_t adv_params;
-
 extern uint32_t spp_handle;
-extern uint8_t rx_buf[200];
-extern int rx_index;
-extern QueueHandle_t ble_recieve_queue;
 
-// Function declarations
 void robot_ble_init();
 void send_bytes(uint8_t *packet, size_t len);
+void send_bytes_to_all(uint8_t *packet, size_t len);
 void send_string(char *txt);
 void send_cmd(uint8_t* pkt, int sec_lvl);
 void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
 void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

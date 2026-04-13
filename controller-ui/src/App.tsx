@@ -29,7 +29,7 @@ interface MessageLogEntry {
   timestamp: string;
 }
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080';
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3001';
 const ENCRYPTION_KEY = 'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456'; // 64 hex chars (32 bytes)
 
 function App() {

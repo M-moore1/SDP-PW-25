@@ -4,23 +4,24 @@
 // Stops the motor after 60 ms countdown is complete
 static void motor_stop_callback(void* arg) {
     step_mot_t* motor = (step_mot_t*)arg;
+    stepper_disable(motor);
     ledc_set_duty(LEDC_LOW_SPEED_MODE, motor->channel, 0);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, motor->channel);
 }
 
 //Initialize a instance of the stepper motor
-void motor_init(step_mot_t* m, const int step_pin, const int dir_pin, const int en_pin, ledc_channel_t channel){
+void motor_init(step_mot_t* m, const int step_pin, const int dir_pin, const int en_pin, ledc_channel_t channel, ledc_timer_t timer) {
     m->dir_gpio = dir_pin;
     m->en_gpio = en_pin;
     m->step_gpio = step_pin;
     m->status = MOTOR_IDLE;
     m->channel = channel;
+    m->timer_sel = timer;
 
     gpio_set_direction(m->dir_gpio, GPIO_MODE_OUTPUT);
     gpio_set_direction(m->en_gpio, GPIO_MODE_OUTPUT);
-    gpio_set_level(m->en_gpio, 0);
+    gpio_set_level(m->en_gpio, 1);
 
-    m->timer_sel = (ledc_timer_t)(channel / 2); 
 
     // 1. Configure LEDC Timer
     ledc_timer_config_t ledc_timer = {
@@ -56,12 +57,12 @@ void motor_init(step_mot_t* m, const int step_pin, const int dir_pin, const int 
 }
 
 void stepper_enable(step_mot_t* m){
-    gpio_set_level(m->en_gpio, 1); 
+    gpio_set_level(m->en_gpio, 0); 
     m->status = MOTOR_IDLE;
 }
 
 void stepper_disable(step_mot_t* m){
-    gpio_set_level(m->en_gpio, 0); 
+    gpio_set_level(m->en_gpio, 1); 
     m->status = MOTOR_DISABLE;
 }
 

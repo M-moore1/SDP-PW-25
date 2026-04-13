@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
         
 
         if (looks_like_json(buf)) {
-          printf("I GOT a JSON\r\n");
+          //printf("I GOT a JSON\r\n");
           cJSON *probe = cJSON_Parse(buf);
           if (probe) {
             cJSON_Delete(probe);
@@ -184,18 +184,16 @@ int main(int argc, char **argv) {
         }
         // If not handled, attempt decrypt path or send raw string over Bluetooth
         if (!handled) {
-          printf("I GOT SOMETHING ENCRYPTED\r\n");
+          //printf("I GOT SOMETHING ENCRYPTED\r\n");
           handle_encrypted_data(uart_fd, uds_client, buf);
         }
-
-        printf("\r\n Recieved Data:\r\n");
-        printf("%s \r\n", buf);
 
         free(buf);                                         // Free buffer
       }
     }
 
     // ----- If UART readable: read bytes, parse frames, forward to Node -----
+    /*
     if (FD_ISSET(uart_fd, &rfds)) {                         // UART has data
       uint8_t tmp[256];                                     // Temp read buffer
       ssize_t n = read(uart_fd, tmp, sizeof(tmp));          // Read available bytes
@@ -209,6 +207,12 @@ int main(int argc, char **argv) {
         }
       }
     }
+      */
+    ble_uart_check(uart_fd);
+    char rx_buffer[1024]; 
+    if (uart_queue_pop(&uart_queue, rx_buffer) == 0){
+       printf("[UART OUTPUT] %s\r\n", rx_buffer);
+    }
   }
 
   // Cleanup on exit
@@ -216,6 +220,6 @@ int main(int argc, char **argv) {
   close(uds_listen);                                        // Close UDS server
   close(uart_fd);                                           // Close UART
   unlink(uds_path);                                         // Remove socket file
-
+ 
   return 0;                                                 // Exit
 }
