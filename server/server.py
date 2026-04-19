@@ -2,19 +2,14 @@ import asyncio
 import json
 import os
 import shutil
-import subprocess
 import sys
 
 import websockets
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "ubertooth"))
-from script import opcode_name
 
 HOST = "localhost"
 PORT = 8765
 
 connected_clients: set = set()
-seen_frames: set = set()
 
 
 def find_tool(name: str) -> str:
@@ -22,23 +17,6 @@ def find_tool(name: str) -> str:
     if not path:
         sys.exit(f"Error: '{name}' not found. Make sure it is installed and on your PATH.")
     return path
-
-
-def parse_line(line: str) -> dict | None:
-    parts = line.strip().split("\t")
-    while len(parts) < 3:
-        parts.append("")
-
-    frame_num, opcode, value = parts[0].strip(), parts[1].strip(), parts[2].strip()
-    if not value:
-        return None
-
-    return {
-        "type": "sniffed_packet",
-        "frame": frame_num,
-        "opcode": opcode_name(opcode),
-        "value": value,
-    }
 
 
 async def broadcast(message: str) -> None:
@@ -50,95 +28,71 @@ async def capture_loop() -> None:
     ubertooth = find_tool("ubertooth-btle")
     tshark = find_tool("tshark")
 
-    pcap_file = "/tmp/ubertooth_live.pcap"
-    if os.path.exists(pcap_file):
-        os.remove(pcap_file)
+    fifo_path = "/tmp/ubertooth_live.pcap"
+    if os.path.exists(fifo_path):
+        os.remove(fifo_path)
+    os.mkfifo(fifo_path)
 
     print("[capture] Starting ubertooth-btle...")
 
-    ubertooth_proc = subprocess.Popen(
-        ["sudo", ubertooth, "-f", "-c", pcap_file],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+    ubertooth_proc = await asyncio.create_subprocess_exec(
+        "sudo", ubertooth, "-f", "-c", fifo_path,
+        stdout=asyncio.subprocess.DEVNULL,
+        stderr=asyncio.subprocess.DEVNULL,
     )
 
-    await asyncio.sleep(2)
-    print("[capture] Pipeline running, polling for packets...")
+    print("[capture] Starting tshark stream...")
 
-    connect_ind_seen = False
-    loop = asyncio.get_event_loop()
+    tshark_proc = await asyncio.create_subprocess_exec(
+        tshark, "-i", fifo_path,
+        "-l",
+        "-Y", "btatt.handle == 0x002a",
+        "-T", "fields",
+        "-e", "frame.number",
+        "-e", "frame.time_relative",
+        "-e", "_ws.col.Source",
+        "-e", "_ws.col.Destination",
+        "-e", "_ws.col.Protocol",
+        "-e", "frame.len",
+        "-e", "_ws.col.Info",
+        "-e", "btatt.value",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.DEVNULL,
+    )
+
+    print("[capture] Pipeline running, streaming packets...")
+
     try:
-        while True:
-            if not os.path.exists(pcap_file):
-                await asyncio.sleep(1)
+        async for raw_line in tshark_proc.stdout:
+            line = raw_line.decode().strip()
+            if not line:
                 continue
-            # if not connect_ind_seen:
-            #     conn_result = await loop.run_in_executor(None, lambda: subprocess.run(
-            #         [
-            #             tshark, "-r", pcap_file,
-            #             "-Y", '_ws.col.Info contains "CONNECT_IND"',
-            #             "-T", "fields",
-            #             "-e", "frame.number",
-            #             "-c", "1",
-            #         ],
-            #         capture_output=True,
-            #         text=True,
-            #     ))
-            #     if conn_result.stdout.strip():
-            #         print("Connected")
-            #         connect_ind_seen = True
+            fields = line.split("\t")
+            while len(fields) < 8:
+                fields.append("")
+            frame, time_rel, src, dst, proto, length, info, value = (
+                f.strip() for f in fields
+            )
 
-            result = await loop.run_in_executor(None, lambda: subprocess.run(
-                [
-                    tshark, "-r", pcap_file,
-                    "-Y", "btatt.handle == 0x002a",
-                    "-T", "fields",
-                    "-e", "frame.number",
-                    "-e", "frame.time_relative",
-                    "-e", "_ws.col.Source",
-                    "-e", "_ws.col.Destination",
-                    "-e", "_ws.col.Protocol",
-                    "-e", "frame.len",
-                    "-e", "_ws.col.Info",
-                    "-e", "btatt.value",
-                ],
-                capture_output=True,
-                text=True,
-            ))
+            val_display = f" | Value: {value}" if value else ""
+            print(f"[sniff] [{proto}] {frame} {time_rel} {src} → {dst} {proto} {length} {info}{val_display}")
 
-            
-            for line in result.stdout.splitlines():
-                line = line.strip()
-                if not line:
-                    continue
-                fields = line.split("\t")
-                while len(fields) < 8:
-                    fields.append("")
-                frame, time, src, dst, proto, length, info, value = (
-                    f.strip() for f in fields
-                )
-                if frame in seen_frames:
-                    continue
-                seen_frames.add(frame)
-
-                val_display = f" | Value: {value}" if value else ""
-                print(f"[sniff] [{proto}] {frame} {time} {src} → {dst} {proto} {length} {info}{val_display}")
-
-                pkt = {
-                    "type": "sniffed_packet",
-                    "frame": frame,
-                    "protocol": proto,
-                    "info": info,
-                    "value": value,
-                }
-                await broadcast(json.dumps(pkt))
-
-            await asyncio.sleep(1)
+            pkt = {
+                "type": "sniffed_packet",
+                "frame": frame,
+                "protocol": proto,
+                "info": info,
+                "value": value,
+            }
+            await broadcast(json.dumps(pkt))
 
     finally:
+        tshark_proc.terminate()
         ubertooth_proc.terminate()
-        if os.path.exists(pcap_file):
-            os.remove(pcap_file)
+        try:
+            os.remove(fifo_path)
+        except OSError:
+            pass
         print("[capture] Pipeline stopped.")
 
 
