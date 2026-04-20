@@ -1,5 +1,6 @@
 #include "pmod_esp32.h"
 #include "uart_queue.h"
+#include "../cmd_parser/cmd_parser.h"
 #include "ble_tls_transport.h"
 
 
@@ -19,13 +20,14 @@ void pmod_on_ble_notification(const uint8_t *data, int len) {
 }
 
 
-long get_now_ms() {
+
+uint64_t get_now_ms() { // gets system updates
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (ts.tv_sec * 1000L) + (ts.tv_nsec / 1000000L);
+    return (ts.tv_sec * 1000L) + (ts.tv_nsec / 1000000L); // converts seconds to ms and nanoseconds to ms (Used for timeouts)
 }
 
-int uart_open_config(const char *dev, speed_t baud) {
+int uart_open_config(const char *dev, speed_t baud) { // UART Configuration
   int fd = open(dev, O_RDWR | O_NOCTTY | O_NONBLOCK); // Open UART nonblocking
   if (fd < 0) {                                       // If open failed
     perror("open uart");                              // Print reason (errno)
@@ -160,12 +162,12 @@ int send_at_cmd(int uart_fd, const char *cmd, const char *prefix, char *out_valu
 
             if (strstr(buffer, "OK")) {
                 /* NEW: print full response for diagnostic commands */
-                printf("[UART OUTPUT] %s\n", buffer);
+                //printf("[UART OUTPUT] %s\n", buffer);
                 return 0;
             }
             if (strstr(buffer, "ERROR")) {
                 /* NEW: print full response including errors */
-                printf("[UART OUTPUT] %s\n", buffer);
+                //printf("[UART OUTPUT] %s\n", buffer);
                 return -1;
             }
         }
@@ -248,7 +250,6 @@ int pmod_esp32_reset(int uart_fd) {
     return -1;
 }
 
-
 int pmod_esp32_init(int uart_fd) {
     int ret = 0;
     uart_queue_init(&uart_queue);
@@ -261,7 +262,6 @@ int pmod_esp32_init(int uart_fd) {
 
     if (ret != 0) return -1;
 
-    
     gpio_write(PMOD_0_RST,    1);   
     gpio_write(PMOD_0_MODE, 0);   
     gpio_write(PMOD_0_GPIO_0, 0);
@@ -269,10 +269,9 @@ int pmod_esp32_init(int uart_fd) {
 
     if (pmod_esp32_reset(uart_fd) < 0) return -1;
 
-    return send_at_cmd(uart_fd, "ATE0\r\n", NULL, NULL, 50);
+    return send_at_cmd(uart_fd, "ATE0\r\n", NULL, NULL, 50);;
 
 }
-
 
 int pmod_name(int uart_fd, const char *set_name, char *out_name) {
     int ret;
@@ -294,17 +293,8 @@ int pmod_name(int uart_fd, const char *set_name, char *out_name) {
     return 0;
 }
 
-
-int set_pmod_name(int uart_fd, const char *dev_name){
-    char cmd_buffer[128];
-    snprintf(cmd_buffer, sizeof(cmd_buffer), "AT+BLENAME=\"%s\"\r\n", dev_name);
-    return send_at_cmd(uart_fd, cmd_buffer, NULL, NULL, 1000);
-}
-
-
 int ble_discon(int uart_fd){
     BLE_CONNECTED = 0;
-
     return send_at_cmd(uart_fd, "AT+BLEDISCONN=0\r\n", NULL, NULL, 1000);
 }
 
@@ -314,10 +304,11 @@ int ble_notification(int uart_fd, int enable) {
     uint8_t enable_cccd[2]  = {0x01, 0x00};
     uint8_t disable_cccd[2] = {0x00, 0x00};
 
+    // CCCD is descriptor 1 on RX characteristic (chr=2) in service 3
     if (!enable) {
-        return ble_write(uart_fd, 3, 1, 1, disable_cccd, 2);
+        return ble_write(uart_fd, ROBOT_SRV, ROBOT_RX_CHR, ROBOT_RX_DESC, disable_cccd, 2);
     }
-    return ble_write(uart_fd, 3, 1, 1, enable_cccd, 2);
+    return ble_write(uart_fd, ROBOT_SRV, ROBOT_RX_CHR, ROBOT_RX_DESC, enable_cccd, 2);
 }
 
 int ble_connect(int uart_fd, const char *MAC) {
@@ -337,53 +328,36 @@ int ble_connect(int uart_fd, const char *MAC) {
         return -1;
     }
 
-    
     usleep(500000); 
     BLE_CONNECTED = 1;
-//------------------------------------------------------------------
 
-    // Request authenticated encrypted link with MITM protection
-    if (send_at_cmd(uart_fd, "AT+BLEENC=0,3\r\n", NULL, NULL, 3000) < 0) return -1;
+    // CSE Team Security Addition
+    if (security_level > 0) {
+        // Request authenticated encrypted link with MITM protection
+        if (send_at_cmd(uart_fd, "AT+BLEENC=0,3\r\n", NULL, NULL, 3000) < 0) return -1;
 
-    // Wait here for +BLEAUTHCMPL:0,0 before continuing
-    if (wait_for_ble_auth_complete(uart_fd, 10000) < 0) {
-        BLE_CONNECTED = 0;
-        return -1;
+        // Wait here for +BLEAUTHCMPL:0,0 before continuing
+        if (wait_for_ble_auth_complete(uart_fd, 10000) < 0) {
+            BLE_CONNECTED = 0;
+            return -1;
+        }
+
     }
-
-//------------------------------------------------------------------
-
+    //
 
     if (send_at_cmd(uart_fd, "AT+BLEDATALEN=0,251\r\n", NULL, NULL, 2000) < 0) return -1;  // Set Data Length
     if (send_at_cmd(uart_fd, "AT+BLECFGMTU=0,512\r\n", NULL, NULL, 2000) < 0) return -1;   // Set MTU
     if (send_at_cmd(uart_fd, "AT+BLEGATTCPRIMSRV=0\r\n", NULL, NULL, 5000) < 0) return -1; // Get BLE Connection Service and makes index
-    if (send_at_cmd(uart_fd, "AT+BLEGATTCCHAR=0,3\r\n", NULL, NULL, 10000) < 0) return -1; // Gets the Robot custom Service 
-    if (ble_notification(uart_fd, 1) < 0) return -1;                                       // Enable Robot Custom service notifications
+    if (send_at_cmd(uart_fd, "AT+BLEGATTCCHAR=0,3\r\n", NULL, NULL, 5000) < 0) return -1;  // Get Robot custom service characteristics
+    if (ble_notification(uart_fd, 1) < 0) return -1;                                       // Enable notifications on RX characteristic (0xFF02)
 
-    
     return 0;
-}
-
-int get_name(int uart_fd, char *name){
-    if (!BLE_CONNECTED) return -1;
-    return send_at_cmd(uart_fd, "AT+BLENAME?\r\n", "+BLENAME:", name, 1000);
-}
-
-int get_mac(int uart_fd, char *connected_mac) {
-    if (!BLE_CONNECTED) return -1;
-    return send_at_cmd(uart_fd, "AT+BLECONN?\r\n", "+BLECONN:0,", connected_mac, 1000);
-}
-
-int get_rssi(int uart_fd, char *rssi_out) {
-    if (!BLE_CONNECTED) return -1;
-    return send_at_cmd(uart_fd, "AT+BLERDRSSI=0\r\n", "+BLERDRSSI:0,", rssi_out, 1000);
 }
 
 int get_ble_conn_params(int uart_fd, char *params_out) {
     if (!BLE_CONNECTED) return -1;
     return send_at_cmd(uart_fd, "AT+BLECONNPARAM?\r\n", "+BLECONNPARAM:", params_out, 1000);
 }
-
 
 int ble_init(int uart_fd) {
     BLE_INITIALIZED = 0;
@@ -413,25 +387,29 @@ int ble_init(int uart_fd) {
         return -1;
     }
 
-    /* NEW: diagnostic - check firmware version */
+    // Check Firmware
+    /*
     write(uart_fd, "AT+GMR\r\n", strlen("AT+GMR\r\n"));
     usleep(500000);
     char diag_buf[512] = {0};
     int n = uart_read_and_queue(uart_fd, diag_buf, sizeof(diag_buf) - 1);
     if (n > 0) printf("[PMOD FW VERSION] %s\n", diag_buf);
+    */
 
-    /* NEW: diagnostic - check stored bonds */
+    // Check stored bonds
+    /*
     write(uart_fd, "AT+BLEGETPEERDEV=0\r\n", strlen("AT+BLEGETPEERDEV=0\r\n"));
     usleep(500000);
     memset(diag_buf, 0, sizeof(diag_buf));
     n = uart_read_and_queue(uart_fd, diag_buf, sizeof(diag_buf) - 1);
     if (n > 0) printf("[PMOD STORED BONDS] %s\n", diag_buf);
-    /* END NEW */
+    */
 
-
-    if (send_at_cmd(uart_fd, "AT+BLESECPARAM=0,3,16,3,3,0\r\n", NULL, NULL, 1000) < 0) return -1;
-    if (send_at_cmd(uart_fd, "AT+BLESETKEY=123456\r\n", NULL, NULL, 1000) < 0) {
-        return -1;
+    //
+    // CSE Security Additions
+    if (security_level > 0) {
+        if (send_at_cmd(uart_fd, "AT+BLESECPARAM=0,3,16,3,3,0\r\n", NULL, NULL, 1000) < 0) return -1;
+        if (send_at_cmd(uart_fd, "AT+BLESETKEY=123456\r\n", NULL, NULL, 1000) < 0) return -1;
     }
 
     if (pmod_name(uart_fd, PMOD_DEV_NAME, NULL) < 0) {
@@ -442,8 +420,6 @@ int ble_init(int uart_fd) {
     BLE_INITIALIZED = 1;
     return 0;
 }
-
-
 
 
 int ble_send_pkt(int uart_fd, uint8_t *data, int data_len) {
@@ -457,7 +433,7 @@ int ble_send_pkt(int uart_fd, uint8_t *data, int data_len) {
     packet[158] = 0xDA;
     packet[159] = 0x0D;
 
-    return ble_write(uart_fd, 3, 1, -1, packet, PACKET_BYTES);
+    return ble_write(uart_fd, ROBOT_SRV, ROBOT_TX_CHR, -1, packet, PACKET_BYTES);
 }
 
 int ble_send_instruction(int uart_fd, uint8_t instruction[8]) {
