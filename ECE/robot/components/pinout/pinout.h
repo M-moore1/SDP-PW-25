@@ -13,53 +13,28 @@
 #define TEST_MOTOR_CHANNEL LEDC_CHANNEL_0
 
 //Front Left Motor
-#define FL_MOTOR_STEP    GPIO_NUM_4 
+#define FL_MOTOR_STEP    GPIO_NUM_3 // RX
 #define FL_MOTOR_DIR     GPIO_NUM_19
-#define FL_MOTOR_EN      GPIO_NUM_27
+#define FL_MOTOR_EN      GPIO_NUM_23
 #define FL_MOTOR_PWM     LEDC_CHANNEL_0
-#define FL_MOTOR_TIMER   LEDC_TIMER_0
 
 //Front Right Motor
 #define FR_MOTOR_STEP    GPIO_NUM_15
 #define FR_MOTOR_DIR     GPIO_NUM_2
-#define FR_MOTOR_EN      GPIO_NUM_27 // Possible Change to GPIO_NUM_14
+#define FR_MOTOR_EN      GPIO_NUM_23
 #define FR_MOTOR_PWM     LEDC_CHANNEL_1
-#define FR_MOTOR_TIMER   LEDC_TIMER_1
 
 //Back Left Motor
 #define BL_MOTOR_STEP    GPIO_NUM_25
-#define BL_MOTOR_DIR     GPIO_NUM_26
+#define BL_MOTOR_DIR     GPIO_NUM_33
 #define BL_MOTOR_EN      GPIO_NUM_23
 #define BL_MOTOR_PWM     LEDC_CHANNEL_2
-#define BL_MOTOR_TIMER   LEDC_TIMER_0
 
 //Back Right Motor
 #define BR_MOTOR_STEP    GPIO_NUM_12
-#define BR_MOTOR_DIR     GPIO_NUM_33
-#define BR_MOTOR_EN      GPIO_NUM_23 // Possible Change to GPIO_NUM_13
+#define BR_MOTOR_DIR     GPIO_NUM_14
+#define BR_MOTOR_EN      GPIO_NUM_23
 #define BR_MOTOR_PWM     LEDC_CHANNEL_3
-#define BR_MOTOR_TIMER   LEDC_TIMER_1 
-
-// Servo Base
-#define SERVO_BASE_PIN      16
-#define SERVO_BASE_CHANNEL  LEDC_CHANNEL_4
-
-// Servo Shoulder
-#define SERVO_SHOULDER_PIN      17
-#define SERVO_SHOULDER_CHANNEL  LEDC_CHANNEL_5
-
-// Servo Elbow
-#define SERVO_ELBOW_PIN      18
-#define SERVO_ELBOW_CHANNEL  LEDC_CHANNEL_6
-
-// i2c
-#define i2c_scl_pin GPIO_NUM_22
-#define i2c_sda_pin GPIO_NUM_21
-
-//imu 
-#define IMU_INT_PIN   GPIO_NUM_34 
-#define IMU_RESET_PIN GPIO_NUM_5 
-
 
 //TAGS ESP LOG TAGS
 #define MAIN_TAG "ROBOT_MAIN"

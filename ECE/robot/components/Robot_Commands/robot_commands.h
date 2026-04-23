@@ -7,7 +7,7 @@
 #include <string.h>
 
 //Robot State Variables
-extern volatile int security_flag;
+extern volatile int security_flag_1;
 extern volatile uint16_t AC;        // Stored in NVS
 extern volatile int motor_power;
 extern char robot_name[32];         // Stored in NVS

@@ -1,21 +1,9 @@
 #include "cmd_parser.h"
 #include "../cmd_structure.h"
 
-volatile int security_level = 0; // use for sendback from bruidge for confirmation of secuirty level
+volatile int security_level = 0;
 volatile int connection_status = 0;
 volatile int authorization_code = 0x3FF;
-
-static int apply_security_params(int uart_fd) {
-    if (security_level > 0) {
-        if (send_at_cmd(uart_fd, "AT+BLESECPARAM=0,3,16,3,3,0\r\n", NULL, NULL, 1000) < 0) return -1;
-        if (send_at_cmd(uart_fd, "AT+BLESETKEY=123456\r\n",          NULL, NULL, 1000) < 0) return -1;
-    } else {
-        // Open security mode, no bonding, no MITM
-        if (send_at_cmd(uart_fd, "AT+BLESECPARAM=0,0,16,3,0,0\r\n", NULL, NULL, 1000) < 0) return -1;
-        if (send_at_cmd(uart_fd, "AT+BLESETKEY=0\r\n",               NULL, NULL, 1000) < 0) return -1;
-    }
-    return 0;
-}
 
 // Do sys instructions for the robot
 int sys_cmd(int uart_fd, system_format_t sys_inst){
@@ -24,41 +12,9 @@ int sys_cmd(int uart_fd, system_format_t sys_inst){
   switch(sys_inst.instruction){
     case SECURITY_LEVEL:
       printf("Changing Security Level\r\n");
+      sys_inst.specific = security_level;
 
-      if (sys_inst.specific == security_level) {
-          robot_send_need = 0;
-          break;
-      }
-
-      {
-          robot_bt_packet_t packet = {0};
-          packet.sys.pl          = sys_inst.pl;
-          packet.sys.type        = System_CMD;
-          packet.sys.instruction = sys_inst.instruction;
-          packet.sys.ac          = sys_inst.ac;
-          packet.sys.id          = sys_inst.id;
-          packet.sys.specific    = sys_inst.specific;  // 0 or 1 — robot acts on this
-          ble_send_instruction(uart_fd, packet.bytes);
-          usleep(100000); // give robot time to process before we drop connection
-      }
-
-      security_level = sys_inst.specific; // set AFTER notifying robot, BEFORE reconnect
-
-      if (BLE_CONNECTED) ble_discon(uart_fd);
-      usleep(300000);
-
-      apply_security_params(uart_fd);  // push correct AT params for new level
-
-      connection_status = (ble_connect(uart_fd, NULL) == 0) ? 1 : 0;
-      if (connection_status == 0) {
-          printf("[SEC] Reconnect failed after security level change\r\n");
-      } else {
-          printf("[SEC] Security level now %d, reconnected OK\r\n", security_level);
-      }
-
-      robot_send_need = 0;
-    break;
-
+      break;
     case Connect_Reconnect:
       printf("Attempting Connection\r\n");
       if (ble_connect(uart_fd, NULL) < 0){ connection_status = 0;}
@@ -126,34 +82,21 @@ int query_cmd(int uart_fd, query_format_t query_inst){
 }
 
 int handle_encrypted_data(int uart_fd, int uds_fd, const char *encrypt_str) {
-    if (!security_level){
+    if (!encrypt_str) {
         fprintf(stderr, "[encrypt] ERROR: null input\n");
         return -1;
     }
 
-    /* Strip all whitespace into a clean buffer */
-    char clean[PAYLOAD_HEX_STR_LEN + 1] = {0};
-    size_t clean_len = 0;
-    for (size_t i = 0; encrypt_str[i] != '\0'; i++) {
-        unsigned char c = (unsigned char)encrypt_str[i];
-        if (c == ' ' || c == '\t' || c == '\n' || c == '\r') continue;
-        if (clean_len >= PAYLOAD_HEX_STR_LEN) {
-            fprintf(stderr, "[encrypt] ERROR: input too long after stripping whitespace\n");
-            return -2;
-        }
-        clean[clean_len++] = encrypt_str[i];
-    }
-    clean[clean_len] = '\0';
-
-    if (clean_len != PAYLOAD_HEX_STR_LEN) {
+    size_t actual_len = strlen(encrypt_str);
+    if (actual_len != PAYLOAD_HEX_STR_LEN) {
         fprintf(stderr, "[encrypt] ERROR: bad length — got %zu, expected %d\n",
-                clean_len, PAYLOAD_HEX_STR_LEN);
+                actual_len, PAYLOAD_HEX_STR_LEN);
         return -2;
     }
 
     uint8_t encrypted_bytes[TOTAL_SZ] = {0};
     for (int i = 0; i < TOTAL_SZ; i++) {
-        if (sscanf(clean + i * 2, "%02hhx", &encrypted_bytes[i]) != 1) {
+        if (sscanf(encrypt_str + i * 2, "%02hhx", &encrypted_bytes[i]) != 1) {
             fprintf(stderr, "[encrypt] ERROR: hex parse failed at byte %d\n", i);
             return -3;
         }
@@ -166,9 +109,10 @@ int handle_encrypted_data(int uart_fd, int uds_fd, const char *encrypt_str) {
         return -4;
     }
 
+    /* Guarantee null termination even if decrypt_json doesn't */
     json_out[CT_SZ] = '\0';
 
-    //printf("[encrypt] Decrypted JSON (%d bytes): %s\n", len, json_out);
+    printf("[encrypt] Decrypted JSON (%d bytes): %s\n", len, json_out);
     fflush(stdout);
 
     handle_node_json(uart_fd, uds_fd, json_out);
@@ -195,7 +139,7 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
   robot_bt_packet_t packet = {0}; // Initialize to clear all 64 bits (including "unused")
   int send_to_robot = 1;
 
-  //printf("IM PARSING\r\n");
+  printf("IM PARSING\r\n");
   // CONTROL (C)
   if (strcmp(t, "C") == 0) {
     uint8_t f, b, l, r_move, speed, pl;
@@ -206,13 +150,13 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
         json_get_u8(root, "L",  &l,     0, 1)   ||
         json_get_u8(root, "R",  &r_move,0, 1)   ||
         json_get_u8(root, "S",  &speed, 0, 100) ||
-        json_get_u8(root, "PL", &pl,    0, 3) )  //||
-        //json_get_u8(root, "ID", &pl,    1, 2047)) 
+        json_get_u8(root, "PL", &pl,    0, 3)  ) 
     {
       uds_send_json(uds_fd, "{\"type\":\"ERR\",\"msg\":\"bad C fields\"}");
       cJSON_Delete(root);
       return -1;
     }
+
     packet.ctrl.type  = CONTROL_CMD;
     packet.ctrl.pl    = pl;
     packet.ctrl.w     = f;
@@ -220,7 +164,7 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
     packet.ctrl.a     = l;
     packet.ctrl.d     = r_move;
     packet.ctrl.speed = speed;
-    //packet.ctrl.id    = id_tag;
+    packet.ctrl.id    = id_tag;
   }
 
   // ARM (A)
@@ -228,8 +172,6 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
     uint8_t  up, down, left, right, in, out, reset, pl;
     uint8_t  speed;
     uint16_t id_tag;
-
-    printf("I Got An ARM CMD");
 
     if (json_get_u8(root,  "U",  &up,    0, 1)    ||
         json_get_u8(root,  "D",  &down,  0, 1)    ||
@@ -246,8 +188,6 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
         cJSON_Delete(root);
         return -1;
     }
-
-    printf("Packaging an arm cmd");
 
     packet.arm.type  = ARM_CMD;
     packet.arm.pl    = pl;
@@ -269,11 +209,11 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
     uint32_t spec;
     
 
-    if (json_get_u8(root, "instruction",   &instr, 0, 15)   ||
-        json_get_u16(root,"Authorization_Code",  &ac,    0, 1024) ||
+    if (json_get_u8(root, "I",   &instr, 0, 15)   ||
+        json_get_u16(root,"AC",  &ac,    0, 1024) ||
         json_get_u8(root, "PL",  &pl,    0, 3)    ||
         json_get_u16(root,"ID",  &id,    0, 2047) ||
-        json_get_u32(root,"instruction_specific", &spec)) 
+        json_get_u32(root,"IS", &spec)) 
     {
       printf("I GOT AN ERROR WITH THE S INSTRUCTION\n");
       uds_send_json(uds_fd, "{\"type\":\"ERR\",\"msg\":\"bad S fields\"}");
@@ -328,8 +268,8 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
   cJSON_Delete(root);
 
   //Put a connection check and send back ACK
-  if (send_to_robot == 1){
-    if (security_level == 1) {
+  if (send_to_robot){
+    if (security_level) {
       uint8_t ciphertext[TOTAL_SZ] = {0};
       size_t out_len = 0;
 
@@ -338,104 +278,10 @@ int handle_node_json(int uart_fd, int uds_fd, const char *json_str) {
       printf("\n");
 
       if (encrypt_cmd(&packet, ciphertext, &out_len) != 0) return -1;
-      //printf("Ciphertext (%zu bytes): ", out_len);
-      //for (size_t i = 0; i < out_len; i++) printf("%02X ", ciphertext[i]);
-      //printf("\n");
-
       return ble_send_pkt(uart_fd, ciphertext, out_len);
     }
     // TODO add priority Queue   
     return ble_send_instruction(uart_fd, packet.bytes);
   }
   return 0;
-}
-
-cJSON *robot_packet_to_json(robot_bt_packet_t pkt) {
-    cJSON *root = cJSON_CreateObject();
-
-    switch (pkt.ctrl.type) {
-
-        // =========================
-        // HEALTH REPORT (HR)
-        // =========================
-        case HEALTH_CMD: {
-            cJSON_AddStringToObject(root, "type", "HR");
-            cJSON_AddNumberToObject(root, "battery", pkt.health.battery);
-            cJSON_AddNumberToObject(root, "security", pkt.health.sec_en);
-            cJSON_AddNumberToObject(root, "motor_enabled", pkt.health.motor_en);
-            cJSON_AddNumberToObject(root, "arm_enabled", pkt.health.arm_en);
-            break;
-        }
-
-        // =========================
-        // ACKNOWLEDGEMENT (ACK)
-        // =========================
-        case ACK_CMD: {
-            cJSON_AddStringToObject(root, "type", "ACK");
-            cJSON_AddNumberToObject(root, "id", pkt.ack.id);
-            cJSON_AddNumberToObject(root, "result", pkt.ack.result_code);
-            cJSON_AddNumberToObject(root, "info", pkt.ack.instruction_specific);
-            break;
-        }
-
-        // =========================
-        // ROBOT UPDATE (NAV / POSE / INERT)
-        // =========================
-        case ROBOT_UPDATE_CMD: {
-
-            // ---------- NAVIGATION ----------
-            if (pkt.nav.part == 0) {
-                cJSON_AddStringToObject(root, "type", "NAV");
-
-                cJSON_AddNumberToObject(root, "px", pkt.nav.pos_x);
-                cJSON_AddNumberToObject(root, "py", pkt.nav.pos_y);
-                cJSON_AddNumberToObject(root, "pz", pkt.nav.pos_z);
-                cJSON_AddNumberToObject(root, "speed", pkt.nav.speed);
-            }
-
-            // ---------- POSE ----------
-            else if (pkt.pose.part == 1) {
-                cJSON_AddStringToObject(root, "type", "POSE");
-
-                cJSON_AddNumberToObject(root, "yaw", pkt.pose.yaw);
-                cJSON_AddNumberToObject(root, "pitch", pkt.pose.pitch);
-                cJSON_AddNumberToObject(root, "roll", pkt.pose.roll);
-            }
-
-            // ---------- INERTIA ----------
-            else if (pkt.inert.part == 2) {
-                cJSON_AddStringToObject(root, "type", "INERT");
-
-                cJSON_AddNumberToObject(root, "ax", pkt.inert.accel_x);
-                cJSON_AddNumberToObject(root, "ay", pkt.inert.accel_y);
-                cJSON_AddNumberToObject(root, "az", pkt.inert.accel_z);
-
-                cJSON_AddNumberToObject(root, "gx", pkt.inert.gyro_x);
-                cJSON_AddNumberToObject(root, "gy", pkt.inert.gyro_y);
-                cJSON_AddNumberToObject(root, "gz", pkt.inert.gyro_z);
-            }
-
-            break;
-        }
-
-        // =========================
-        // HIGH PRIORITY ALERT (HPR)
-        // =========================
-        case HPR_CMD: {
-            cJSON_AddStringToObject(root, "type", "HPR");
-            cJSON_AddNumberToObject(root, "alert", pkt.hpr.alert_type);
-            break;
-        }
-
-        // =========================
-        // UNKNOWN TYPE
-        // =========================
-        default: {
-            cJSON_AddStringToObject(root, "type", "UNKNOWN");
-            cJSON_AddNumberToObject(root, "raw_type", pkt.ctrl.type);
-            break;
-        }
-    }
-
-    return root;
 }

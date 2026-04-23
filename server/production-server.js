@@ -16,7 +16,7 @@ import net from "net";
 
 // ------------------------- Config -------------------------
 
-const PORT = Number(process.env.PORT || 3001);
+const PORT = Number(process.env.PORT || 8080);
 const BIND = process.env.BIND || "0.0.0.0";
 const SOCKET_PATH = process.env.SOCKET_PATH || "/tmp/gs_bridge.sock";
 
@@ -85,7 +85,7 @@ function udsSendRaw(str) {
   if (!cSocket || cSocket.destroyed) return false;
 
   const buf = Buffer.from(String(str), "utf8");
-  console.log("udsSendRaw: sending", buf.length, "bytes:", str.slice(0, 32), "...");
+  console.log("udsSendRaw: sending", buf.length, "bytes:", str.slice(0, 32), "...");  // add this
 
   if (buf.length <= 0 || buf.length > 1024 * 1024) {
     console.warn("⚠️  Refusing to send UDS raw of invalid size:", buf.length);
@@ -186,69 +186,40 @@ function directionToC(dir, maybeSpeed, maybeId) {
   };
 }
 
-// UI-internal types that should NEVER be forwarded to the C bridge.
-const UI_ONLY_TYPES = new Set(["ping", "pong", "hello", "ack", "ERR", "INFO"]);
-
-/**
- * Returns true if this message type should be forwarded to the C bridge.
- * Allows any well-formed T value that is not a UI-internal type:
- *   "C"   - Control (drive)
- *   "A"   - Arm / appendage  e.g. {"T":"A","U":1,"D":0,...}
- *   "P"   - Peripheral / servo
- *   "S"   - Settings
- *   "Q"   - Query
- *   "raw" - Raw passthrough
- *   "HR", "SR", "HPR", … - Robot report types (round-trip passthrough)
- *   any future type added in gs_bridge.c
- */
 function isBridgeType(t) {
-  return typeof t === "string" && t.length > 0 && !UI_ONLY_TYPES.has(t);
+  return t === "C" || t === "P" || t === "S" || t === "Q" || t === "raw";
 }
 
-/**
- * Normalize a Control (C) message to the compact UDS form.
- * Accepts both legacy { type, forward, ... } and compact { T, F, ... }.
- * Returns null if the message is NOT a Control command.
- */
+/** Normalize Control (C) to compact UDS form; accepts legacy { type, forward, ... } or { T, F, ... }. */
 function compactControlMessage(data) {
-  const t = data.T ?? data.type;
-  if (t !== "C") return null;
-
+  if (data.T !== "C" && data.type !== "C") return null;
   const compact = data.T === "C";
   return {
     T: "C",
-    F: clampInt(compact ? data.F : data.forward,  0,   1, 0),
-    B: clampInt(compact ? data.B : data.backward, 0,   1, 0),
-    L: clampInt(compact ? data.L : data.left,     0,   1, 0),
-    R: clampInt(compact ? data.R : data.right,    0,   1, 0),
-    S: clampInt(compact ? data.S : data.speed,    0, 100, DEFAULT_SPEED),
+    F: clampInt(compact ? data.F : data.forward, 0, 1, 0),
+    B: clampInt(compact ? data.B : data.backward, 0, 1, 0),
+    L: clampInt(compact ? data.L : data.left, 0, 1, 0),
+    R: clampInt(compact ? data.R : data.right, 0, 1, 0),
+    S: clampInt(compact ? data.S : data.speed, 0, 100, DEFAULT_SPEED),
     PL: clampInt(compact ? data.PL : data.priority_level, 0, 3, DEFAULT_PRIORITY),
     ID: clampInt(compact ? data.ID : (data.id ?? data.ID), 0, 255, 1),
   };
 }
 
-/**
- * Build the object to send on UDS from a parsed WS JSON message.
- * Returns null if the message should not be forwarded.
- */
+/** Build the object to send on UDS from a parsed WS JSON message. */
 function wsPayloadToUds(data) {
-  // Special handling for Control (C): normalize/clamp all fields.
   const c = compactControlMessage(data);
   if (c) return c;
 
-  // Resolve the type field (support legacy "type" key as well as compact "T").
   const t = data.T ?? data.type;
-
   if (!isBridgeType(t)) return null;
 
-  // Ensure the outgoing object always uses "T" (compact key expected by gs_bridge.c).
-  // If the message arrived with the legacy "type" key, rename it to "T".
+  // Legacy bridge messages: use T instead of type for the C side
   if (data.type !== undefined && data.T === undefined) {
     const { type, ...rest } = data;
     return { T: type, ...rest };
   }
 
-  // Already uses "T" — forward as-is (covers "A", "P", "S", "Q", "raw", report types, …)
   return data;
 }
 
@@ -264,7 +235,7 @@ wss.on("connection", (ws, req) => {
     try {
       data = JSON.parse(rawStr);
     } catch {
-      // Plain string (invalid JSON) — send to UDS as raw
+      // Plain string (invalid JSON) - send to UDS as raw
       const ok = udsSendRaw(rawStr);
       ws.send(JSON.stringify({ type: ok ? "ack" : "ERR", msg: ok ? "sent" : "C bridge not connected", ts: Date.now() }));
       return;
@@ -286,6 +257,7 @@ wss.on("connection", (ws, req) => {
     // If UI sends direction key, translate to Control (C)
     if (data.direction) {
       const cmd = directionToC(data.direction, data.speed, data.id);
+
       const ok = udsSendJson(cmd);
       ws.send(
         JSON.stringify({
@@ -298,7 +270,7 @@ wss.on("connection", (ws, req) => {
       return;
     }
 
-    // All other bridge messages (C, A, P, S, Q, raw, report types, …)
+    // Direct bridge messages: Control (C) as compact { T,F,B,L,R,S,PL,ID }; other types get T alias if legacy
     const udsPayload = wsPayloadToUds(data);
     if (udsPayload) {
       console.log("WS->UDS sending:", udsPayload);

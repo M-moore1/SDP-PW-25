@@ -131,9 +131,7 @@ int aes_gcm_test(void)
 
 // ---- host entry point (not used on ESP-IDF) -----------------------------
 #ifndef ESP_PLATFORM
-/*
 int main(void) {
     return aes_gcm_test() == 0 ? 0 : 1;
 }
-*/
 #endif

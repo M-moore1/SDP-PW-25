@@ -24,22 +24,13 @@
 #define PMOD_1_GPIO_3 523
 
 #define PMOD_DEV_NAME "SDP_2635_GS"
-#define ESP32_MAC "44:1d:64:f1:70:66"
-
-//test "44:1d:64:f1:1a:86"
-// real "44:1d:64:f1:70:66"
+#define ESP32_MAC "44:1d:64:f1:1a:86"
 #define CONN_IDX 0
 
 #define PAYLOAD_BYTES    156
 #define PAYLOAD_HEX_LEN  (PAYLOAD_BYTES * 2)  
 #define PACKET_BYTES     160                   
-#define PACKET_HEX_LEN   (PACKET_BYTES * 2)
-
-// Custom GATT service indices (discovered via AT+BLEGATTCCHAR)
-#define ROBOT_SRV      3  // Custom robot service
-#define ROBOT_TX_CHR   1  // 0xFF01 — central writes commands here
-#define ROBOT_RX_CHR   2  // 0xFF02 — peripheral notifies responses here
-#define ROBOT_RX_DESC  1  // CCCD descriptor on RX characteristic
+#define PACKET_HEX_LEN   (PACKET_BYTES * 2)  
 
 extern volatile int BLE_CONNECTED;
 
@@ -57,6 +48,7 @@ int pmod_esp32_reset(int uart_fd);
 int pmod_esp32_init(int uart_fd);
 
 // BLE Functions
+
 int get_pmod_mac(int uart_fd, char *MAC_Output);
 int pmod_name(int uart_fd, const char *set_name, char *out_name); 
 
@@ -64,8 +56,11 @@ int ble_init(int uart_fd);
 int ble_discon(int uart_fd);
 int ble_notification(int uart_fd, int enable);
 int ble_connect(int uart_fd, const char *MAC);
+
+int get_name(int uart_fd, char *name);
+int get_mac(int uart_fd, char *connected_mac);
+int get_rssi(int uart_fd, char *rssi_out);
 int get_ble_conn_params(int uart_fd, char *params_out);
-int ble_get_rssi(int uart_fd, int *rssi_out);
 
 int ble_send_pkt(int uart_fd, uint8_t *data, int data_len);
 int ble_send_instruction(int uart_fd, uint8_t instruction[8]);
