@@ -1,0 +1,5 @@
+vhdl xil_defaultlib  \
+"../../../bd/ZCU102/sim/ZCU102.vhd" \
+
+# Do not sort compile order
+nosort
