@@ -7,6 +7,8 @@ interface ArmPadProps {
   armSpeed: number;
   onArmSpeedChange: (speed: number) => void;
   onReset: () => void;
+  onPlaySmiley: () => void;
+  isPlayingSmiley: boolean;
 }
 
 export function ArmPad({
@@ -16,6 +18,8 @@ export function ArmPad({
   armSpeed,
   onArmSpeedChange,
   onReset,
+  onPlaySmiley,
+  isPlayingSmiley,
 }: ArmPadProps) {
   const handlePointerDown = (action: ArmAction) => (e: React.PointerEvent) => {
     e.preventDefault();
@@ -117,7 +121,7 @@ export function ArmPad({
           aria-label="Arm Out"
           type="button"
         >
-          Out<span className="block text-[10px] font-normal opacity-70">Enter</span>
+          Out<span className="block text-[10px] font-normal opacity-70">Enter / Caps</span>
         </button>
       </div>
 
@@ -144,6 +148,17 @@ export function ArmPad({
         className="mt-1 px-4 py-2 text-sm font-semibold rounded-lg bg-red-100 text-red-700 hover:bg-red-200 active:bg-red-300 transition-colors focus:outline-none focus:ring-4 focus:ring-red-300 dark:bg-red-950/50 dark:text-red-300 dark:hover:bg-red-900/50 dark:active:bg-red-900 dark:focus:ring-red-500 dark:focus:ring-offset-2 dark:focus:ring-offset-slate-800"
       >
         Reset Arm
+      </button>
+
+      {/* Smiley playback button */}
+      <button
+        onClick={onPlaySmiley}
+        disabled={isPlayingSmiley}
+        type="button"
+        aria-label="Play smiley routine"
+        className="mt-1 px-4 py-2 text-sm font-semibold rounded-lg bg-yellow-100 text-yellow-800 hover:bg-yellow-200 active:bg-yellow-300 disabled:opacity-60 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-4 focus:ring-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-200 dark:hover:bg-yellow-900/60 dark:focus:ring-yellow-500 dark:focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+      >
+        {isPlayingSmiley ? 'Playing\u2026' : 'Smiley :)'}
       </button>
 
     </div>
