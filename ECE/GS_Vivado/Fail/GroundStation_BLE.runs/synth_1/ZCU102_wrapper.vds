@@ -1,0 +1,252 @@
+#-----------------------------------------------------------
+# Vivado v2025.1 (64-bit)
+# SW Build 6140274 on Thu May 22 00:12:29 MDT 2025
+# IP Build 6138677 on Thu May 22 03:10:11 MDT 2025
+# SharedData Build 6139179 on Tue May 20 17:58:58 MDT 2025
+# Start of session at: Sun Dec 21 18:00:48 2025
+# Process ID         : 24000
+# Current directory  : C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.runs/synth_1
+# Command line       : vivado.exe -log ZCU102_wrapper.vds -product Vivado -mode batch -messageDb vivado.pb -notrace -source ZCU102_wrapper.tcl
+# Log file           : C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.runs/synth_1/ZCU102_wrapper.vds
+# Journal file       : C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.runs/synth_1\vivado.jou
+# Running On         : SDP2635
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26200
+# Processor Detail   : 12th Gen Intel(R) Core(TM) i7-12700
+# CPU Frequency      : 2112 MHz
+# CPU Physical cores : 12
+# CPU Logical cores  : 20
+# Host memory        : 16853 MB
+# Swap memory        : 7784 MB
+# Total Virtual      : 24638 MB
+# Available Virtual  : 6561 MB
+#-----------------------------------------------------------
+source ZCU102_wrapper.tcl -notrace
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'c:/Users/ist21005/Documents/Board_Practice/PmodBT2_v1_0'.
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository 'C:/Xilinx/2025.1/Vivado/data/ip'.
+WARNING: [BD 41-1661] One or more IPs have been locked in the design 'ZCU102.bd'. Please run report_ip_status for more details and recommendations on how to fix this issue.
+List of locked IPs:
+ZCU102_zynq_ultra_ps_e_0_0
+
+Command: read_checkpoint -auto_incremental -incremental C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.srcs/utils_1/imports/synth_1/ECE3blk_wrapper.dcp
+INFO: [Vivado 12-5825] Read reference checkpoint from C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.srcs/utils_1/imports/synth_1/ECE3blk_wrapper.dcp for incremental synthesis
+INFO: [Vivado 12-7989] Please ensure there are no constraint changes
+Command: synth_design -top ZCU102_wrapper -part xczu9eg-ffvb1156-2-e
+Starting synth_design
+Attempting to get a license for feature 'Synthesis' and/or device 'xczu9eg'
+INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xczu9eg'
+WARNING: [Vivado_Tcl 4-1809] The reference checkpoint is from an old version of Vivado; A full resynthesis flow will be run
+INFO: [Device 21-403] Loading part xczu9eg-ffvb1156-2-e
+INFO: [Designutils 20-5440] No compile time benefit to using incremental synthesis; A full resynthesis will be run
+INFO: [Designutils 20-4379] Flow is switching to default flow due to incremental criteria not met. If you would like to alter this behaviour and have the flow terminate instead, please set the following parameter config_implementation {autoIncr.Synth.RejectBehavior Terminate}
+INFO: [Synth 8-7079] Multithreading enabled for synth_design using a maximum of 2 processes.
+INFO: [Synth 8-7078] Launching helper process for spawning children vivado processes
+INFO: [Synth 8-7075] Helper process launched with PID 30980
+---------------------------------------------------------------------------------
+Starting RTL Elaboration : Time (s): cpu = 00:00:03 ; elapsed = 00:00:04 . Memory (MB): peak = 1897.309 ; gain = 211.445
+---------------------------------------------------------------------------------
+INFO: [Synth 8-638] synthesizing module 'ZCU102_wrapper' [C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.gen/sources_1/bd/ZCU102/hdl/ZCU102_wrapper.vhd:22]
+INFO: [Synth 8-3491] module 'ZCU102' declared at 'c:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.gen/sources_1/bd/ZCU102/synth/ZCU102.vhd:15' bound to instance 'ZCU102_i' of component 'ZCU102' [C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.gen/sources_1/bd/ZCU102/hdl/ZCU102_wrapper.vhd:30]
+INFO: [Synth 8-638] synthesizing module 'ZCU102' [c:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.gen/sources_1/bd/ZCU102/synth/ZCU102.vhd:26]
+INFO: [Synth 8-3491] module 'ZCU102_zynq_ultra_ps_e_0_0' declared at 'C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.runs/synth_1/.Xil/Vivado-24000-SDP2635/realtime/ZCU102_zynq_ultra_ps_e_0_0_stub.vhdl:6' bound to instance 'zynq_ultra_ps_e_0' of component 'ZCU102_zynq_ultra_ps_e_0_0' [c:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.gen/sources_1/bd/ZCU102/synth/ZCU102.vhd:40]
+INFO: [Synth 8-638] synthesizing module 'ZCU102_zynq_ultra_ps_e_0_0' [C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.runs/synth_1/.Xil/Vivado-24000-SDP2635/realtime/ZCU102_zynq_ultra_ps_e_0_0_stub.vhdl:20]
+INFO: [Synth 8-256] done synthesizing module 'ZCU102' (0#1) [c:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.gen/sources_1/bd/ZCU102/synth/ZCU102.vhd:26]
+INFO: [Synth 8-256] done synthesizing module 'ZCU102_wrapper' (0#1) [C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.gen/sources_1/bd/ZCU102/hdl/ZCU102_wrapper.vhd:22]
+---------------------------------------------------------------------------------
+Finished RTL Elaboration : Time (s): cpu = 00:00:04 ; elapsed = 00:00:05 . Memory (MB): peak = 2004.801 ; gain = 318.938
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Handling Custom Attributes
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Handling Custom Attributes : Time (s): cpu = 00:00:04 ; elapsed = 00:00:05 . Memory (MB): peak = 2004.801 ; gain = 318.938
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished RTL Optimization Phase 1 : Time (s): cpu = 00:00:04 ; elapsed = 00:00:05 . Memory (MB): peak = 2004.801 ; gain = 318.938
+---------------------------------------------------------------------------------
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 2004.801 ; gain = 0.000
+INFO: [Project 1-570] Preparing netlist for logic optimization
+
+Processing XDC Constraints
+Initializing timing engine
+Parsing XDC File [c:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.gen/sources_1/bd/ZCU102/ip/ZCU102_zynq_ultra_ps_e_0_0/ZCU102_zynq_ultra_ps_e_0_0/ZCU102_zynq_ultra_ps_e_0_0_in_context.xdc] for cell 'ZCU102_i/zynq_ultra_ps_e_0'
+Finished Parsing XDC File [c:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.gen/sources_1/bd/ZCU102/ip/ZCU102_zynq_ultra_ps_e_0_0/ZCU102_zynq_ultra_ps_e_0_0/ZCU102_zynq_ultra_ps_e_0_0_in_context.xdc] for cell 'ZCU102_i/zynq_ultra_ps_e_0'
+Parsing XDC File [C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.srcs/constrs_1/new/PmodBT2.xdc]
+WARNING: [Vivado 12-584] No ports matched 'BT2_RTS'. [C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.srcs/constrs_1/new/PmodBT2.xdc:3]
+WARNING: [Vivado 12-584] No ports matched 'BT2_RTS'. [C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.srcs/constrs_1/new/PmodBT2.xdc:4]
+WARNING: [Vivado 12-584] No ports matched 'BT2_CTS'. [C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.srcs/constrs_1/new/PmodBT2.xdc:12]
+WARNING: [Vivado 12-584] No ports matched 'BT2_CTS'. [C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.srcs/constrs_1/new/PmodBT2.xdc:13]
+WARNING: [Vivado 12-584] No ports matched 'BT2_STATUS'. [C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.srcs/constrs_1/new/PmodBT2.xdc:15]
+WARNING: [Vivado 12-584] No ports matched 'BT2_STATUS'. [C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.srcs/constrs_1/new/PmodBT2.xdc:16]
+WARNING: [Vivado 12-584] No ports matched 'BT2_RST'. [C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.srcs/constrs_1/new/PmodBT2.xdc:18]
+WARNING: [Vivado 12-584] No ports matched 'BT2_RST'. [C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.srcs/constrs_1/new/PmodBT2.xdc:19]
+Finished Parsing XDC File [C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.srcs/constrs_1/new/PmodBT2.xdc]
+WARNING: [Project 1-498] One or more constraints failed evaluation while reading constraint file [C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.srcs/constrs_1/new/PmodBT2.xdc] and the design contains unresolved black boxes. These constraints will be read post-synthesis (as long as their source constraint file is marked as used_in_implementation) and should be applied correctly then. You should review the constraints listed in the file [.Xil/ZCU102_wrapper_propImpl.xdc] and check the run log file to verify that these constraints were correctly applied.
+INFO: [Project 1-236] Implementation specific constraints were found while reading constraint file [C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.srcs/constrs_1/new/PmodBT2.xdc]. These constraints will be ignored for synthesis but will be used in implementation. Impacted constraints are listed in the file [.Xil/ZCU102_wrapper_propImpl.xdc].
+Resolution: To avoid this warning, move constraints listed in [.Xil/ZCU102_wrapper_propImpl.xdc] to another XDC file and exclude this new file from synthesis with the used_in_synthesis property (File Properties dialog in GUI) and re-run elaboration/synthesis.
+Parsing XDC File [C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.runs/synth_1/dont_touch.xdc]
+Finished Parsing XDC File [C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.runs/synth_1/dont_touch.xdc]
+Completed Processing XDC Constraints
+
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.001 . Memory (MB): peak = 2014.633 ; gain = 0.000
+INFO: [Project 1-111] Unisim Transformation Summary:
+No Unisim elements were transformed.
+
+Constraint Validation Runtime : Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.007 . Memory (MB): peak = 2014.633 ; gain = 0.000
+INFO: [Designutils 20-5440] No compile time benefit to using incremental synthesis; A full resynthesis will be run
+INFO: [Designutils 20-4379] Flow is switching to default flow due to incremental criteria not met. If you would like to alter this behaviour and have the flow terminate instead, please set the following parameter config_implementation {autoIncr.Synth.RejectBehavior Terminate}
+---------------------------------------------------------------------------------
+Finished Constraint Validation : Time (s): cpu = 00:00:09 ; elapsed = 00:00:11 . Memory (MB): peak = 2014.633 ; gain = 328.770
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Loading Part and Timing Information
+---------------------------------------------------------------------------------
+Loading part: xczu9eg-ffvb1156-2-e
+INFO: [Synth 8-6742] Reading net delay rules and data
+---------------------------------------------------------------------------------
+Finished Loading Part and Timing Information : Time (s): cpu = 00:00:09 ; elapsed = 00:00:11 . Memory (MB): peak = 2014.633 ; gain = 328.770
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Applying 'set_property' XDC Constraints
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished applying 'set_property' XDC Constraints : Time (s): cpu = 00:00:09 ; elapsed = 00:00:11 . Memory (MB): peak = 2014.633 ; gain = 328.770
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished RTL Optimization Phase 2 : Time (s): cpu = 00:00:09 ; elapsed = 00:00:11 . Memory (MB): peak = 2014.633 ; gain = 328.770
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start RTL Component Statistics 
+---------------------------------------------------------------------------------
+Detailed RTL Component Info : 
+---------------------------------------------------------------------------------
+Finished RTL Component Statistics 
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Part Resource Summary
+---------------------------------------------------------------------------------
+Part Resources:
+DSPs: 2520 (col length:168)
+BRAMs: 1824 (col length: RAMB18 168 RAMB36 84)
+---------------------------------------------------------------------------------
+Finished Part Resource Summary
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Cross Boundary and Area Optimization
+---------------------------------------------------------------------------------
+WARNING: [Synth 8-7080] Parallel synthesis criteria is not met
+---------------------------------------------------------------------------------
+Finished Cross Boundary and Area Optimization : Time (s): cpu = 00:00:11 ; elapsed = 00:00:12 . Memory (MB): peak = 2023.371 ; gain = 337.508
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Applying XDC Timing Constraints
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Applying XDC Timing Constraints : Time (s): cpu = 00:00:17 ; elapsed = 00:00:21 . Memory (MB): peak = 2748.078 ; gain = 1062.215
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Timing Optimization
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Timing Optimization : Time (s): cpu = 00:00:17 ; elapsed = 00:00:21 . Memory (MB): peak = 2748.078 ; gain = 1062.215
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Technology Mapping
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Technology Mapping : Time (s): cpu = 00:00:17 ; elapsed = 00:00:21 . Memory (MB): peak = 2757.633 ; gain = 1071.770
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Flattening Before IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Flattening Before IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Final Netlist Cleanup
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Final Netlist Cleanup
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished IO Insertion : Time (s): cpu = 00:00:20 ; elapsed = 00:00:24 . Memory (MB): peak = 2992.949 ; gain = 1307.086
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Instances
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Instances : Time (s): cpu = 00:00:20 ; elapsed = 00:00:24 . Memory (MB): peak = 2992.949 ; gain = 1307.086
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Rebuilding User Hierarchy
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Rebuilding User Hierarchy : Time (s): cpu = 00:00:20 ; elapsed = 00:00:24 . Memory (MB): peak = 2992.949 ; gain = 1307.086
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Ports
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Ports : Time (s): cpu = 00:00:20 ; elapsed = 00:00:24 . Memory (MB): peak = 2992.949 ; gain = 1307.086
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Handling Custom Attributes
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Handling Custom Attributes : Time (s): cpu = 00:00:20 ; elapsed = 00:00:24 . Memory (MB): peak = 2992.949 ; gain = 1307.086
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Nets
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Nets : Time (s): cpu = 00:00:20 ; elapsed = 00:00:24 . Memory (MB): peak = 2992.949 ; gain = 1307.086
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Writing Synthesis Report
+---------------------------------------------------------------------------------
+
+Report BlackBoxes: 
++------+---------------------------+----------+
+|      |BlackBox name              |Instances |
++------+---------------------------+----------+
+|1     |ZCU102_zynq_ultra_ps_e_0_0 |         1|
++------+---------------------------+----------+
+
+Report Cell Usage: 
++------+--------------------------------+------+
+|      |Cell                            |Count |
++------+--------------------------------+------+
+|1     |ZCU102_zynq_ultra_ps_e_0_0_bbox |     1|
+|2     |IBUF                            |     1|
+|3     |OBUF                            |     1|
++------+--------------------------------+------+
+---------------------------------------------------------------------------------
+Finished Writing Synthesis Report : Time (s): cpu = 00:00:20 ; elapsed = 00:00:24 . Memory (MB): peak = 2992.949 ; gain = 1307.086
+---------------------------------------------------------------------------------
+Synthesis finished with 0 errors, 0 critical warnings and 1 warnings.
+Synthesis Optimization Runtime : Time (s): cpu = 00:00:15 ; elapsed = 00:00:23 . Memory (MB): peak = 2992.949 ; gain = 1297.254
+Synthesis Optimization Complete : Time (s): cpu = 00:00:20 ; elapsed = 00:00:24 . Memory (MB): peak = 2992.949 ; gain = 1307.086
+INFO: [Project 1-571] Translating synthesized netlist
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 2992.949 ; gain = 0.000
+INFO: [Netlist 29-17] Analyzing 1 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-570] Preparing netlist for logic optimization
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 2992.949 ; gain = 0.000
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 1 instances were transformed.
+  IBUF => IBUF (IBUFCTRL, INBUF): 1 instance 
+
+Synth Design complete | Checksum: c26774cf
+INFO: [Common 17-83] Releasing license: Synthesis
+32 Infos, 12 Warnings, 0 Critical Warnings and 0 Errors encountered.
+synth_design completed successfully
+synth_design: Time (s): cpu = 00:00:25 ; elapsed = 00:00:45 . Memory (MB): peak = 2992.949 ; gain = 2297.805
+Write ShapeDB Complete: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.001 . Memory (MB): peak = 2992.949 ; gain = 0.000
+INFO: [Common 17-1381] The checkpoint 'C:/Users/ist21005/Documents/Board_Practice/pmod_ip/pmod_ip.runs/synth_1/ZCU102_wrapper.dcp' has been generated.
+INFO: [Vivado 12-24828] Executing command : report_utilization -file ZCU102_wrapper_utilization_synth.rpt -pb ZCU102_wrapper_utilization_synth.pb
+INFO: [Common 17-206] Exiting Vivado at Sun Dec 21 18:01:43 2025...

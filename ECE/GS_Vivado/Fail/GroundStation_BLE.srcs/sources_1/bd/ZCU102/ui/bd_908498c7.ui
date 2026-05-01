@@ -1,0 +1,19 @@
+{
+   "ActiveEmotionalView":"Default View",
+   "Default View_ScaleFactor":"1.0",
+   "Default View_TopLeft":"-351,-149",
+   "ExpandedHierarchyInLayout":"",
+   "guistr":"# # String gsaved with Nlview 7.8.0 2024-04-26 e1825d835c VDI=44 GEI=38 GUI=JA:21.0
+#  -string -flagsOSRD
+preplace port port-id_BT2_RX -pg 1 -lvl 2 -x 520 -y 90 -defaultsOSRD
+preplace port port-id_BT2_TX -pg 1 -lvl 0 -x 0 -y 180 -defaultsOSRD
+preplace inst zynq_ultra_ps_e_0 -pg 1 -lvl 1 -x 260 -y 90 -defaultsOSRD
+preplace netloc BT2_TX_1 1 0 2 NJ 180 500
+preplace netloc zynq_ultra_ps_e_0_emio_uart1_txd 1 1 1 N 90
+levelinfo -pg 1 0 260 520
+pagesize -pg 1 -db -bbox -sgen -110 0 630 200
+"
+}
+{
+   "da_zynq_ultra_ps_e_cnt":"1"
+}
