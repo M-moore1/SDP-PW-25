@@ -12,7 +12,7 @@ int sys_cmd(int uart_fd, system_format_t sys_inst){
   switch(sys_inst.instruction){
     case SECURITY_LEVEL:
       printf("Changing Security Level\r\n");
-      if(sys_inst.specific == 1){
+      {
         robot_bt_packet_t packet = {0};
         packet.sys.pl          = sys_inst.pl;
         packet.sys.type        = System_CMD;
@@ -20,12 +20,23 @@ int sys_cmd(int uart_fd, system_format_t sys_inst){
         packet.sys.ac          = sys_inst.ac;
         packet.sys.id          = sys_inst.id;
         packet.sys.specific    = sys_inst.specific;
-        ble_send_instruction(uart_fd, packet.bytes);
+
+        if (security_level == 1) {
+          // Currently encrypted — send encrypted regardless of direction
+          uint8_t ciphertext[TOTAL_SZ] = {0};
+          size_t out_len = 0;
+          if (encrypt_cmd(&packet, ciphertext, &out_len) == 0)
+            ble_send_pkt(uart_fd, ciphertext, out_len);
+        } else {
+          // Currently unencrypted — send plain (0→1 case)
+          ble_send_instruction(uart_fd, packet.bytes);
+        }
+
+        // Update local level AFTER sending
+        security_level = sys_inst.specific;
         robot_send_need = 0;
       }
-      security_level = sys_inst.specific;
     break;
-
     case Connect_Reconnect:
       printf("Attempting Connection\r\n");
       if (ble_connect(uart_fd, NULL) < 0){ connection_status = 0;}

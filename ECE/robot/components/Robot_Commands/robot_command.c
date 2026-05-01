@@ -179,7 +179,7 @@ void system_cmd(system_format_t sys, step_mot_t* F_L, step_mot_t* F_R, step_mot_
                 break;
             }
             ESP_LOGI(CMD_TAG, "System CMD - Security Flag Updated %d", payload );
-            security_flag = payload;
+            security_flag = !security_flag;
             result = RESULT_SUCCESS;
             if(security_flag){instr_spc_rsp = SECURITY_ON; }
             else             {instr_spc_rsp = SECURITY_OFF;}
