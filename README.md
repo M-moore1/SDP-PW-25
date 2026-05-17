@@ -1,6 +1,6 @@
 # Secure Remote Vehicle Communication System
 
-**Pratt & Whitney SDP 2024–2025**
+**Pratt & Whitney SDP 2025–2026**
 
 A Pratt & Whitney–sponsored UConn Senior Design Project. The goal is to build a **secure, remotely controlled robotic platform** with encrypted command channels.
 
