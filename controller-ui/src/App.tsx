@@ -21,8 +21,18 @@ import {
   armActionsToAxes,
 } from './utils/armDirection';
 import { buildControlMsg, buildArmControlMsg } from './utils/commands';
+import { SMILEY_COMMANDS, SMILEY_STEP_DELAY_MS } from './utils/smileyPlayback';
 import { useThemePreference } from './hooks/useThemePreference';
 import { ThemeToggle } from './components/ThemeToggle';
+import {
+  appendToLiveLog,
+  chooseLogFile,
+  clearLiveLogFile,
+  downloadLog,
+  getLiveLogFileName,
+  isFileSystemAccessSupported,
+  type LogEntry,
+} from './utils/commandLog';
 
 interface MessageLogEntry {
   payload: string;
@@ -37,19 +47,56 @@ function App() {
   const [activeDirections, setActiveDirections] = useState<Set<Direction>>(new Set());
   const [activeArmActions, setActiveArmActions] = useState<Set<ArmAction>>(new Set());
   const [messageLog, setMessageLog] = useState<MessageLogEntry[]>([]);
-  const [repeatRate, setRepeatRate] = useState(50);
+  const [repeatRate, setRepeatRate] = useState(150);
   const [controlSpeed, setControlSpeed] = useState(50);
   const [armSpeed, setArmSpeed] = useState(50);
   const [encryptionEnabled, setEncryptionEnabled] = useState(false);
+  const [liveLogFileName, setLiveLogFileName] = useState<string | null>(null);
+  const [isPlayingSmiley, setIsPlayingSmiley] = useState(false);
 
   const pressedKeysRef = useRef<Set<string>>(new Set());
   const armPressedKeysRef = useRef<Set<string>>(new Set());
+  const capsLockReleaseTimerRef = useRef<number | null>(null);
+  const fullLogRef = useRef<LogEntry[]>([]);
+  const smileyAbortRef = useRef(false);
 
   const logMessage = useCallback((payload: string) => {
+    const entry: LogEntry = {
+      timestamp: new Date().toISOString(),
+      payload,
+    };
+    fullLogRef.current.push(entry);
+    appendToLiveLog(entry);
+
     setMessageLog((prev) => [
       { payload, timestamp: new Date().toLocaleTimeString() },
       ...prev,
     ].slice(0, 10));
+  }, []);
+
+  const handleDownloadLog = useCallback(() => {
+    downloadLog(fullLogRef.current);
+  }, []);
+
+  const handleChooseLiveLog = useCallback(async () => {
+    const ok = await chooseLogFile();
+    if (ok) {
+      setLiveLogFileName(getLiveLogFileName());
+      // Flush the in-memory log so the file starts with everything captured so far.
+      for (const entry of fullLogRef.current) {
+        appendToLiveLog(entry);
+      }
+    }
+  }, []);
+
+  const handleClearLiveLog = useCallback(() => {
+    clearLiveLogFile();
+    setLiveLogFileName(null);
+  }, []);
+
+  const handleClearLog = useCallback(() => {
+    fullLogRef.current = [];
+    setMessageLog([]);
   }, []);
 
   const { status, sendMessage, lastError } = useWebSocket(WS_URL, {
@@ -96,6 +143,23 @@ function App() {
       e.preventDefault();
       pressedKeysRef.current.add(e.key);
       setActiveDirections(prev => new Set([...prev, keyToDirection[e.key]]));
+    } else if (e.key === 'CapsLock') {
+      // CapsLock is a toggle key (keyup only fires on the next press), so treat
+      // it as a momentary tap: activate 'out' briefly, then auto-release.
+      e.preventDefault();
+      const action = keyToArmAction[e.key];
+      setActiveArmActions(prev => new Set([...prev, action]));
+      if (capsLockReleaseTimerRef.current !== null) {
+        clearTimeout(capsLockReleaseTimerRef.current);
+      }
+      capsLockReleaseTimerRef.current = window.setTimeout(() => {
+        setActiveArmActions(prev => {
+          const next = new Set(prev);
+          next.delete(action);
+          return next;
+        });
+        capsLockReleaseTimerRef.current = null;
+      }, 150);
     } else if (isArmKey(e.key)) {
       e.preventDefault();
       armPressedKeysRef.current.add(e.key);
@@ -112,6 +176,9 @@ function App() {
         next.delete(keyToDirection[e.key]);
         return next;
       });
+    } else if (e.key === 'CapsLock') {
+      // Ignored: CapsLock release is handled by the auto-release timer in keydown.
+      e.preventDefault();
     } else if (isArmKey(e.key)) {
       e.preventDefault();
       armPressedKeysRef.current.delete(e.key);
@@ -128,6 +195,10 @@ function App() {
     pressedKeysRef.current.clear();
     setActiveArmActions(new Set());
     armPressedKeysRef.current.clear();
+    if (capsLockReleaseTimerRef.current !== null) {
+      clearTimeout(capsLockReleaseTimerRef.current);
+      capsLockReleaseTimerRef.current = null;
+    }
   }, []);
 
   useEffect(() => {
@@ -180,6 +251,32 @@ function App() {
     const msg = buildArmControlMsg(0, 0, 0, 0, 0, 0, armSpeed, 1);
     sendMessage(msg);
   }, [sendMessage, armSpeed]);
+
+  const handlePlaySmiley = useCallback(async () => {
+    if (isPlayingSmiley) return;
+    if (SMILEY_COMMANDS.length === 0) return;
+    setIsPlayingSmiley(true);
+    smileyAbortRef.current = false;
+    try {
+      for (let i = 0; i < SMILEY_COMMANDS.length; i++) {
+        if (smileyAbortRef.current) break;
+        sendMessage(SMILEY_COMMANDS[i]);
+        if (i < SMILEY_COMMANDS.length - 1) {
+          await new Promise<void>((resolve) =>
+            setTimeout(resolve, SMILEY_STEP_DELAY_MS)
+          );
+        }
+      }
+    } finally {
+      setIsPlayingSmiley(false);
+    }
+  }, [sendMessage, isPlayingSmiley]);
+
+  useEffect(() => {
+    return () => {
+      smileyAbortRef.current = true;
+    };
+  }, []);
 
   const handleConnect = useCallback(() => {
     sendMessage({
@@ -239,6 +336,8 @@ function App() {
             armSpeed={armSpeed}
             onArmSpeedChange={setArmSpeed}
             onReset={handleArmReset}
+            onPlaySmiley={handlePlaySmiley}
+            isPlayingSmiley={isPlayingSmiley}
           />
         </div>
 
@@ -253,7 +352,14 @@ function App() {
             repeatRate={repeatRate}
             onRepeatRateChange={setRepeatRate}
           />
-          <MessageLog logs={messageLog} />
+          <MessageLog
+            logs={messageLog}
+            onDownload={handleDownloadLog}
+            onClear={handleClearLog}
+            onChooseLiveFile={isFileSystemAccessSupported() ? handleChooseLiveLog : undefined}
+            onStopLiveFile={liveLogFileName ? handleClearLiveLog : undefined}
+            liveLogFileName={liveLogFileName}
+          />
         </div>
       </div>
 

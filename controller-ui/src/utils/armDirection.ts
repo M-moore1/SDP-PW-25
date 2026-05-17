@@ -7,6 +7,7 @@ export const keyToArmAction: Record<string, ArmAction> = {
   ArrowRight: 'right',
   Shift: 'in',
   Enter: 'out',
+  CapsLock: 'out',
 };
 
 export function isArmKey(key: string): key is keyof typeof keyToArmAction {
