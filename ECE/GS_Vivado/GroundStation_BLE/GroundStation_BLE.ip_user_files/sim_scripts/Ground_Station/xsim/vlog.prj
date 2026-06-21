@@ -1,0 +1,8 @@
+verilog xil_defaultlib -i "../../../../../../../../../Xilinx/2025.1/Vivado/data/rsb/busdef" --include "C:/Xilinx/2025.1/Vivado/data/xilinx_vip/include" --include "../../../../GroundStation_BLE.gen/sources_1/bd/Ground_Station/ipshared/ec67/hdl" --include "../../../../GroundStation_BLE.gen/sources_1/bd/Ground_Station/ipshared/7711/hdl" \
+"../../../bd/Ground_Station/ip/Ground_Station_zynq_ultra_ps_e_0_0/sim/Ground_Station_zynq_ultra_ps_e_0_0_vip_wrapper.v" \
+"../../../bd/Ground_Station/sim/Ground_Station.v" \
+
+verilog xil_defaultlib "glbl.v"
+
+# Do not sort compile order
+nosort

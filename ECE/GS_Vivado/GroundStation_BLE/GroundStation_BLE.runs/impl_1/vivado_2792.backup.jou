@@ -1,0 +1,24 @@
+#-----------------------------------------------------------
+# Vivado v2025.1 (64-bit)
+# SW Build 6140274 on Thu May 22 00:12:29 MDT 2025
+# IP Build 6138677 on Thu May 22 03:10:11 MDT 2025
+# SharedData Build 6139179 on Tue May 20 17:58:58 MDT 2025
+# Start of session at: Fri Feb 27 17:30:52 2026
+# Process ID         : 2792
+# Current directory  : C:/Users/ist21005/Documents/GS_Vivado/GroundStation_BLE/GroundStation_BLE.runs/impl_1
+# Command line       : vivado.exe -log Ground_Station_wrapper.vdi -applog -product Vivado -messageDb vivado.pb -mode batch -source Ground_Station_wrapper.tcl -notrace
+# Log file           : C:/Users/ist21005/Documents/GS_Vivado/GroundStation_BLE/GroundStation_BLE.runs/impl_1/Ground_Station_wrapper.vdi
+# Journal file       : C:/Users/ist21005/Documents/GS_Vivado/GroundStation_BLE/GroundStation_BLE.runs/impl_1\vivado.jou
+# Running On         : SDP2635
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26200
+# Processor Detail   : 12th Gen Intel(R) Core(TM) i7-12700
+# CPU Frequency      : 2112 MHz
+# CPU Physical cores : 12
+# CPU Logical cores  : 20
+# Host memory        : 16853 MB
+# Swap memory        : 15572 MB
+# Total Virtual      : 32425 MB
+# Available Virtual  : 12780 MB
+#-----------------------------------------------------------
+source Ground_Station_wrapper.tcl -notrace

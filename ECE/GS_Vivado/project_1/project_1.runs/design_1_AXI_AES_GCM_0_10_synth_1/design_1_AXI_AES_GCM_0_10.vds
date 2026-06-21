@@ -1,0 +1,777 @@
+#-----------------------------------------------------------
+# Vivado v2025.1 (64-bit)
+# SW Build 6140274 on Thu May 22 00:12:29 MDT 2025
+# IP Build 6138677 on Thu May 22 03:10:11 MDT 2025
+# SharedData Build 6139179 on Tue May 20 17:58:58 MDT 2025
+# Start of session at: Sat Apr  4 22:03:54 2026
+# Process ID         : 27072
+# Current directory  : C:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.runs/design_1_AXI_AES_GCM_0_10_synth_1
+# Command line       : vivado.exe -log design_1_AXI_AES_GCM_0_10.vds -product Vivado -mode batch -messageDb vivado.pb -notrace -source design_1_AXI_AES_GCM_0_10.tcl
+# Log file           : C:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.runs/design_1_AXI_AES_GCM_0_10_synth_1/design_1_AXI_AES_GCM_0_10.vds
+# Journal file       : C:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.runs/design_1_AXI_AES_GCM_0_10_synth_1\vivado.jou
+# Running On         : SDP2635
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26200
+# Processor Detail   : 12th Gen Intel(R) Core(TM) i7-12700
+# CPU Frequency      : 2112 MHz
+# CPU Physical cores : 12
+# CPU Logical cores  : 20
+# Host memory        : 16853 MB
+# Swap memory        : 23622 MB
+# Total Virtual      : 40475 MB
+# Available Virtual  : 16546 MB
+#-----------------------------------------------------------
+source design_1_AXI_AES_GCM_0_10.tcl -notrace
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'c:/Users/ist21005/Documents/GS_Vivado/ip_repo/AXI_AES_GCM_1_0'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'c:/Users/ist21005/Documents/GS_Vivado/ip_repo/ADD_2_1_0'.
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository 'C:/Xilinx/2025.1/Vivado/data/ip'.
+Command: synth_design -top design_1_AXI_AES_GCM_0_10 -part xczu9eg-ffvb1156-2-e -incremental_mode off -mode out_of_context
+Starting synth_design
+Attempting to get a license for feature 'Synthesis' and/or device 'xczu9eg'
+INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xczu9eg'
+INFO: [Device 21-403] Loading part xczu9eg-ffvb1156-2-e
+INFO: [Synth 8-7079] Multithreading enabled for synth_design using a maximum of 2 processes.
+INFO: [Synth 8-7078] Launching helper process for spawning children vivado processes
+WARNING: [Common 17-1361] You have specified a new message control rule that is equivalent to an existing rule with attributes ' -id {17-179}  -suppress '. The existing rule will be replaced.
+INFO: [Synth 8-7075] Helper process launched with PID 23132
+---------------------------------------------------------------------------------
+Starting RTL Elaboration : Time (s): cpu = 00:00:04 ; elapsed = 00:00:04 . Memory (MB): peak = 1880.176 ; gain = 210.668
+---------------------------------------------------------------------------------
+INFO: [Synth 8-638] synthesizing module 'design_1_AXI_AES_GCM_0_10' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ip/design_1_AXI_AES_GCM_0_10/synth/design_1_AXI_AES_GCM_0_10.vhd:82]
+	Parameter C_S00_AXI_DATA_WIDTH bound to: 32 - type: integer 
+	Parameter C_S00_AXI_ADDR_WIDTH bound to: 8 - type: integer 
+INFO: [Synth 8-3491] module 'AXI_AES_GCM' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM.vhd:5' bound to instance 'U0' of component 'AXI_AES_GCM' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ip/design_1_AXI_AES_GCM_0_10/synth/design_1_AXI_AES_GCM_0_10.vhd:152]
+INFO: [Synth 8-638] synthesizing module 'AXI_AES_GCM' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM.vhd:49]
+	Parameter C_S_AXI_DATA_WIDTH bound to: 32 - type: integer 
+	Parameter C_S_AXI_ADDR_WIDTH bound to: 8 - type: integer 
+INFO: [Synth 8-3491] module 'AXI_AES_GCM_slave_lite_v1_0_S00_AXI' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM_slave_lite_v1_0_S00_AXI.vhd:8' bound to instance 'AXI_AES_GCM_slave_lite_v1_0_S00_AXI_inst' of component 'AXI_AES_GCM_slave_lite_v1_0_S00_AXI' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM.vhd:85]
+INFO: [Synth 8-638] synthesizing module 'AXI_AES_GCM_slave_lite_v1_0_S00_AXI' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM_slave_lite_v1_0_S00_AXI.vhd:89]
+INFO: [Synth 8-638] synthesizing module 'top_aes_gcm' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/top_aes_gcm.vhd:48]
+	Parameter aes_gcm_mode_g bound to: 2'b10 
+	Parameter aes_gcm_n_rounds_g bound to: 14 - type: integer 
+	Parameter aes_gcm_split_gfmul bound to: 0 - type: integer 
+INFO: [Synth 8-3491] module 'aes_gcm' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_gcm.vhd:16' bound to instance 'u_aes_gcm' of component 'aes_gcm' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/top_aes_gcm.vhd:83]
+INFO: [Synth 8-638] synthesizing module 'aes_gcm' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_gcm.vhd:48]
+	Parameter gctr_mode_g bound to: 2'b10 
+	Parameter gctr_n_rounds_g bound to: 14 - type: integer 
+INFO: [Synth 8-3491] module 'gcm_gctr' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/gcm_gctr.vhd:15' bound to instance 'u_gcm_gctr' of component 'gcm_gctr' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_gcm.vhd:139]
+INFO: [Synth 8-638] synthesizing module 'gcm_gctr' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/gcm_gctr.vhd:44]
+INFO: [Synth 8-3491] module 'aes_icb' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_icb.vhd:16' bound to instance 'u_aes_icb' of component 'aes_icb' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/gcm_gctr.vhd:111]
+INFO: [Synth 8-638] synthesizing module 'aes_icb' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_icb.vhd:31]
+INFO: [Synth 8-256] done synthesizing module 'aes_icb' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_icb.vhd:31]
+	Parameter aes_n_rounds_g bound to: 14 - type: integer 
+INFO: [Synth 8-3491] module 'aes_ecb' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:14' bound to instance 'u_aes_ecb' of component 'aes_ecb' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/gcm_gctr.vhd:124]
+INFO: [Synth 8-638] synthesizing module 'aes_ecb' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:33]
+	Parameter core_num_g bound to: 0 - type: integer 
+INFO: [Synth 8-3491] module 'aes_kexp' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:14' bound to instance 'u_aes_kexp' of component 'aes_kexp' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:172]
+INFO: [Synth 8-638] synthesizing module 'aes_kexp' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+INFO: [Synth 8-256] done synthesizing module 'aes_kexp' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+	Parameter core_num_g bound to: 1 - type: integer 
+INFO: [Synth 8-3491] module 'aes_kexp' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:14' bound to instance 'u_aes_kexp' of component 'aes_kexp' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:172]
+INFO: [Synth 8-638] synthesizing module 'aes_kexp__parameterized1' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+INFO: [Synth 8-256] done synthesizing module 'aes_kexp__parameterized1' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+	Parameter core_num_g bound to: 2 - type: integer 
+INFO: [Synth 8-3491] module 'aes_kexp' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:14' bound to instance 'u_aes_kexp' of component 'aes_kexp' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:172]
+INFO: [Synth 8-638] synthesizing module 'aes_kexp__parameterized3' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+INFO: [Synth 8-256] done synthesizing module 'aes_kexp__parameterized3' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+	Parameter core_num_g bound to: 3 - type: integer 
+INFO: [Synth 8-3491] module 'aes_kexp' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:14' bound to instance 'u_aes_kexp' of component 'aes_kexp' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:172]
+INFO: [Synth 8-638] synthesizing module 'aes_kexp__parameterized5' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+INFO: [Synth 8-256] done synthesizing module 'aes_kexp__parameterized5' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+	Parameter core_num_g bound to: 4 - type: integer 
+INFO: [Synth 8-3491] module 'aes_kexp' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:14' bound to instance 'u_aes_kexp' of component 'aes_kexp' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:172]
+INFO: [Synth 8-638] synthesizing module 'aes_kexp__parameterized7' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+INFO: [Synth 8-256] done synthesizing module 'aes_kexp__parameterized7' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+	Parameter core_num_g bound to: 5 - type: integer 
+INFO: [Synth 8-3491] module 'aes_kexp' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:14' bound to instance 'u_aes_kexp' of component 'aes_kexp' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:172]
+INFO: [Synth 8-638] synthesizing module 'aes_kexp__parameterized9' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+INFO: [Synth 8-256] done synthesizing module 'aes_kexp__parameterized9' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+	Parameter core_num_g bound to: 6 - type: integer 
+INFO: [Synth 8-3491] module 'aes_kexp' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:14' bound to instance 'u_aes_kexp' of component 'aes_kexp' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:172]
+INFO: [Synth 8-638] synthesizing module 'aes_kexp__parameterized11' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+INFO: [Synth 8-256] done synthesizing module 'aes_kexp__parameterized11' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+	Parameter core_num_g bound to: 7 - type: integer 
+INFO: [Synth 8-3491] module 'aes_kexp' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:14' bound to instance 'u_aes_kexp' of component 'aes_kexp' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:172]
+INFO: [Synth 8-638] synthesizing module 'aes_kexp__parameterized13' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+INFO: [Synth 8-256] done synthesizing module 'aes_kexp__parameterized13' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+	Parameter core_num_g bound to: 8 - type: integer 
+INFO: [Synth 8-3491] module 'aes_kexp' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:14' bound to instance 'u_aes_kexp' of component 'aes_kexp' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:172]
+INFO: [Synth 8-638] synthesizing module 'aes_kexp__parameterized15' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+INFO: [Synth 8-256] done synthesizing module 'aes_kexp__parameterized15' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+	Parameter core_num_g bound to: 9 - type: integer 
+INFO: [Synth 8-3491] module 'aes_kexp' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:14' bound to instance 'u_aes_kexp' of component 'aes_kexp' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:172]
+INFO: [Synth 8-638] synthesizing module 'aes_kexp__parameterized17' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+INFO: [Synth 8-256] done synthesizing module 'aes_kexp__parameterized17' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+	Parameter core_num_g bound to: 10 - type: integer 
+INFO: [Synth 8-3491] module 'aes_kexp' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:14' bound to instance 'u_aes_kexp' of component 'aes_kexp' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:172]
+INFO: [Synth 8-638] synthesizing module 'aes_kexp__parameterized19' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+INFO: [Synth 8-256] done synthesizing module 'aes_kexp__parameterized19' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+	Parameter core_num_g bound to: 11 - type: integer 
+INFO: [Synth 8-3491] module 'aes_kexp' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:14' bound to instance 'u_aes_kexp' of component 'aes_kexp' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:172]
+INFO: [Synth 8-638] synthesizing module 'aes_kexp__parameterized21' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+INFO: [Synth 8-256] done synthesizing module 'aes_kexp__parameterized21' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+	Parameter core_num_g bound to: 12 - type: integer 
+INFO: [Synth 8-3491] module 'aes_kexp' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:14' bound to instance 'u_aes_kexp' of component 'aes_kexp' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:172]
+INFO: [Synth 8-638] synthesizing module 'aes_kexp__parameterized23' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+INFO: [Synth 8-256] done synthesizing module 'aes_kexp__parameterized23' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+	Parameter core_num_g bound to: 13 - type: integer 
+INFO: [Synth 8-3491] module 'aes_kexp' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:14' bound to instance 'u_aes_kexp' of component 'aes_kexp' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:172]
+INFO: [Synth 8-638] synthesizing module 'aes_kexp__parameterized25' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+INFO: [Synth 8-256] done synthesizing module 'aes_kexp__parameterized25' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_kexp.vhd:32]
+INFO: [Synth 8-3491] module 'aes_round' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_round.vhd:14' bound to instance 'u_aes_round' of component 'aes_round' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:196]
+INFO: [Synth 8-638] synthesizing module 'aes_round' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_round.vhd:37]
+INFO: [Synth 8-256] done synthesizing module 'aes_round' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_round.vhd:37]
+INFO: [Synth 8-3491] module 'aes_round' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_round.vhd:14' bound to instance 'u_aes_round' of component 'aes_round' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:196]
+INFO: [Synth 8-3491] module 'aes_round' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_round.vhd:14' bound to instance 'u_aes_round' of component 'aes_round' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:196]
+INFO: [Synth 8-3491] module 'aes_round' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_round.vhd:14' bound to instance 'u_aes_round' of component 'aes_round' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:196]
+INFO: [Synth 8-3491] module 'aes_round' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_round.vhd:14' bound to instance 'u_aes_round' of component 'aes_round' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:196]
+INFO: [Synth 8-3491] module 'aes_round' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_round.vhd:14' bound to instance 'u_aes_round' of component 'aes_round' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:196]
+INFO: [Synth 8-3491] module 'aes_round' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_round.vhd:14' bound to instance 'u_aes_round' of component 'aes_round' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:196]
+INFO: [Synth 8-3491] module 'aes_round' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_round.vhd:14' bound to instance 'u_aes_round' of component 'aes_round' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:196]
+INFO: [Synth 8-3491] module 'aes_round' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_round.vhd:14' bound to instance 'u_aes_round' of component 'aes_round' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:196]
+INFO: [Synth 8-3491] module 'aes_round' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_round.vhd:14' bound to instance 'u_aes_round' of component 'aes_round' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:196]
+INFO: [Synth 8-3491] module 'aes_round' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_round.vhd:14' bound to instance 'u_aes_round' of component 'aes_round' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:196]
+INFO: [Synth 8-3491] module 'aes_round' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_round.vhd:14' bound to instance 'u_aes_round' of component 'aes_round' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:196]
+INFO: [Synth 8-3491] module 'aes_round' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_round.vhd:14' bound to instance 'u_aes_round' of component 'aes_round' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:196]
+INFO: [Synth 8-3491] module 'aes_round' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_round.vhd:14' bound to instance 'u_aes_round' of component 'aes_round' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:196]
+INFO: [Synth 8-3491] module 'aes_last_round' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_last_round.vhd:14' bound to instance 'u_aes_last_round' of component 'aes_last_round' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:258]
+INFO: [Synth 8-638] synthesizing module 'aes_last_round' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_last_round.vhd:30]
+INFO: [Synth 8-256] done synthesizing module 'aes_last_round' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_last_round.vhd:30]
+INFO: [Synth 8-256] done synthesizing module 'aes_ecb' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_ecb.vhd:33]
+INFO: [Synth 8-256] done synthesizing module 'gcm_gctr' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/gcm_gctr.vhd:44]
+	Parameter aes_gcm_split_gfmul bound to: 0 - type: integer 
+INFO: [Synth 8-3491] module 'gcm_ghash' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/gcm_ghash.vhd:15' bound to instance 'u_gcm_ghash' of component 'gcm_ghash' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_gcm.vhd:168]
+INFO: [Synth 8-638] synthesizing module 'gcm_ghash' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/gcm_ghash.vhd:39]
+INFO: [Synth 8-3491] module 'ghash_gfmul' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/ghash_gfmul.vhd:14' bound to instance 'u_ghash_gfmul' of component 'ghash_gfmul' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/gcm_ghash.vhd:352]
+INFO: [Synth 8-638] synthesizing module 'ghash_gfmul' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/ghash_gfmul.vhd:22]
+INFO: [Synth 8-256] done synthesizing module 'ghash_gfmul' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/ghash_gfmul.vhd:22]
+INFO: [Synth 8-256] done synthesizing module 'gcm_ghash' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/gcm_ghash.vhd:39]
+INFO: [Synth 8-3491] module 'aes_enc_dec_ctrl' declared at 'c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_enc_dec_ctrl.vhd:13' bound to instance 'u_aes_enc_dec_ctrl' of component 'aes_enc_dec_ctrl' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_gcm.vhd:192]
+INFO: [Synth 8-638] synthesizing module 'aes_enc_dec_ctrl' [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_enc_dec_ctrl.vhd:26]
+INFO: [Synth 8-256] done synthesizing module 'aes_enc_dec_ctrl' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_enc_dec_ctrl.vhd:26]
+INFO: [Synth 8-256] done synthesizing module 'aes_gcm' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/aes_gcm.vhd:48]
+INFO: [Synth 8-256] done synthesizing module 'top_aes_gcm' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/src/top_aes_gcm.vhd:48]
+INFO: [Synth 8-256] done synthesizing module 'AXI_AES_GCM_slave_lite_v1_0_S00_AXI' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM_slave_lite_v1_0_S00_AXI.vhd:89]
+INFO: [Synth 8-256] done synthesizing module 'AXI_AES_GCM' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM.vhd:49]
+INFO: [Synth 8-256] done synthesizing module 'design_1_AXI_AES_GCM_0_10' (0#1) [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ip/design_1_AXI_AES_GCM_0_10/synth/design_1_AXI_AES_GCM_0_10.vhd:82]
+WARNING: [Synth 8-6014] Unused sequential element slv_reg18_reg was removed.  [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM_slave_lite_v1_0_S00_AXI.vhd:327]
+WARNING: [Synth 8-6014] Unused sequential element slv_reg25_reg was removed.  [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM_slave_lite_v1_0_S00_AXI.vhd:334]
+WARNING: [Synth 8-6014] Unused sequential element slv_reg26_reg was removed.  [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM_slave_lite_v1_0_S00_AXI.vhd:335]
+WARNING: [Synth 8-6014] Unused sequential element slv_reg27_reg was removed.  [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM_slave_lite_v1_0_S00_AXI.vhd:336]
+WARNING: [Synth 8-6014] Unused sequential element slv_reg28_reg was removed.  [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM_slave_lite_v1_0_S00_AXI.vhd:337]
+WARNING: [Synth 8-6014] Unused sequential element slv_reg29_reg was removed.  [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM_slave_lite_v1_0_S00_AXI.vhd:338]
+WARNING: [Synth 8-6014] Unused sequential element slv_reg30_reg was removed.  [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM_slave_lite_v1_0_S00_AXI.vhd:339]
+WARNING: [Synth 8-6014] Unused sequential element slv_reg31_reg was removed.  [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM_slave_lite_v1_0_S00_AXI.vhd:340]
+WARNING: [Synth 8-6014] Unused sequential element slv_reg32_reg was removed.  [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM_slave_lite_v1_0_S00_AXI.vhd:341]
+WARNING: [Synth 8-6014] Unused sequential element slv_reg33_reg was removed.  [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM_slave_lite_v1_0_S00_AXI.vhd:342]
+WARNING: [Synth 8-6014] Unused sequential element slv_reg34_reg was removed.  [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM_slave_lite_v1_0_S00_AXI.vhd:343]
+WARNING: [Synth 8-6014] Unused sequential element slv_reg35_reg was removed.  [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM_slave_lite_v1_0_S00_AXI.vhd:344]
+WARNING: [Synth 8-6014] Unused sequential element slv_reg36_reg was removed.  [c:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.gen/sources_1/bd/design_1/ipshared/b032/hdl/AXI_AES_GCM_slave_lite_v1_0_S00_AXI.vhd:345]
+WARNING: [Synth 8-7129] Port kexp_cnt_i[3] in module aes_kexp is either unconnected or has no load
+WARNING: [Synth 8-7129] Port kexp_cnt_i[2] in module aes_kexp is either unconnected or has no load
+WARNING: [Synth 8-7129] Port kexp_cnt_i[1] in module aes_kexp is either unconnected or has no load
+WARNING: [Synth 8-7129] Port kexp_cnt_i[0] in module aes_kexp is either unconnected or has no load
+WARNING: [Synth 8-7129] Port aes_key_word_val_i[3] in module aes_ecb is either unconnected or has no load
+WARNING: [Synth 8-7129] Port gctr_mode_i[1] in module gcm_gctr is either unconnected or has no load
+WARNING: [Synth 8-7129] Port gctr_mode_i[0] in module gcm_gctr is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_AXI_AWPROT[2] in module AXI_AES_GCM_slave_lite_v1_0_S00_AXI is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_AXI_AWPROT[1] in module AXI_AES_GCM_slave_lite_v1_0_S00_AXI is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_AXI_AWPROT[0] in module AXI_AES_GCM_slave_lite_v1_0_S00_AXI is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_AXI_ARPROT[2] in module AXI_AES_GCM_slave_lite_v1_0_S00_AXI is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_AXI_ARPROT[1] in module AXI_AES_GCM_slave_lite_v1_0_S00_AXI is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_AXI_ARPROT[0] in module AXI_AES_GCM_slave_lite_v1_0_S00_AXI is either unconnected or has no load
+---------------------------------------------------------------------------------
+Finished RTL Elaboration : Time (s): cpu = 00:00:14 ; elapsed = 00:00:15 . Memory (MB): peak = 2338.590 ; gain = 669.082
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Handling Custom Attributes
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Handling Custom Attributes : Time (s): cpu = 00:00:14 ; elapsed = 00:00:15 . Memory (MB): peak = 2338.590 ; gain = 669.082
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished RTL Optimization Phase 1 : Time (s): cpu = 00:00:14 ; elapsed = 00:00:15 . Memory (MB): peak = 2338.590 ; gain = 669.082
+---------------------------------------------------------------------------------
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.270 . Memory (MB): peak = 2338.590 ; gain = 0.000
+INFO: [Project 1-570] Preparing netlist for logic optimization
+
+Processing XDC Constraints
+Initializing timing engine
+Completed Processing XDC Constraints
+
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.009 . Memory (MB): peak = 2411.512 ; gain = 0.000
+INFO: [Project 1-111] Unisim Transformation Summary:
+No Unisim elements were transformed.
+
+Constraint Validation Runtime : Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.322 . Memory (MB): peak = 2430.094 ; gain = 18.398
+INFO: [Designutils 20-5008] Incremental synthesis strategy off
+---------------------------------------------------------------------------------
+Finished Constraint Validation : Time (s): cpu = 00:00:25 ; elapsed = 00:00:26 . Memory (MB): peak = 2430.094 ; gain = 760.586
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Loading Part and Timing Information
+---------------------------------------------------------------------------------
+Loading part: xczu9eg-ffvb1156-2-e
+INFO: [Synth 8-6742] Reading net delay rules and data
+---------------------------------------------------------------------------------
+Finished Loading Part and Timing Information : Time (s): cpu = 00:00:25 ; elapsed = 00:00:26 . Memory (MB): peak = 2430.094 ; gain = 760.586
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Applying 'set_property' XDC Constraints
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished applying 'set_property' XDC Constraints : Time (s): cpu = 00:00:25 ; elapsed = 00:00:26 . Memory (MB): peak = 2430.094 ; gain = 760.586
+---------------------------------------------------------------------------------
+INFO: [Synth 8-802] inferred FSM for state register 'state_write_reg' in module 'AXI_AES_GCM_slave_lite_v1_0_S00_AXI'
+INFO: [Synth 8-802] inferred FSM for state register 'state_read_reg' in module 'AXI_AES_GCM_slave_lite_v1_0_S00_AXI'
+---------------------------------------------------------------------------------------------------
+                   State |                     New Encoding |                Previous Encoding 
+---------------------------------------------------------------------------------------------------
+                    idle |                              001 |                               00
+                   waddr |                              010 |                               10
+                   wdata |                              100 |                               11
+---------------------------------------------------------------------------------------------------
+INFO: [Synth 8-3354] encoded FSM with state register 'state_write_reg' using encoding 'one-hot' in module 'AXI_AES_GCM_slave_lite_v1_0_S00_AXI'
+---------------------------------------------------------------------------------------------------
+                   State |                     New Encoding |                Previous Encoding 
+---------------------------------------------------------------------------------------------------
+                    idle |                               00 |                               00
+                   raddr |                               01 |                               10
+                   rdata |                               10 |                               11
+---------------------------------------------------------------------------------------------------
+INFO: [Synth 8-3354] encoded FSM with state register 'state_read_reg' using encoding 'sequential' in module 'AXI_AES_GCM_slave_lite_v1_0_S00_AXI'
+---------------------------------------------------------------------------------
+Finished RTL Optimization Phase 2 : Time (s): cpu = 00:00:37 ; elapsed = 00:00:39 . Memory (MB): peak = 2430.094 ; gain = 760.586
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start RTL Component Statistics 
+---------------------------------------------------------------------------------
+Detailed RTL Component Info : 
++---Adders : 
+	   2 Input   61 Bit       Adders := 1     
+	   2 Input    4 Bit       Adders := 14    
++---XORs : 
+	   2 Input    128 Bit         XORs := 3     
+	   3 Input      8 Bit         XORs := 224   
+	   2 Input      8 Bit         XORs := 478   
+	   5 Input      8 Bit         XORs := 112   
+	   2 Input      1 Bit         XORs := 1095  
++---XORs : 
+	              128 Bit    Wide XORs := 128   
++---Registers : 
+	              128 Bit    Registers := 5     
+	               96 Bit    Registers := 1     
+	               61 Bit    Registers := 2     
+	               32 Bit    Registers := 25    
+	               16 Bit    Registers := 2     
+	                8 Bit    Registers := 736   
+	                4 Bit    Registers := 14    
+	                2 Bit    Registers := 1     
+	                1 Bit    Registers := 34    
++---Muxes : 
+	   2 Input  128 Bit        Muxes := 6     
+	   2 Input   61 Bit        Muxes := 1     
+	   2 Input   32 Bit        Muxes := 18    
+	   2 Input   16 Bit        Muxes := 5     
+	   2 Input    8 Bit        Muxes := 1181  
+	   3 Input    8 Bit        Muxes := 56    
+	   2 Input    6 Bit        Muxes := 1     
+	   2 Input    5 Bit        Muxes := 1     
+	   3 Input    4 Bit        Muxes := 14    
+	   2 Input    4 Bit        Muxes := 15    
+	   2 Input    3 Bit        Muxes := 10    
+	   3 Input    3 Bit        Muxes := 1     
+	   3 Input    2 Bit        Muxes := 1     
+	   2 Input    2 Bit        Muxes := 2     
+	   2 Input    1 Bit        Muxes := 58    
+	   3 Input    1 Bit        Muxes := 12    
+	  39 Input    1 Bit        Muxes := 1     
+---------------------------------------------------------------------------------
+Finished RTL Component Statistics 
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Part Resource Summary
+---------------------------------------------------------------------------------
+Part Resources:
+DSPs: 2520 (col length:168)
+BRAMs: 1824 (col length: RAMB18 168 RAMB36 84)
+---------------------------------------------------------------------------------
+Finished Part Resource Summary
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Cross Boundary and Area Optimization
+---------------------------------------------------------------------------------
+WARNING: [Synth 8-7080] Parallel synthesis criteria is not met
+WARNING: [Synth 8-7129] Port s00_axi_awprot[2] in module design_1_AXI_AES_GCM_0_10 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port s00_axi_awprot[1] in module design_1_AXI_AES_GCM_0_10 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port s00_axi_awprot[0] in module design_1_AXI_AES_GCM_0_10 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port s00_axi_arprot[2] in module design_1_AXI_AES_GCM_0_10 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port s00_axi_arprot[1] in module design_1_AXI_AES_GCM_0_10 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port s00_axi_arprot[0] in module design_1_AXI_AES_GCM_0_10 is either unconnected or has no load
+---------------------------------------------------------------------------------
+Finished Cross Boundary and Area Optimization : Time (s): cpu = 00:03:31 ; elapsed = 00:03:50 . Memory (MB): peak = 3575.078 ; gain = 1905.570
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start ROM, RAM, DSP, Shift Register and Retiming Reporting
+---------------------------------------------------------------------------------
+
+ROM: Preliminary Mapping Report
++------------+------------+---------------+----------------+
+|Module Name | RTL Object | Depth x Width | Implemented As | 
++------------+------------+---------------+----------------+
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_round   | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
+|aes_kexp    | tmp_v      | 256x8         | LUT            | 
++------------+------------+---------------+----------------+
+
+---------------------------------------------------------------------------------
+Finished ROM, RAM, DSP, Shift Register and Retiming Reporting
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Applying XDC Timing Constraints
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Applying XDC Timing Constraints : Time (s): cpu = 00:03:39 ; elapsed = 00:04:00 . Memory (MB): peak = 3575.078 ; gain = 1905.570
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Timing Optimization
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Timing Optimization : Time (s): cpu = 00:03:39 ; elapsed = 00:04:00 . Memory (MB): peak = 3575.078 ; gain = 1905.570
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Technology Mapping
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Technology Mapping : Time (s): cpu = 00:03:44 ; elapsed = 00:04:05 . Memory (MB): peak = 3575.078 ; gain = 1905.570
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Flattening Before IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Flattening Before IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Final Netlist Cleanup
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Final Netlist Cleanup
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished IO Insertion : Time (s): cpu = 00:03:48 ; elapsed = 00:04:09 . Memory (MB): peak = 3575.078 ; gain = 1905.570
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Instances
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Instances : Time (s): cpu = 00:03:48 ; elapsed = 00:04:09 . Memory (MB): peak = 3575.078 ; gain = 1905.570
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Rebuilding User Hierarchy
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Rebuilding User Hierarchy : Time (s): cpu = 00:03:50 ; elapsed = 00:04:12 . Memory (MB): peak = 3575.078 ; gain = 1905.570
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Ports
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Ports : Time (s): cpu = 00:03:51 ; elapsed = 00:04:12 . Memory (MB): peak = 3575.078 ; gain = 1905.570
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Handling Custom Attributes
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Handling Custom Attributes : Time (s): cpu = 00:03:51 ; elapsed = 00:04:13 . Memory (MB): peak = 3575.078 ; gain = 1905.570
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Nets
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Nets : Time (s): cpu = 00:03:52 ; elapsed = 00:04:13 . Memory (MB): peak = 3575.078 ; gain = 1905.570
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Writing Synthesis Report
+---------------------------------------------------------------------------------
+
+Report BlackBoxes: 
++-+--------------+----------+
+| |BlackBox name |Instances |
++-+--------------+----------+
++-+--------------+----------+
+
+Report Cell Usage: 
++------+-------+------+
+|      |Cell   |Count |
++------+-------+------+
+|1     |CARRY8 |    12|
+|2     |LUT1   |     2|
+|3     |LUT2   |  2426|
+|4     |LUT3   |   726|
+|5     |LUT4   |  5297|
+|6     |LUT5   |  1523|
+|7     |LUT6   | 17635|
+|8     |MUXF7  |  4288|
+|9     |MUXF8  |  2144|
+|10    |FDCE   |  6798|
+|11    |FDPE   |     1|
+|12    |FDRE   |   844|
+|13    |FDSE   |     1|
++------+-------+------+
+---------------------------------------------------------------------------------
+Finished Writing Synthesis Report : Time (s): cpu = 00:03:52 ; elapsed = 00:04:13 . Memory (MB): peak = 3575.078 ; gain = 1905.570
+---------------------------------------------------------------------------------
+Synthesis finished with 0 errors, 0 critical warnings and 7 warnings.
+Synthesis Optimization Runtime : Time (s): cpu = 00:03:33 ; elapsed = 00:04:10 . Memory (MB): peak = 3575.078 ; gain = 1814.066
+Synthesis Optimization Complete : Time (s): cpu = 00:03:52 ; elapsed = 00:04:14 . Memory (MB): peak = 3575.078 ; gain = 1905.570
+INFO: [Project 1-571] Translating synthesized netlist
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.317 . Memory (MB): peak = 3575.078 ; gain = 0.000
+INFO: [Netlist 29-17] Analyzing 6444 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-570] Preparing netlist for logic optimization
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.010 . Memory (MB): peak = 3575.078 ; gain = 0.000
+INFO: [Project 1-111] Unisim Transformation Summary:
+No Unisim elements were transformed.
+
+Synth Design complete | Checksum: b87798c9
+INFO: [Common 17-83] Releasing license: Synthesis
+116 Infos, 34 Warnings, 0 Critical Warnings and 0 Errors encountered.
+synth_design completed successfully
+synth_design: Time (s): cpu = 00:04:01 ; elapsed = 00:04:25 . Memory (MB): peak = 3575.078 ; gain = 2885.066
+Write ShapeDB Complete: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.058 . Memory (MB): peak = 3575.078 ; gain = 0.000
+INFO: [Common 17-1381] The checkpoint 'C:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.runs/design_1_AXI_AES_GCM_0_10_synth_1/design_1_AXI_AES_GCM_0_10.dcp' has been generated.
+INFO: [Coretcl 2-1648] Added synthesis output to IP cache for IP design_1_AXI_AES_GCM_0_10, cache-ID = 233a9c5499c4bdf1
+INFO: [Coretcl 2-1174] Renamed 38 cell refs.
+Write ShapeDB Complete: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.051 . Memory (MB): peak = 3575.078 ; gain = 0.000
+INFO: [Common 17-1381] The checkpoint 'C:/Users/ist21005/Documents/GS_Vivado/project_1/project_1.runs/design_1_AXI_AES_GCM_0_10_synth_1/design_1_AXI_AES_GCM_0_10.dcp' has been generated.
+INFO: [Vivado 12-24828] Executing command : report_utilization -file design_1_AXI_AES_GCM_0_10_utilization_synth.rpt -pb design_1_AXI_AES_GCM_0_10_utilization_synth.pb
+INFO: [Common 17-206] Exiting Vivado at Sat Apr  4 22:08:41 2026...

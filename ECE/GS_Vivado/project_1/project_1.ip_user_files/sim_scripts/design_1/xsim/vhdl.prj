@@ -1,0 +1,31 @@
+vhdl xil_defaultlib  \
+"../../../bd/design_1/ip/design_1_axi_gpio_0_0/sim/design_1_axi_gpio_0_0.vhd" \
+"../../../bd/design_1/ip/design_1_axi_uartlite_0_0/sim/design_1_axi_uartlite_0_0.vhd" \
+"../../../bd/design_1/ip/design_1_axi_gpio_0_1/sim/design_1_axi_gpio_0_1.vhd" \
+"../../../bd/design_1/ip/design_1_rst_ps8_0_99M_1/sim/design_1_rst_ps8_0_99M_1.vhd" \
+"../../../bd/design_1/ipshared/defa/hdl/ADD_2_slave_lite_v1_0_S00_AXI.vhd" \
+"../../../bd/design_1/ipshared/defa/hdl/ADD_2.vhd" \
+"../../../bd/design_1/ipshared/defa/e2ba/simple_adder.vhd" \
+"../../../bd/design_1/ip/design_1_ADD_2_0_0/sim/design_1_ADD_2_0_0.vhd" \
+"../../../bd/design_1/ip/design_1_axi_smc_6/bd_0/ip/ip_1/sim/bd_ad43_psr_aclk_0.vhd" \
+"../../../bd/design_1/ipshared/b032/hdl/AXI_AES_GCM_slave_lite_v1_0_S00_AXI.vhd" \
+"../../../bd/design_1/ipshared/b032/src/aes_pkg.vhd" \
+"../../../bd/design_1/ipshared/b032/src/gcm_pkg.vhd" \
+"../../../bd/design_1/ipshared/b032/src/top_aes_gcm.vhd" \
+"../../../bd/design_1/ipshared/b032/src/aes_func.vhd" \
+"../../../bd/design_1/ipshared/b032/src/aes_ecb.vhd" \
+"../../../bd/design_1/ipshared/b032/src/aes_enc_dec_ctrl.vhd" \
+"../../../bd/design_1/ipshared/b032/src/aes_gcm.vhd" \
+"../../../bd/design_1/ipshared/b032/src/aes_icb.vhd" \
+"../../../bd/design_1/ipshared/b032/src/aes_kexp.vhd" \
+"../../../bd/design_1/ipshared/b032/src/aes_last_round.vhd" \
+"../../../bd/design_1/ipshared/b032/src/aes_round.vhd" \
+"../../../bd/design_1/ipshared/b032/src/gcm_gctr.vhd" \
+"../../../bd/design_1/ipshared/b032/src/gcm_ghash.vhd" \
+"../../../bd/design_1/ipshared/b032/src/ghash_gfmul.vhd" \
+"../../../bd/design_1/ipshared/b032/hdl/AXI_AES_GCM.vhd" \
+"../../../bd/design_1/ip/design_1_AXI_AES_GCM_0_10/sim/design_1_AXI_AES_GCM_0_10.vhd" \
+"../../../bd/design_1/sim/design_1.vhd" \
+
+# Do not sort compile order
+nosort
